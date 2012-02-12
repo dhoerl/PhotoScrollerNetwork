@@ -1,0 +1,735 @@
+
+http://dl.dropbox.com/u/60414145/Lake.jpg
+http://dl.dropbox.com/u/60414145/Shed.jpg
+http://dl.dropbox.com/u/60414145/Tree.jpg
+
+// JP2
+2012-02-03 12:46:59.728 PhotoScroller[8102:707] A
+2012-02-03 12:47:29.347 PhotoScroller[8102:707] B
+2012-02-03 12:47:29.589 PhotoScroller[8102:707] END
+2012-02-03 12:47:29.594 PhotoScroller[8102:707] START
+2012-02-03 12:47:29.604 PhotoScroller[8102:707] A
+2012-02-03 12:47:47.289 PhotoScroller[8102:707] B
+2012-02-03 12:47:47.451 PhotoScroller[8102:707] END
+2012-02-03 12:47:47.456 PhotoScroller[8102:707] START
+2012-02-03 12:47:47.468 PhotoScroller[8102:707] A
+2012-02-03 12:48:05.229 PhotoScroller[8102:707] B
+2012-02-03 12:48:05.390 PhotoScroller[8102:707] END
+
+// JPG
+2012-02-03 12:43:19.813 PhotoScroller[8084:707] A
+2012-02-03 12:43:21.991 PhotoScroller[8084:707] B
+2012-02-03 12:43:22.232 PhotoScroller[8084:707] END
+2012-02-03 12:43:22.237 PhotoScroller[8084:707] START
+2012-02-03 12:43:22.249 PhotoScroller[8084:707] A
+2012-02-03 12:43:23.606 PhotoScroller[8084:707] B
+2012-02-03 12:43:23.771 PhotoScroller[8084:707] END
+2012-02-03 12:43:23.776 PhotoScroller[8084:707] START
+2012-02-03 12:43:23.787 PhotoScroller[8084:707] A
+2012-02-03 12:43:26.391 PhotoScroller[8084:707] B
+2012-02-03 12:43:27.170 PhotoScroller[8084:707] END
+
+
+
+
+
+vImage high resolution
+2012-02-02 14:13:34.563 PhotoScroller[7414:707] SET IMAGENAME
+2012-02-02 14:13:34.573 PhotoScroller[7414:707] NAME: Lake
+2012-02-02 14:13:34.577 PhotoScroller[7414:707] START i=0
+2012-02-02 14:13:36.243 PhotoScroller[7414:707] END i=0
+2012-02-02 14:13:36.247 PhotoScroller[7414:707] START i=1
+2012-02-02 14:13:38.211 PhotoScroller[7414:707] END i=1
+2012-02-02 14:13:38.215 PhotoScroller[7414:707] START i=2
+2012-02-02 14:13:38.682 PhotoScroller[7414:707] END i=2
+2012-02-02 14:13:38.686 PhotoScroller[7414:707] START i=3
+2012-02-02 14:13:38.801 PhotoScroller[7414:707] END i=3
+2012-02-02 14:13:38.805 PhotoScroller[7414:707] TB: <LTTiledImageBuilder: 0x131120>
+
+low res
+2012-02-02 14:16:37.579 PhotoScroller[7447:707] SET IMAGENAME
+2012-02-02 14:16:37.587 PhotoScroller[7447:707] NAME: Lake
+2012-02-02 14:16:37.594 PhotoScroller[7447:707] START i=0
+2012-02-02 14:16:39.120 PhotoScroller[7447:707] END i=0
+2012-02-02 14:16:39.123 PhotoScroller[7447:707] START i=1
+2012-02-02 14:16:40.515 PhotoScroller[7447:707] END i=1
+2012-02-02 14:16:40.519 PhotoScroller[7447:707] START i=2
+2012-02-02 14:16:40.866 PhotoScroller[7447:707] END i=2
+2012-02-02 14:16:40.869 PhotoScroller[7447:707] START i=3
+2012-02-02 14:16:40.948 PhotoScroller[7447:707] END i=3
+2012-02-02 14:16:40.952 PhotoScroller[7447:707] TB: <LTTiledImageBuilder: 0x180380>
+
+every other pixel/row
+2012-02-02 14:29:53.966 PhotoScroller[7484:707] SET IMAGENAME
+2012-02-02 14:29:53.973 PhotoScroller[7484:707] NAME: Lake
+2012-02-02 14:29:53.978 PhotoScroller[7484:707] START i=0
+2012-02-02 14:29:55.173 PhotoScroller[7484:707] END i=0
+2012-02-02 14:29:55.177 PhotoScroller[7484:707] START i=1
+2012-02-02 14:29:55.273 PhotoScroller[7484:707] END i=1
+2012-02-02 14:29:55.277 PhotoScroller[7484:707] START i=2
+2012-02-02 14:29:55.308 PhotoScroller[7484:707] END i=2
+2012-02-02 14:29:55.311 PhotoScroller[7484:707] START i=3
+2012-02-02 14:29:55.324 PhotoScroller[7484:707] END i=3
+2012-02-02 14:29:55.328 PhotoScroller[7484:707] TB: <LTTiledImageBuilder: 0x12f140>
+
+
+
+
+
+
+
+
+
+//
+//  LTTiledImageBuilder.m
+//  PhotoScroller
+//
+//  Created by David Hoerl on 1/31/12.
+//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/mount.h>
+
+#import <ImageIO/ImageIO.h>
+#import <MobileCoreServices/MobileCoreServices.h>
+
+#import "LTTiledImageBuilder.h"
+
+#define TILE_SIZE	256
+#define ZOOM_LEVELS 4
+
+static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
+
+static size_t PhotoScrollerProviderGetBytesAtPosition (
+    void *info,
+    void *buffer,
+    off_t position,
+    size_t count
+);
+static void PhotoScrollerProviderReleaseInfoCallback (
+    void *info
+);
+
+typedef struct {
+	int fd;
+	
+	// whole image
+	size_t bytesPerRow;
+	size_t height;
+	size_t width;
+
+	// used by tiles
+	size_t tileHeight;		
+	size_t tileWidth;
+	size_t col;
+	size_t row;
+
+} imageMemory;
+
+@interface LTTiledImageBuilder ()
+
++ (CGImageRef)createResizedCGImage:(CGImageRef)image scaledDown:(size_t)scale;
++ (BOOL)CGImage:(CGImageRef)image writeToURL:(NSURL *)url;
++ (imageMemory)convertCGImageToDataFile:(CGImageRef)image scale:(CGFloat)ratio file:(NSString *)path;
+
+- (void)run;
+
+@end
+
+@implementation LTTiledImageBuilder
+{
+	NSString *imagePath;
+	CGImageRef images[ZOOM_LEVELS];
+	imageMemory ims[ZOOM_LEVELS];
+}
+
++ (CGImageRef)createResizedCGImage:(CGImageRef)image scaledDown:(size_t)scale
+{
+	// create context, keeping original image properties
+	CGColorSpaceRef colorspace = CGColorSpaceCreateDeviceRGB();
+	
+	size_t height	= CGImageGetHeight(image)/scale;
+	size_t width	= CGImageGetWidth(image)/scale;
+	
+	CGContextRef context = CGBitmapContextCreate(NULL, width, height,
+		CGImageGetBitsPerComponent(image),	// should be 8
+		width*4,							// JPG has none
+		colorspace,
+		kCGImageAlphaNoneSkipFirst			// nothing special
+	);
+	CGColorSpaceRelease(colorspace);
+
+	assert(context);
+
+	// draw image to context (resizing it)
+	CGContextDrawImage(context, CGRectMake(0, 0, width, height), image);
+	// extract resulting image from context
+	CGImageRef imgRef = CGBitmapContextCreateImage(context);
+	CGContextRelease(context);
+
+	return imgRef;
+}
+
++ (BOOL)CGImage:(CGImageRef)image writeToURL:(NSURL *)url
+{
+    CGImageDestinationRef destination = CGImageDestinationCreateWithURL((__bridge CFURLRef)url, kUTTypePNG, 1, NULL);
+    CGImageDestinationAddImage(destination, image, nil);
+
+    bool success = CGImageDestinationFinalize(destination);
+    CFRelease(destination);
+	
+	return success;
+}
+
++ (imageMemory)convertCGImageToDataFile:(CGImageRef)image scale:(CGFloat)ratio file:(NSString *)path
+{
+	size_t width = CGImageGetWidth(image);
+	size_t height = CGImageGetHeight(image);
+	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+	
+	size_t bytesPerPixel = 4;
+	size_t bytesPerRow = bytesPerPixel * width;
+	size_t bitsPerComponent = 8;
+	
+	const char *fileName = [path cStringUsingEncoding:NSUTF8StringEncoding];
+	int fd = open(fileName, O_CREAT | O_RDWR | O_TRUNC, 0777);
+	if(fd == -1) NSLog(@"OPEN failed file %s %s", fileName, strerror(errno));
+	assert(fd >= 0);
+
+	// have to expande the file to appropriate size first
+	lseek(fd, height * width * 4 - 1, SEEK_SET);
+	char tmp = 0;
+	write(fd, &tmp, 1);
+
+	size_t imageSize = height * width * 4;
+	void *addr = mmap(NULL, imageSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED | MAP_NOCACHE, fd, 0); // 
+	if(addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+	
+	assert(addr != MAP_FAILED);
+/*
+	assert(addr);
+	void *rawData = malloc(height * width * 4);
+	memcpy(addr, rawData, height * width * 4);
+	free(rawData);
+*/	
+	
+	CGContextRef context = CGBitmapContextCreate(addr, width, height, bitsPerComponent, bytesPerRow, colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Host);
+	CGColorSpaceRelease(colorSpace);
+
+	CGContextDrawImage(context, CGRectMake(0, 0, width, height), image);
+	CGContextRelease(context);
+
+	munmap(addr, imageSize);
+	
+#if 0
+	FILE *fp = fopen([path cStringUsingEncoding:NSUTF8StringEncoding], "w");
+	if(fp) {
+		fwrite(rawData, 1, bytesPerRow*height, fp);
+		fclose(fp);
+	}
+	free(rawData);
+#endif
+
+	imageMemory im;
+	im.fd = fd;
+{
+		char filePath[MAXPATHLEN];
+		int ret = fcntl(fd, F_GETPATH, filePath);
+		assert(ret == 0);
+		NSLog(@"path: %s", filePath);
+}
+	//im.addr = addr;
+	im.bytesPerRow = bytesPerRow;
+	im.height = height;
+	im.width = width;
+	//asprintf(&im.fileName, "%s", fileName);
+
+	return im;
+}
+
+
++ (imageMemory)XXXconvertCGImageToDataFile:(CGImageRef)image scale:(CGFloat)ratio file:(NSString *)path
+{
+	size_t width = CGImageGetWidth(image);
+	size_t height = CGImageGetHeight(image);
+	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+	
+	size_t bytesPerPixel = 4;
+	size_t bytesPerRow = bytesPerPixel * width;
+	size_t bitsPerComponent = 8;
+	
+	const char *fileName = [path cStringUsingEncoding:NSUTF8StringEncoding];
+	int fd = open(fileName, O_CREAT | O_RDWR | O_TRUNC, 0777);
+	if(fd == -1) NSLog(@"OPEN failed file %s %s", fileName, strerror(errno));
+	assert(fd >= 0);
+
+	// have to expande the file to appropriate size first
+	lseek(fd, height * width * 4 - 1, SEEK_SET);
+	char tmp = 0;
+	write(fd, &tmp, 1);
+
+	size_t imageSize = height * width * 4;
+	void *addr = mmap(NULL, imageSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED | MAP_NOCACHE, fd, 0); // 
+	if(addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+	
+	assert(addr != MAP_FAILED);
+/*
+	assert(addr);
+	void *rawData = malloc(height * width * 4);
+	memcpy(addr, rawData, height * width * 4);
+	free(rawData);
+*/	
+	
+	CGContextRef context = CGBitmapContextCreate(addr, width, height, bitsPerComponent, bytesPerRow, colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Host);
+	CGColorSpaceRelease(colorSpace);
+
+	CGContextDrawImage(context, CGRectMake(0, 0, width, height), image);
+	CGContextRelease(context);
+
+	munmap(addr, imageSize);
+	
+#if 0
+	FILE *fp = fopen([path cStringUsingEncoding:NSUTF8StringEncoding], "w");
+	if(fp) {
+		fwrite(rawData, 1, bytesPerRow*height, fp);
+		fclose(fp);
+	}
+	free(rawData);
+#endif
+
+	imageMemory im;
+	im.fd = fd;
+{
+		char filePath[MAXPATHLEN];
+		int ret = fcntl(fd, F_GETPATH, filePath);
+		assert(ret == 0);
+		NSLog(@"path: %s", filePath);
+}
+	//im.addr = addr;
+	im.bytesPerRow = bytesPerRow;
+	im.height = height;
+	im.width = width;
+	//asprintf(&im.fileName, "%s", fileName);
+
+	return im;
+}
+
+
+- (id)initWithImagePath:(NSString *)path
+{
+	if((self = [super init])) {
+		imagePath = path;
+		[self run];
+		
+		NSString *tmpFile = [NSString stringWithCString:tempnam([NSTemporaryDirectory() cStringUsingEncoding:NSUTF8StringEncoding], "xxx") encoding:NSUTF8StringEncoding];
+		NSLog(@"MY TMP FILE: %@", tmpFile);
+		exit(0);
+	}
+	return self;
+}
+- (void)dealloc
+{
+	for(int i=0; i<ZOOM_LEVELS;++i) {
+		CGImageRelease(images[i]);
+		
+		char filePath[MAXPATHLEN];
+		int ret = fcntl(ims[i].fd, F_GETPATH, filePath);
+		if(!ret) {
+			NSLog(@"path: %s", filePath);
+			unlink(filePath);
+		}
+		close(ims[i].fd);
+	}
+}
+
+- (void)run
+{
+	const size_t scales[] = { 1, 2, 2, 2, 0 };
+	const char *scaleString[] = { "1000", "500", "250", "125", 0 };
+	NSString *basename = [[imagePath lastPathComponent] stringByDeletingPathExtension];
+
+NSLog(@"imagePath; %@", imagePath);
+
+	size_t scale;
+	for(size_t i=0; ((scale = scales[i])); ++i) {
+		CGImageRef image;
+		if(i == 0) {
+			CGDataProviderRef dataProvider = CGDataProviderCreateWithFilename([imagePath cStringUsingEncoding:NSUTF8StringEncoding]);
+			image = CGImageCreateWithJPEGDataProvider (
+				dataProvider,
+				NULL,
+				true,
+				kCGRenderingIntentPerceptual
+			);
+			CGDataProviderRelease(dataProvider);
+		} else {
+			image = [LTTiledImageBuilder createResizedCGImage:images[i-1] scaledDown:scale];
+		}
+		NSString *newName = [NSString stringWithFormat:@"%@_%s", basename, scaleString[i]];
+#ifdef TARGET_OS_IPHONE
+		NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+		path = [path stringByAppendingPathComponent:newName];
+#else
+		NSString *path = [@"/tmp" stringByAppendingPathComponent:newName];
+#endif
+
+		{
+NSLog(@"Convert...");
+			ims[i] = [LTTiledImageBuilder convertCGImageToDataFile:image scale:i file:[path stringByAppendingPathExtension:@"data"]];
+NSLog(@"...done");
+		}
+
+NSLog(@"SAVING...");
+		path = [path stringByAppendingPathExtension:@"png"];
+		BOOL success = [LTTiledImageBuilder CGImage:image writeToURL:[NSURL fileURLWithPath:path]];
+		assert(success);
+
+		CGDataProviderRef dataProvider = CGDataProviderCreateWithFilename([path cStringUsingEncoding:NSUTF8StringEncoding]);
+		images[i] = CGImageCreateWithPNGDataProvider (
+			dataProvider,
+			NULL,
+			true,
+			kCGRenderingIntentPerceptual
+		);
+		CGDataProviderRelease(dataProvider);
+
+NSLog(@"...done");
+
+#if 0
+		NSString *newName = [NSString stringWithFormat:@"%@_%s.png", basename, scaleString[i]];
+		NSString *path = [@"/tmp" stringByAppendingPathComponent:newName];
+		BOOL success = [LTTiledImageBuilder CGImage:image writeToURL:[NSURL fileURLWithPath:path]];
+NSLog(@"Wrote %@ with ret=%d", newName, success);
+#endif
+
+#if 0
+		size_t height	= CGImageGetHeight(image);
+		size_t width	= CGImageGetWidth(image);
+		
+		NSUInteger wIdx=0, hIdx;
+		for(size_t w = 0; w < width; w += TILE_SIZE) {
+			hIdx = 0;
+			for(size_t h = 0; h < height; h += TILE_SIZE) {
+				CGRect rect = CGRectMake(w, h, MIN(width-w, TILE_SIZE), MIN(height-h, TILE_SIZE));
+				CGImageRef oneTile = CGImageCreateWithImageInRect(image, rect);
+				
+				NSString *newName = [NSString stringWithFormat:@"%@_%s_%u_%u.png", basename, scaleString[i], wIdx, hIdx];
+				
+				NSString *path = [@"/tmp" stringByAppendingPathComponent:newName];
+				BOOL success = [LTTiledImageBuilder CGImage:oneTile writeToURL:[NSURL fileURLWithPath:path]];
+
+NSLog(@"Wrote %@ with ret=%d", newName, success);
+
+				++hIdx;
+			}
+			++wIdx;
+		}
+#endif
+	}
+}
+
+#if 0
+- (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col
+{
+//NSLog(@"XtileForScale: %f", scale);
+	long idx = offsetFromScale(scale);
+//NSLog(@"idx=%ld", idx);
+	CGImageRef image = images[idx];
+	size_t height	= CGImageGetHeight(image);
+	size_t width	= CGImageGetWidth(image);
+
+	size_t x	= col * TILE_SIZE;
+	size_t y	= row * TILE_SIZE;
+	
+	CGRect rect = CGRectMake(x, y, MIN(width-x, TILE_SIZE), MIN(height-y, TILE_SIZE));
+	CGImageRef oneTile = CGImageCreateWithImageInRect(image, rect);
+//NSLog(@"TILE ASKED FOR IMAGE %ld inRect: %@", idx, NSStringFromCGRect(rect));
+//CFShow(oneTile);
+	UIImage *img = [UIImage imageWithCGImage:oneTile];
+	CGImageRelease(oneTile);
+
+	return img;
+#if 0
+     // we use "imageWithContentsOfFile:" instead of "imageNamed:" here because we don't want UIImage to cache our tiles
+    NSString *tileName = [NSString stringWithFormat:@"%@_%d_%d_%d", imageName, (int)(scale * 1000), col, row];
+    NSString *path = [[NSBundle mainBundle] pathForResource:tileName ofType:@"png"];
+    UIImage *image = [UIImage imageWithContentsOfFile:path];
+    return image;
+#endif
+}
+
+#else
+
+- (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col
+{
+	long idx = offsetFromScale(scale);
+	imageMemory *im = (imageMemory *)malloc(sizeof(imageMemory));
+	memcpy(im, &ims[idx], sizeof(imageMemory));
+	
+	im->col = col;
+	im->row = row;
+
+	size_t x = col * TILE_SIZE;
+	size_t y = row * TILE_SIZE;
+	
+	im->tileWidth = MIN(im->width-x, TILE_SIZE);
+	im->tileHeight = MIN(im->height-y, TILE_SIZE);
+
+	size_t bytesPerRow = im->tileWidth*4;
+	size_t imageSize = bytesPerRow*im->tileHeight;
+	struct CGDataProviderDirectCallbacks callBacks = { 0, 0, 0, PhotoScrollerProviderGetBytesAtPosition, PhotoScrollerProviderReleaseInfoCallback};
+	CGDataProviderRef dataProvider = CGDataProviderCreateDirect(im, imageSize, &callBacks);
+	
+	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+	CGImageRef image = CGImageCreate (
+	   im->tileWidth,
+	   im->tileHeight,
+	   8,
+	   4*8,
+	   bytesPerRow,
+	   colorSpace,
+	   kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Host,
+	   dataProvider,
+	   NULL,
+	   false,
+	   kCGRenderingIntentPerceptual
+	);
+	CGColorSpaceRelease(colorSpace);
+	
+	UIImage *img = [UIImage imageWithCGImage:image];
+	CGImageRelease(image);
+	
+	return img;
+}
+
+#endif
+
+@end
+
+static size_t PhotoScrollerProviderGetBytesAtPosition (
+    void *info,
+    void *buffer,
+    off_t position,
+    size_t origCount
+) {
+	size_t count = origCount;
+	imageMemory *im = (imageMemory *)info;
+	
+	size_t tileSize = im->tileHeight*im->bytesPerRow;
+	void *addr = mmap(NULL, tileSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->fd, im->row*im->bytesPerRow); // size then offset
+	unsigned char *startPtr = (unsigned char *)addr + im->col*TILE_SIZE*4;	// where this tile starts
+	unsigned char *oPtr = (unsigned char *)buffer;
+
+	size_t bytesPerRow = im->tileWidth*4;
+	size_t rows = position / bytesPerRow;
+	size_t cols = position % bytesPerRow;
+	
+	unsigned char *iPtr = startPtr + rows*im->bytesPerRow;
+	
+	if(cols) {
+		size_t size = bytesPerRow - cols;
+		size = MIN(size, count);
+		memcpy(oPtr, iPtr+cols, size);
+		oPtr += size;
+		iPtr += im->bytesPerRow;
+		count -= size;
+	}
+	for(size_t idx=0; count; ++idx) {
+		size_t copyAmount = MIN(count, im->tileWidth*4);
+		memcpy(oPtr, iPtr, copyAmount);
+		
+		oPtr += copyAmount;
+		iPtr += im->bytesPerRow;
+		count -= copyAmount;
+	}
+	munmap(addr, tileSize);
+
+	return origCount;
+}
+
+static void PhotoScrollerProviderReleaseInfoCallback (
+    void *info
+) {
+	free(info);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
+#if 0
+							else
+							if([webData length] > highWaterMark) {
+				NSLog(@"len=%u high=%u", [webData length], highWaterMark);
+
+								highWaterMark += markIncrement + UPDATE_LEVELS;	// update_levels added in so the final chunk is deferred to the end
+
+								NSDictionary *dict = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:cache] forKey:(__bridge_transfer NSString *)kCGImageSourceShouldCache];
+								CGImageRef image = CGImageSourceCreateImageAtIndex((CGImageSourceRef)imageSource, 0, (__bridge CFDictionaryRef)dict); // 
+#endif
+				
+#if 0					
+												
+								//CFShow(imageProperties);
+								{
+
+								CFDictionaryRef d = CGImageSourceCopyProperties(imageSource, NULL);
+								CFShow(d);
+								}
+
+#endif
+#if 0
+								NSLog(@"h=%f h=%ld w=%ld", h, CGImageGetHeight(image), CGImageGetWidth(image) );
+								NSLog(@"DRAW");
+								if(0) {
+								CGDataProviderRef dataProvider = CGImageGetDataProvider(image);
+								CFDataRef data = CGDataProviderCopyData(dataProvider);
+								NSLog(@"DATA=%u", [(__bridge NSData *)data length]);
+								CFRelease(data);
+								} else {
+												[imageBuilder drawImage:image]; // releases
+								}
+								NSLog(@"...done");
+			}
+#endif
+
+		}
+		if(imageProperties) CFRelease(imageProperties);
+	}
+
+#if 0
+				CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+				CGContextRef context = CGBitmapContextCreate(NULL, CGImageGetWidth(image), CGImageGetHeight(image), 8, CGImageGetWidth(image)*4, colorSpace, kCGImageAlphaNoneSkipFirst /* |  kCGBitmapByteOrder32Host*/);
+				assert(context);
+				CGRect rect = CGRectMake(0, 0, CGImageGetWidth(image), CGImageGetHeight(image));
+				CGContextDrawImage(context, rect, image);
+
+				CGColorSpaceRelease(colorSpace);
+				CGContextRelease(context);
+				CGImageRelease(image), image=NULL;
+
+				CGImageRelease(image);
+
+#endif
+}
+
+- (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *)error
+{
+#ifndef NDEBUG
+	NSLog(@"ConcurrentOp: error: %@", [error description]);
+#endif
+	self.webData = nil;
+	CFRelease(imageSource), imageSource = NULL;
+    [connection cancel];
+
+	[self finish];
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)conn
+{
+	if([super isCancelled]) {
+		[connection cancel];
+		return;
+	}
+#ifndef NDEBUG
+	NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
+#endif
+
+#if 0
+					NSLog(@"DRAW");
+						CGImageSourceUpdateData(imageSource, (__bridge CFDataRef)self.webData, true);
+						CGImageRef image = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
+						[imageBuilder drawImage:image]; // releases
+					NSLog(@"FINISH IMAGE");
+#endif
+
+#if 0
+					for(int i=0; i<4; ++i) {
+						NSDictionary *dict = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:cache] forKey:(__bridge_transfer NSString *)kCGImageSourceShouldCache];
+						CGImageRef image = CGImageSourceCreateImageAtIndex(imageSource, 0, (__bridge CFDictionaryRef)dict);
+
+					NSLog(@"DRAW");
+					if(0) {
+						CGDataProviderRef dataProvider = CGImageGetDataProvider(image);
+						CFDataRef data = CGDataProviderCopyData(dataProvider);
+						CFRelease(data);
+					} else {
+										[imageBuilder drawImage:image]; // releases
+					}
+					NSLog(@"...done");
+					}
+#endif
+
+#ifdef TURBO 
+
+	CFRelease(imageSource), imageSource = NULL;
+
+NSLog(@"TURBO");
+{
+	unsigned char *jpegBuf = (unsigned char *)[webData mutableBytes]; // const ???
+	unsigned long jpegSize = [webData length];
+	int width, height, jpegSubsamp;
+	int ret = tjDecompressHeader2(decompressor,
+		jpegBuf,
+		jpegSize,
+		&width,
+		&height,
+		&jpegSubsamp 
+		);
+	assert(ret == 0);
+for(int i=0; i<3; ++i) {
+NSLog(@"HEADER w%d bpr%ld h%d", width, imageBuilder.image0BytesPerRow, height);	
+	ret = tjDecompress2(decompressor,
+		jpegBuf,
+		jpegSize,
+		addr,
+		width,
+		imageBuilder.image0BytesPerRow,
+		height,
+		TJPF_XRGB,
+		TJFLAG_NOREALLOC
+		);	
+	assert(ret == 0);
+NSLog(@"DONE");
+}
+}
+
+#else
+	CGImageSourceUpdateData(imageSource, (__bridge CFDataRef)self.webData, true);
+for(int i=0; i<3; ++i) {
+
+	NSLog(@"DRAW");
+	
+	CGImageRef image = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
+	[imageBuilder drawImage:image]; // releases
+		
+	NSLog(@"FINISH IMAGE");
+
+}
+	CFRelease(imageSource), imageSource = NULL;
+
+
+
+#endif
+
+
+	// could use a NSXMLParser here too.
+	[self finish];
+}
+
