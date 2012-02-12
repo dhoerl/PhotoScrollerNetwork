@@ -36,9 +36,6 @@
 		DE4AD9A114DC7AF800D63E5A /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD99F14DC7AF800D63E5A /* ImageIO.framework */; };
 		DE4AD9A214DC7AF800D63E5A /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD9A014DC7AF800D63E5A /* QuartzCore.framework */; };
 		DE4AD9A314DC811900D63E5A /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */; };
-		DE4AD9B414DECA3200D63E5A /* Lake.jp2 in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD9B114DECA3200D63E5A /* Lake.jp2 */; };
-		DE4AD9B514DECA3200D63E5A /* Shed.jp2 in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD9B214DECA3200D63E5A /* Shed.jp2 */; };
-		DE4AD9B614DECA3200D63E5A /* Tree.jp2 in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD9B314DECA3200D63E5A /* Tree.jp2 */; };
 		DE4AD9CA14DEE4DB00D63E5A /* ConcurrentOp.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */; };
 		DE4ADA2014E1A56500D63E5A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD93D14DC783D00D63E5A /* main.m */; };
 		DE4ADA2114E1A56500D63E5A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD94114DC783D00D63E5A /* AppDelegate.m */; };
@@ -70,13 +67,9 @@
 		DE4ADA3D14E1A56500D63E5A /* iTunesArtwork in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97114DC788F00D63E5A /* iTunesArtwork */; };
 		DE4ADA3E14E1A56500D63E5A /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97914DC788F00D63E5A /* ReadMe.txt */; };
 		DE4ADA3F14E1A56500D63E5A /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */; };
-		DE4ADA4014E1A56500D63E5A /* Lake.jp2 in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD9B114DECA3200D63E5A /* Lake.jp2 */; };
-		DE4ADA4114E1A56500D63E5A /* Shed.jp2 in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD9B214DECA3200D63E5A /* Shed.jp2 */; };
-		DE4ADA4214E1A56500D63E5A /* Tree.jp2 in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD9B314DECA3200D63E5A /* Tree.jp2 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		DE3B9E6814E5496700BA8E4D /* ScratchSpace */ = {isa = PBXFileReference; lastKnownFileType = text; path = ScratchSpace; sourceTree = "<group>"; };
 		DE4AD92D14DC783D00D63E5A /* PhotoScrollerNetwork.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetwork.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE4AD93114DC783D00D63E5A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		DE4AD93314DC783D00D63E5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -90,8 +83,6 @@
 		DE4AD94314DC783D00D63E5A /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		DE4AD94414DC783D00D63E5A /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		DE4AD94714DC783D00D63E5A /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController.xib; sourceTree = "<group>"; };
-		DE4AD95014DC788F00D63E5A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		DE4AD95114DC788F00D63E5A /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		DE4AD95214DC788F00D63E5A /* ImageScrollView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageScrollView.h; sourceTree = "<group>"; };
 		DE4AD95314DC788F00D63E5A /* ImageScrollView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageScrollView.m; sourceTree = "<group>"; };
 		DE4AD95414DC788F00D63E5A /* PhotoViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhotoViewController.h; sourceTree = "<group>"; };
@@ -118,9 +109,6 @@
 		DE4AD97914DC788F00D63E5A /* ReadMe.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe.txt; sourceTree = "<group>"; };
 		DE4AD99F14DC7AF800D63E5A /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
 		DE4AD9A014DC7AF800D63E5A /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		DE4AD9B114DECA3200D63E5A /* Lake.jp2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Lake.jp2; sourceTree = "<group>"; };
-		DE4AD9B214DECA3200D63E5A /* Shed.jp2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Shed.jp2; sourceTree = "<group>"; };
-		DE4AD9B314DECA3200D63E5A /* Tree.jp2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Tree.jp2; sourceTree = "<group>"; };
 		DE4AD9C814DEE4DB00D63E5A /* ConcurrentOp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConcurrentOp.h; sourceTree = "<group>"; };
 		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; };
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -157,7 +145,6 @@
 		DE4AD92214DC783D00D63E5A = {
 			isa = PBXGroup;
 			children = (
-				DE3B9E6814E5496700BA8E4D /* ScratchSpace */,
 				DE4AD99E14DC78ED00D63E5A /* Images */,
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
@@ -229,8 +216,6 @@
 			isa = PBXGroup;
 			children = (
 				DE4AD95614DC788F00D63E5A /* SaveMe.txt */,
-				DE4AD95014DC788F00D63E5A /* AppDelegate.h */,
-				DE4AD95114DC788F00D63E5A /* AppDelegate.m */,
 				DE4AD9C814DEE4DB00D63E5A /* ConcurrentOp.h */,
 				DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */,
 				DE4AD95214DC788F00D63E5A /* ImageScrollView.h */,
@@ -256,9 +241,6 @@
 		DE4AD96214DC788F00D63E5A /* Full Images */ = {
 			isa = PBXGroup;
 			children = (
-				DE4AD9B114DECA3200D63E5A /* Lake.jp2 */,
-				DE4AD9B214DECA3200D63E5A /* Shed.jp2 */,
-				DE4AD9B314DECA3200D63E5A /* Tree.jp2 */,
 				DE4AD96414DC788F00D63E5A /* Lake.jpg */,
 				DE4AD96714DC788F00D63E5A /* Shed.jpg */,
 				DE4AD96A14DC788F00D63E5A /* Tree.jpg */,
@@ -366,9 +348,6 @@
 				DE4AD99614DC788F00D63E5A /* iTunesArtwork in Resources */,
 				DE4AD99A14DC788F00D63E5A /* ReadMe.txt in Resources */,
 				DE4AD9A314DC811900D63E5A /* PhotoViewController.xib in Resources */,
-				DE4AD9B414DECA3200D63E5A /* Lake.jp2 in Resources */,
-				DE4AD9B514DECA3200D63E5A /* Shed.jp2 in Resources */,
-				DE4AD9B614DECA3200D63E5A /* Tree.jp2 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -393,9 +372,6 @@
 				DE4ADA3D14E1A56500D63E5A /* iTunesArtwork in Resources */,
 				DE4ADA3E14E1A56500D63E5A /* ReadMe.txt in Resources */,
 				DE4ADA3F14E1A56500D63E5A /* PhotoViewController.xib in Resources */,
-				DE4ADA4014E1A56500D63E5A /* Lake.jp2 in Resources */,
-				DE4ADA4114E1A56500D63E5A /* Shed.jp2 in Resources */,
-				DE4ADA4214E1A56500D63E5A /* Tree.jp2 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
