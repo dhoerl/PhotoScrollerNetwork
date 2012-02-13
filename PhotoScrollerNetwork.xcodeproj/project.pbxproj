@@ -112,6 +112,7 @@
 		DE4AD9C814DEE4DB00D63E5A /* ConcurrentOp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConcurrentOp.h; sourceTree = "<group>"; };
 		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; };
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE588D8614E9433A00C7E151 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -145,9 +146,10 @@
 		DE4AD92214DC783D00D63E5A = {
 			isa = PBXGroup;
 			children = (
-				DE4AD99E14DC78ED00D63E5A /* Images */,
+				DE588D8614E9433A00C7E151 /* README.txt */,
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
+				DE4AD99E14DC78ED00D63E5A /* Images */,
 				DE4AD93014DC783D00D63E5A /* Frameworks */,
 				DE4AD92E14DC783D00D63E5A /* Products */,
 			);
@@ -513,10 +515,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=*]" = (
-					"-l",
-					"/opt/libjpeg-turbo/lib/libjpeg.a",
-				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -529,10 +527,6 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				OTHER_CFLAGS = "";
-				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=*]" = (
-					"-l",
-					"/opt/libjpeg-turbo/lib/libjpeg.a",
-				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -545,8 +539,11 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				LIBRARY_SEARCH_PATHS = /usr/lib;
-				OTHER_CFLAGS = "-DTURBO";
+				LIBRARY_SEARCH_PATHS = /opt/lib;
+				OTHER_CFLAGS = (
+					"-DLIBJPEG_TURBO",
+					"-DLIBJPEG",
+				);
 				OTHER_LDFLAGS = "/Volumes/Data/git/libjpeg-turbo-builder/libturbojpeg.a";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				WRAPPER_EXTENSION = app;
@@ -560,8 +557,11 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				LIBRARY_SEARCH_PATHS = /usr/lib;
-				OTHER_CFLAGS = "-DTURBO";
+				LIBRARY_SEARCH_PATHS = /opt/lib;
+				OTHER_CFLAGS = (
+					"-DLIBJPEG_TURBO",
+					"-DLIBJPEG",
+				);
 				OTHER_LDFLAGS = "/Volumes/Data/git/libjpeg-turbo-builder/libturbojpeg.a";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				WRAPPER_EXTENSION = app;
@@ -598,10 +598,6 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				OTHER_CFLAGS = "";
-				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=*]" = (
-					"-l",
-					"/opt/libjpeg-turbo/lib/libjpeg.a",
-				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -614,8 +610,11 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				LIBRARY_SEARCH_PATHS = /usr/lib;
-				OTHER_CFLAGS = "-DTURBO";
+				LIBRARY_SEARCH_PATHS = /opt/lib;
+				OTHER_CFLAGS = (
+					"-DLIBJPEG_TURBO",
+					"-DLIBJPEG",
+				);
 				OTHER_LDFLAGS = "/Volumes/Data/git/libjpeg-turbo-builder/libturbojpeg.a";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				WRAPPER_EXTENSION = app;

@@ -37,14 +37,17 @@
 
 @class TiledImageBuilder;
 
+typedef enum { cgimageDecoder, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
+
 @interface ConcurrentOp : NSOperation
+@property (nonatomic, assign) imageDecoder decoder;
 @property (nonatomic, assign) NSUInteger index;
+@property (nonatomic, assign) NSUInteger milliSeconds;
 @property (nonatomic, strong) NSThread *thread;
 @property (nonatomic, strong) NSURL *url;
 @property (nonatomic, strong) NSMutableData *webData;
 @property (nonatomic, strong) TiledImageBuilder *imageBuilder;
 
-//- (void)wakeUp;				// should be run on the operation's thread - could create a convenience method that does this then hide thread
 - (void)finish;				// should be run on the operation's thread - could create a convenience method that does this then hide thread
 - (void)runConnection;		// convenience method - messages using proper thread
 - (void)cancel;				// subclassed convenience method

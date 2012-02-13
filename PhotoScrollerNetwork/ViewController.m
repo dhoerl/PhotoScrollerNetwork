@@ -37,19 +37,21 @@
 
 #import "ViewController.h"
 #import "PhotoViewController.h"
+#import "ConcurrentOp.h"
 
 @implementation ViewController
 {
 	IBOutlet UIButton *runButton;
-	IBOutlet UIActivityIndicatorView *spinner;
 	IBOutlet UISegmentedControl *technology;
 	IBOutlet UISwitch *useInternet;
 }
+@synthesize spinner;
 
 - (IBAction)button:(id)sender
 {
 	PhotoViewController *pvc = [[PhotoViewController alloc] initWithNibName:@"PhotoViewController" bundle:nil];
-	pvc.isWebTest = YES;
+	pvc.isWebTest = useInternet.on;
+	pvc.decoder = technology.selectedSegmentIndex;
 	[self.navigationController pushViewController:pvc animated:YES];
 }
 
@@ -64,7 +66,24 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
+
+	spinner.hidden = YES;
+
+#if defined(LIBJPEG) || defined(LIBJPEG_TURBO)
+	technology.hidden = NO;
+	
+#if !defined(LIBJPEG_TURBO)
+	[technology setEnabled:NO forSegmentAtIndex:1];
+#endif
+
+#if !defined(LIBJPEG)
+	[technology setEnabled:NO forSegmentAtIndex:2];
+#endif
+
+#else
+
+	technology.hidden = YES;
+#endif
 }
 
 - (void)viewDidUnload

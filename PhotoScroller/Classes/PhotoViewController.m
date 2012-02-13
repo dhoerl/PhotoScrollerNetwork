@@ -46,6 +46,7 @@ translucent  property YES/NO
 #import "ImageScrollView.h"
 #import "TiledImageBuilder.h"
 #import "ConcurrentOp.h"
+#import "AppDelegate.h"
 
 static char *runnerContext = "runnerContext";
 
@@ -54,6 +55,7 @@ static char *runnerContext = "runnerContext";
 @property (nonatomic, strong) NSMutableSet *operations;
 
 - (void)operationDidFinish:(ConcurrentOp *)operation;
+- (IBAction)cancelNow:(id)sender;
 
 - (void)configurePage:(ImageScrollView *)page forIndex:(NSUInteger)index;
 - (BOOL)isDisplayingPageForIndex:(NSUInteger)index;
@@ -70,12 +72,15 @@ static char *runnerContext = "runnerContext";
 - (CGSize)imageSizeAtIndex:(NSUInteger)index;
 //- (UIImage *)imageAtIndex:(NSUInteger)index;
 
-- (void)constructImages;
+- (void)constructStaticImages;
+- (void)fetchWebImages;
 
 @end
 
 @implementation PhotoViewController
 {
+	IBOutlet UIActivityIndicatorView *spinner;
+
     UIScrollView	*pagingScrollView;
     
     NSMutableSet	*recycledPages;
@@ -90,12 +95,15 @@ static char *runnerContext = "runnerContext";
 @synthesize isWebTest;
 @synthesize queue;
 @synthesize operations;
+@synthesize decoder;
 
 #pragma mark -
 #pragma mark View loading and unloading
 
 - (void)viewDidLoad 
 {
+	[spinner startAnimating];
+
 	self.operations = [NSMutableSet setWithCapacity:1];
 	self.queue = [NSOperationQueue new];
    
@@ -106,23 +114,16 @@ static char *runnerContext = "runnerContext";
     recycledPages = [[NSMutableSet alloc] init];
     visiblePages  = [[NSMutableSet alloc] init];
 	tileBuilders  = [[NSMutableArray alloc] init];
-
 	if(isWebTest) {
-		ConcurrentOp *op = [ConcurrentOp new];
-		op.url = [NSURL URLWithString:@"http://dl.dropbox.com/u/60414145/Lake.jpg"];
-
-		// Order is important here
-		[op addObserver:self forKeyPath:@"isFinished" options:0 context:runnerContext];	// First, observe isFinished
-		[operations addObject:op];	// Second we retain and save a reference to the operation
-		[queue addOperation:op];	// Lastly, lets get going!
+		[self fetchWebImages];
 	} else {
-		[self constructImages];
-		[self tilePages];
+		[self constructStaticImages];
 	}
 }
 
 - (void)viewDidUnload
 {
+	spinner = nil;
     [super viewDidUnload];
 
     pagingScrollView = nil;
@@ -131,13 +132,19 @@ static char *runnerContext = "runnerContext";
 	tileBuilders = nil;
 }
 
+- (void)dealloc
+{
+	[self cancelNow:nil];
+}
+
 - (IBAction)cancelNow:(id)sender
 {
+	[operations enumerateObjectsUsingBlock:^(id obj, BOOL *stop) { [obj removeObserver:self forKeyPath:@"isFinished"]; }];   
+    [self.operations removeAllObjects];
+
 	[queue cancelAllOperations];
 	[queue waitUntilAllOperationsAreFinished];
 	
-	[operations enumerateObjectsUsingBlock:^(id obj, BOOL *stop) { [obj removeObserver:self forKeyPath:@"isFinished"]; }];   
-    [self.operations removeAllObjects];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
@@ -157,37 +164,40 @@ static char *runnerContext = "runnerContext";
 	}
 }
 
-- (void)operationDidFinish:(ConcurrentOp *)operation
+- (void)operationDidFinish:(ConcurrentOp *)op
 {
+
 	// what you would want in real world situations below
 
 	// if you cancel the operation when its in the set, will hit this case
 	// since observeValueForKeyPath: queues this message on the main thread
-	if(![self.operations containsObject:operation]) return;
+	if(![self.operations containsObject:op]) return;
 	
 	// If we are in the queue, then we have to both remove our observation and queue membership
-	[operation removeObserver:self forKeyPath:@"isFinished"];
-	[operations removeObject:operation];
+	[op removeObserver:self forKeyPath:@"isFinished"];
+	[operations removeObject:op];
 	
 	// This would be the case if cancelled before we start running.
-	if(operation.isCancelled) return;
+	if(op.isCancelled) return;
 	
 	// We either failed in setup or succeeded doing something.
-	NSLog(@"Operation Succeeded: webData = %lx", (unsigned long)operation.webData);
+	NSLog(@"Operation Succeeded: index=%d", op.index);
 	
-	[tileBuilders addObject:operation.imageBuilder];
-	[operation.imageBuilder run];
+	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
 
-	[self tilePages];
+	if(![operations count]) {
+		[spinner stopAnimating];
+		[self tilePages];
+	}
 }
 
 #pragma mark -
 #pragma mark Tiling and page configuration
 
-- (void)constructImages
+- (void)constructStaticImages
 {
-	dispatch_queue_t que = dispatch_queue_create("com.dfh.photoScroller", DISPATCH_QUEUE_SERIAL);
 	dispatch_group_t group = dispatch_group_create();
+	dispatch_queue_t que = dispatch_queue_create("com.dfh.photoScroller", DISPATCH_QUEUE_SERIAL);
 	
 	NSUInteger multiCore = [[NSProcessInfo processInfo] processorCount] - 1;
 	
@@ -197,13 +207,44 @@ static char *runnerContext = "runnerContext";
 		NSString *path = [[NSBundle mainBundle] pathForResource:imageName ofType:@"jpg"];
 
 		// thread if we have multiple cores
-		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0) : que, ^
+		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
 				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path];
-				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; });
+				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; NSLog(@"tilebuilder RETURNED"); });
 			} );
 	}
-	dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+		{
+			dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+			dispatch_async(dispatch_get_main_queue(), ^
+				{
+					[spinner stopAnimating];
+					[self tilePages];
+				});
+			dispatch_release(group);
+			dispatch_release(que);
+		} );
+}
+
+- (void)fetchWebImages
+{		
+	for(NSUInteger idx=0; idx<[self imageCount]; ++idx) {
+		[tileBuilders addObject:@""];
+		
+		NSString *imageName = [self imageNameAtIndex:idx];
+		NSString *path = [[@"http://dl.dropbox.com/u/60414145" stringByAppendingPathComponent:imageName] stringByAppendingPathExtension:@"jpg"];
+
+		ConcurrentOp *op = [ConcurrentOp new];
+		op.url = [NSURL URLWithString:path];
+		op.decoder = decoder;
+		op.index = idx;
+
+		// Order is important here
+		[op addObserver:self forKeyPath:@"isFinished" options:0 context:runnerContext];	// First, observe isFinished
+
+		[operations addObject:op];	// Second we retain and save a reference to the operation
+		[queue addOperation:op];	// Lastly, lets get going!
+	}
 }
 
 - (void)tilePages 

@@ -33,6 +33,8 @@ In the end, you have n files, each containing image tiles which can be memcpy'd 
 This solution scales to huge images. The limiting factor is the amount of file space. That said, you may need to tweak the mmap strategy if you have threads mapping in several huge images.
 
 
+<<<< THE TURBO PROJECT IS NOT YET FINISHED - YOU CAN READ ABOUT IT BUT IT WILL NOT BUILD AT THE MOMENT >>>>>
+
 PhotoScollerNetworkTURBO Target: INCREMENTAL DECODING
 
 When you download jpegs from the internet, the processor is idling waiting for the complete image to arrive, after which it decodes the image. If it were possible to have CGImageSourceCreateIncremental incrementally decode the image as it arrives (and you feed it more data), then my job would have been done. Alas, it does not do that, and my DTS event to find out some way to cajole it to do so was wasted. Thus, you will not find CGImageSourceCreateIncremental used in this project - in no case could it be used to make the process any faster than it is.
@@ -40,6 +42,15 @@ When you download jpegs from the internet, the processor is idling waiting for t
 So, when using a highly compressed images and a fast WIFI connection, a large component of the total time between starting the image fetches and their display is the decode time. Decode time is the duration of decompressing a encoded image blob into a bit map in memory.
 
 Fortunately, libjpeg provides the mechanism to incrementally decode jpegs (well, it cannot do this for progressive images so be aware of the type). There are scant examples of this on the web so I had to spend quite a bit of timed getting it to work. While I could have used libjpeg, I tripped over the libjpeg-turbo open source library. If your have to use an external library, might as well use one that has accelleration for the ARM chips used by iOS devices. It has the added benefit that once linked into your project, you can use it for faster decoding of on-file images.
+
+To use this feature, you have to have the libturbojpeg.a libray (and headers). You have three options:
+
+1) download my libjpeg-turbo-builder project and do a "Build" (it uses svn to pull the source). You'll need the latest autoconfig etc tools in this case.
+
+2) use the installer for 1.2.0 from http://sourceforge.net/projects/libjpeg-turbo. The downside is that it appears the ARM library didn't pull in the NEON turbo code, but for purposes of decoding the jpegs incrementally it hardly matters.
+
+3) Use the libturbojpeg.a file I've included in this project (its 1.2.0)
+
 
 Process:
 

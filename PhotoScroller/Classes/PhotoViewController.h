@@ -39,6 +39,7 @@
 
 @interface PhotoViewController : UIViewController <UIScrollViewDelegate>
 @property (nonatomic, assign) BOOL isWebTest;
+@property (nonatomic, assign) int decoder;
 
 @end
 

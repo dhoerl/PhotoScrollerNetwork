@@ -38,11 +38,16 @@
 #import <UIKit/UIKit.h>
 
 @class ViewController;
+@class AppDelegate;
+
+extern AppDelegate *appDelegate;
+
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
-
 @property (strong, nonatomic) UINavigationController *viewController;
+
+- (void)spinSpinner:(BOOL)startYes_stopNo;
 
 @end

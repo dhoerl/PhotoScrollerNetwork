@@ -51,15 +51,14 @@
 // Defines for All
 #define UPDATE_LEVELS 4
 
-//#undef TURBO
-//#define TURBOS
-//#define CGIMAGESOURCE
-
-#ifdef TURBOS
+//#undef LIBJPEG
+//#define LIBJPEG_TURBO
+ 
+#ifdef LIBJPEG_TURBO
 #include <turbojpeg.h>
 #endif
 
-#ifdef TURBO	
+#ifdef LIBJPEG	
 #include <jpeglib.h>
 #include <setjmp.h>
 
@@ -88,7 +87,6 @@ typedef struct {
 	struct jpeg_decompress_struct		cinfo;
 	struct my_error_mgr					jerr;
 	
-	//__unsafe_unretained ConcurrentOp	*op;
 	unsigned char						*data;
 	size_t								data_length;
 	size_t								consumed_data;		// where the next chunk of data should come from, offset into the NSData object
@@ -131,7 +129,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 @interface ConcurrentOp (NSURLConnectionDelegate)
 
+#ifdef LIBJPEG
 - (void)outputScanLines;
+#endif
 
 @end
 
@@ -141,16 +141,17 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	NSUInteger						highWaterMark;
 //	NSUInteger						markIncrement;
 	uint64_t						timeStamp;
-#ifdef TURBOS	
+#ifdef LIBJPEG_TURBO	
 	tjhandle						decompressor;
 #endif
 
-#ifdef TURBO
+#ifdef LIBJPEG
 	co_jpeg_source_mgr				src_mgr;
 	unsigned char					*scanLines[SCAN_LINE_MAX];
 #endif
 }
 @synthesize index;
+@synthesize milliSeconds;
 @synthesize thread;
 @synthesize executing, finished;
 @synthesize loops;
@@ -159,6 +160,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 @synthesize webData;
 @synthesize url;
 @synthesize imageBuilder;
+@synthesize decoder;
 
 - (BOOL)isConcurrent { return YES; }
 - (BOOL)isExecuting { return executing; }
@@ -214,7 +216,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	NSURLRequest *request = [NSURLRequest requestWithURL:url];
 	self.connection =  [[NSURLConnection alloc] initWithRequest:request delegate:self];
 
-#ifdef TURBOS
+#ifdef LIBJPEG_TURBO
 	 decompressor = tjInitDecompress();
 #endif
 
@@ -260,11 +262,11 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 	NSLog(@"OP: dealloc"); // didn't always see this message :-)
 
-#ifdef TURBOS
+#ifdef LIBJPEG_TURBO
 	 if(decompressor) tjDestroy(decompressor);
 #endif
 
-#ifdef TURBO
+#ifdef LIBJPEG
 	if(src_mgr.cinfo.src) jpeg_destroy_decompress(&src_mgr.cinfo);
 #endif
 
@@ -295,48 +297,49 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 	self.webData = [NSMutableData dataWithCapacity:responseLength];
 	
-#ifdef TURBO
-	//markIncrement = (NSUInteger)responseLength/UPDATE_LEVELS;
-	//highWaterMark = markIncrement;
-	highWaterMark = INCREMENT_THRESHOLD;
+#ifdef LIBJPEG
+	if(decoder == libjpegIncremental) {
+		//markIncrement = (NSUInteger)responseLength/UPDATE_LEVELS;
+		//highWaterMark = markIncrement;
+		highWaterMark = INCREMENT_THRESHOLD;
 
-	src_mgr.pub.next_input_byte		= NULL;
-	src_mgr.pub.bytes_in_buffer		= 0;
-	src_mgr.pub.init_source			= init_source;
-	src_mgr.pub.fill_input_buffer	= fill_input_buffer;
-	src_mgr.pub.skip_input_data		= skip_input_data;
-	src_mgr.pub.resync_to_restart	= resync_to_restart;
-	src_mgr.pub.term_source			= term_source;
-	
-	src_mgr.consumed_data			= 0;
-	src_mgr.start_of_stream			= TRUE;
-	src_mgr.failed					= FALSE;
+		src_mgr.pub.next_input_byte		= NULL;
+		src_mgr.pub.bytes_in_buffer		= 0;
+		src_mgr.pub.init_source			= init_source;
+		src_mgr.pub.fill_input_buffer	= fill_input_buffer;
+		src_mgr.pub.skip_input_data		= skip_input_data;
+		src_mgr.pub.resync_to_restart	= resync_to_restart;
+		src_mgr.pub.term_source			= term_source;
+		
+		src_mgr.consumed_data			= 0;
+		src_mgr.start_of_stream			= TRUE;
+		src_mgr.failed					= FALSE;
 
-	/* We set up the normal JPEG error routines, then override error_exit. */
-	src_mgr.cinfo.err = jpeg_std_error(&src_mgr.jerr.pub);
-	src_mgr.jerr.pub.error_exit = my_error_exit;
-	/* Establish the setjmp return context for my_error_exit to use. */
-	if (setjmp(src_mgr.jerr.setjmp_buffer)) {
-		/* If we get here, the JPEG code has signaled an error.
-		 * We need to clean up the JPEG object, close the input file, and return.
-		 */
-NSLog(@"YIKES! SETJUMP");
-		src_mgr.failed = YES;
-		[self cancel];
-	} else {
-		/* Now we can initialize the JPEG decompression object. */
-		jpeg_create_decompress(&src_mgr.cinfo);
-		src_mgr.cinfo.src = &src_mgr.pub; // MUST be after the jpeg_create_decompress - ask me how I know this :-)
-		//src_mgr.pub.bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
-		//src_mgr.pub.next_input_byte = NULL; /* until buffer loaded */
+	#warning Error handling does not work yet.
+		/* We set up the normal JPEG error routines, then override error_exit. */
+		src_mgr.cinfo.err = jpeg_std_error(&src_mgr.jerr.pub);
+		src_mgr.jerr.pub.error_exit = my_error_exit;
+		/* Establish the setjmp return context for my_error_exit to use. */
+		if (setjmp(src_mgr.jerr.setjmp_buffer)) {
+			/* If we get here, the JPEG code has signaled an error.
+			 * We need to clean up the JPEG object, close the input file, and return.
+			 */
+	NSLog(@"YIKES! SETJUMP");
+			src_mgr.failed = YES;
+			[self cancel];
+		} else {
+			/* Now we can initialize the JPEG decompression object. */
+			jpeg_create_decompress(&src_mgr.cinfo);
+			src_mgr.cinfo.src = &src_mgr.pub; // MUST be after the jpeg_create_decompress - ask me how I know this :-)
+			//src_mgr.pub.bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
+			//src_mgr.pub.next_input_byte = NULL; /* until buffer loaded */
+		}
 	}
 #endif
 }
 
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data
 {
-//NSLog(@"current=%@ mine=%@", [NSThread currentThread], thread);
-
 #ifndef NDEBUG
 	//NSLog(@"WEB SERVICE: got Data len=%u cancelled=%d", [data length], [super isCancelled]);
 #endif
@@ -344,59 +347,63 @@ NSLog(@"YIKES! SETJUMP");
 		[connection cancel];
 		return;
 	}
-#ifndef TURBO
-	[webData appendData:data];
-#else
-	unsigned char *oldDataPtr = (unsigned char *)[webData mutableBytes];
-	[webData appendData:data];
-	unsigned char *newDataPtr = (unsigned char *)[webData mutableBytes];
-	if(oldDataPtr != newDataPtr) {
-NSLog(@"CHANGED!");
-		size_t diff = src_mgr.pub.next_input_byte - src_mgr.data;
-		src_mgr.pub.next_input_byte = newDataPtr + diff;
+#ifndef LIBJPEG
+	if(decoder != libjpegIncremental) {
+		[webData appendData:data];
 	}
-	src_mgr.data = newDataPtr;
-	src_mgr.data_length = [webData length];
-
-//NSLog(@"s1=%ld s2=%d", src_mgr.data_length, highWaterMark);
-
-	if(src_mgr.data_length > highWaterMark && !src_mgr.failed) {
-		highWaterMark += INCREMENT_THRESHOLD;	// update_levels added in so the final chunk is deferred to the end
-		//NSLog(@"len=%u high=%u", [webData length], highWaterMark);
-
-		if(!src_mgr.got_header) {
-			/* Step 3: read file parameters with jpeg_read_header() */
-			int jret = jpeg_read_header(&src_mgr.cinfo, FALSE);
-			if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return;
-//NSLog(@"GOT header");
-			src_mgr.got_header = YES;
-			src_mgr.start_of_stream = NO;
-
-			assert(src_mgr.cinfo.num_components == 3);
-			assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
-//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
-
-			TiledImageBuilder *tb = [TiledImageBuilder new];
-			addr = [tb mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
-			self.imageBuilder = tb;
-
-			unsigned char *scratch = [tb scratchSpace];
-			size_t rowBytes = tb.image0BytesPerRow;
-//NSLog(@"Scratch=%p rowBytes=%ld", scratch, rowBytes);
-			for(int i=0; i<SCAN_LINE_MAX; ++i) {
-				scanLines[i] = scratch;
-				scratch += rowBytes;
-			}
-			(void)jpeg_start_decompress(&src_mgr.cinfo);
+#else
+	if(decoder == libjpegIncremental) {
+		unsigned char *oldDataPtr = (unsigned char *)[webData mutableBytes];
+		[webData appendData:data];
+		unsigned char *newDataPtr = (unsigned char *)[webData mutableBytes];
+		if(oldDataPtr != newDataPtr) {
+			// NSLog(@"CHANGED!"); // I never saw it, probably could happen
+			size_t diff = src_mgr.pub.next_input_byte - src_mgr.data;
+			src_mgr.pub.next_input_byte = newDataPtr + diff;
 		}
-		if(src_mgr.got_header && !src_mgr.failed) {
-			[self outputScanLines];
+		src_mgr.data = newDataPtr;
+		src_mgr.data_length = [webData length];
+
+		//NSLog(@"s1=%ld s2=%d", src_mgr.data_length, highWaterMark);
+
+		if(src_mgr.data_length > highWaterMark && !src_mgr.failed) {
+			highWaterMark += INCREMENT_THRESHOLD;	// update_levels added in so the final chunk is deferred to the end
+			//NSLog(@"len=%u high=%u", [webData length], highWaterMark);
+
+			if(!src_mgr.got_header) {
+				/* Step 3: read file parameters with jpeg_read_header() */
+				int jret = jpeg_read_header(&src_mgr.cinfo, FALSE);
+				if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return;
+				//NSLog(@"GOT header");
+				src_mgr.got_header = YES;
+				src_mgr.start_of_stream = NO;
+
+				assert(src_mgr.cinfo.num_components == 3);
+				assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
+				//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
+
+				TiledImageBuilder *tb = [TiledImageBuilder new];
+				addr = [tb mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
+				self.imageBuilder = tb;
+
+				unsigned char *scratch = [tb scratchSpace];
+				size_t rowBytes = tb.image0BytesPerRow;
+				//NSLog(@"Scratch=%p rowBytes=%ld", scratch, rowBytes);
+				for(int i=0; i<SCAN_LINE_MAX; ++i) {
+					scanLines[i] = scratch;
+					scratch += rowBytes;
+				}
+				(void)jpeg_start_decompress(&src_mgr.cinfo);
+			}
+			if(src_mgr.got_header && !src_mgr.failed) {
+				[self outputScanLines];
+			}
 		}
 	}
 #endif
 }
 
-#ifdef TURBO
+#ifdef LIBJPEG
 - (void)outputScanLines
 {
 	//NSLog(@"START LINES: %ld width=%d", src_mgr.writtenLines, src_mgr.cinfo.output_width);
@@ -404,7 +411,6 @@ NSLog(@"CHANGED!");
 		int lines = jpeg_read_scanlines(&src_mgr.cinfo, scanLines, SCAN_LINE_MAX);
 		if(lines <= 0) break;
 
-#if 1
 		unsigned char *outPtr = (unsigned char *)addr + src_mgr.writtenLines*imageBuilder.image0BytesPerRow;
 		for(int idx=0; idx<lines; ++idx) {
 			unsigned char *inPtr = scanLines[idx];
@@ -423,7 +429,6 @@ NSLog(@"CHANGED!");
 			outPtr = lastOutPtr + imageBuilder.image0BytesPerRow;
 		}
 		src_mgr.writtenLines += lines;
-#endif
 	}
 	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr.writtenLines, src_mgr.cinfo.output_scanline);
 }
@@ -450,77 +455,80 @@ NSLog(@"CHANGED!");
 		return;
 	}
 #ifndef NDEBUG
-	NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
+	//NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
 #endif
 
-#ifdef TURBO
-	[self outputScanLines];
-	jpeg_finish_decompress(&src_mgr.cinfo);
-	assert(jpeg_input_complete(&src_mgr.cinfo));
-	assert(src_mgr.writtenLines == src_mgr.cinfo.output_height);
-#endif
-
-#ifdef TURBOS
-NSLog(@"TURBOS");
-{
-	unsigned char *jpegBuf = (unsigned char *)[webData mutableBytes]; // const ???
-	unsigned long jpegSize = [webData length];
-	int width, height, jpegSubsamp;
-	int ret = tjDecompressHeader2(decompressor,
-		jpegBuf,
-		jpegSize,
-		&width,
-		&height,
-		&jpegSubsamp 
-		);
-	assert(ret == 0);
-	
-	TiledImageBuilder *tb = [TiledImageBuilder new];
-	addr = [tb mapMemoryForWidth:width height:height];
-	self.imageBuilder = tb;
-	
-NSLog(@"HEADER w%d bpr%ld h%d", width, imageBuilder.image0BytesPerRow, height);	
-	ret = tjDecompress2(decompressor,
-		jpegBuf,
-		jpegSize,
-		addr,
-		width,
-		imageBuilder.image0BytesPerRow,
-		height,
-		TJPF_ABGR,
-		TJFLAG_NOREALLOC
-		);	
-	assert(ret == 0);
-	
-}
-#endif
-
-#ifdef CGIMAGESOURCE
-	CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)webData, NULL);
-	if(imageSource) {
-		CGImageRef image = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
-		size_t width = CGImageGetWidth(image);
-		size_t height = CGImageGetHeight(image);
-		
-		if(width && height) {
-			TiledImageBuilder *tb = [TiledImageBuilder new];
-			self.imageBuilder = tb;
-			addr = [tb mapMemoryForWidth:width height:height];
-			[tb drawImage:image]; // releases image
-			CFRelease(imageSource);
-		}
+#ifdef LIBJPEG
+	if(decoder == libjpegIncremental) {
+		[self outputScanLines];
+		jpeg_finish_decompress(&src_mgr.cinfo);
+		assert(jpeg_input_complete(&src_mgr.cinfo));
+		assert(src_mgr.writtenLines == src_mgr.cinfo.output_height);
 	}
 #endif
 
-	uint64_t diff = DeltaMAT(timeStamp, [self timeStamp]);
+#ifdef LIBJPEG_TURBO
+	if(decoder == libjpegIncremental) {
+		unsigned char *jpegBuf = (unsigned char *)[webData mutableBytes]; // const ???
+		unsigned long jpegSize = [webData length];
+		int width, height, jpegSubsamp;
+		int ret = tjDecompressHeader2(decompressor,
+			jpegBuf,
+			jpegSize,
+			&width,
+			&height,
+			&jpegSubsamp 
+			);
+		assert(ret == 0);
+		
+		TiledImageBuilder *tb = [TiledImageBuilder new];
+		addr = [tb mapMemoryForWidth:width height:height];
+		self.imageBuilder = tb;
+		
+		// NSLog(@"HEADER w%d bpr%ld h%d", width, imageBuilder.image0BytesPerRow, height);	
+		ret = tjDecompress2(decompressor,
+			jpegBuf,
+			jpegSize,
+			addr,
+			width,
+			imageBuilder.image0BytesPerRow,
+			height,
+			TJPF_ABGR,
+			TJFLAG_NOREALLOC
+			);	
+		assert(ret == 0);
+	}
+}
+#endif
 
-NSLog(@"FINISH: %llu milliseconds", diff);
+	if(decoder == cgimageDecoder) {
+		CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)webData, NULL);
+		if(imageSource) {
+			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
+			size_t width = CGImageGetWidth(image);
+			size_t height = CGImageGetHeight(image);
+			
+			if(width && height) {
+				TiledImageBuilder *tb = [TiledImageBuilder new];
+				self.imageBuilder = tb;
+				addr = [tb mapMemoryForWidth:width height:height];
+				[tb drawImage:image]; // releases image
+				CFRelease(imageSource);
+			}
+		}
+	}
+	[imageBuilder run];
+	milliSeconds = (uint32_t)DeltaMAT(timeStamp, [self timeStamp]);
+NSLog(@"FINISH: %u milliseconds", milliSeconds);
+
+	assert(self.imageBuilder );
+
 	[self finish];
 }
 
 @end
 
-#ifdef TURBO
+#ifdef LIBJPEG
 static void my_error_exit(j_common_ptr cinfo)
 {
   /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
@@ -582,7 +590,7 @@ static boolean resync_to_restart(j_decompress_ptr cinfo, int desired)
 {
 	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
 
-NSLog(@"YIKES: resync_to_restart!!!");
+	NSLog(@"YIKES: resync_to_restart!!!");
 
 	src->failed = TRUE;
 	return FALSE;

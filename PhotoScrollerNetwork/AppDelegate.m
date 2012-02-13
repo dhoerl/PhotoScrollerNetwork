@@ -39,16 +39,22 @@
 
 #import "ViewController.h"
 
-@implementation AppDelegate
+AppDelegate *appDelegate;
 
+@implementation AppDelegate
+{
+	ViewController *vc;
+}
 @synthesize window = _window;
 @synthesize viewController = _viewController;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+	appDelegate = self;
+
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     // Override point for customization after application launch.
-	ViewController *vc = [[ViewController alloc] initWithNibName:@"ViewController" bundle:nil];
+	vc = [[ViewController alloc] initWithNibName:@"ViewController" bundle:nil];
 	
 	self.viewController = [[UINavigationController alloc] initWithRootViewController:vc];
 	
@@ -94,6 +100,16 @@
 	 Save data if appropriate.
 	 See also applicationDidEnterBackground:.
 	 */
+}
+
+- (void)spinSpinner:(BOOL)startYes_stopNo
+{
+	UIActivityIndicatorView *spinner = vc.spinner;
+	if(startYes_stopNo) {
+		[spinner startAnimating];
+	} else {
+		[spinner stopAnimating];
+	}
 }
 
 @end

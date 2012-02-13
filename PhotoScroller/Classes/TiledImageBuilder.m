@@ -130,9 +130,25 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 {
 	if((self = [super init])) {
 		imagePath = path;
-		//NSLog(@"START");
+
+		NSURL *url = [NSURL fileURLWithPath:imagePath];
+		CGImageSourceRef imageSourcRef = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
+assert(imageSourcRef);
+		CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
+assert(image);
+
+		width = CGImageGetWidth(image);
+		height = CGImageGetHeight(image);
+		bytesPerRow = calcBytesPerRow(width);
+		CFRelease(imageSourcRef), imageSourcRef = NULL;
+NSLog(@"MAP MEMORY");
+		[self mapMemory];
+NSLog(@"DRAW IMAGE");
+		[self drawImage:image]; // releases
+NSLog(@"RUN");
+	
 		[self run];
-		//NSLog(@"END");
+NSLog(@"END");
 	}
 	return self;
 }
@@ -234,22 +250,7 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 NSLog(@"idx=%ld", idx);
 
 		if(idx == 0) {
-			if(addr) {
-				// already did the first image
-			} else {
-				NSURL *url = [NSURL fileURLWithPath:imagePath];
-				CGImageSourceRef imageSourcRef = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
-assert(imageSourcRef);
-				CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
-assert(image);
-
-				width = CGImageGetWidth(image);
-				height = CGImageGetHeight(image);
-				bytesPerRow = calcBytesPerRow(width);
-				CFRelease(imageSourcRef), imageSourcRef = NULL;
-				[self mapMemory];
-				[self drawImage:image]; // releases
-			}
+			assert(addr);
 		} else {
 			lastWidth = width;
 			lastHeight = height;

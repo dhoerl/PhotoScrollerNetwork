@@ -36,5 +36,6 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 @interface ViewController : UIViewController
+@property (nonatomic, strong) IBOutlet UIActivityIndicatorView *spinner;
 
 @end
