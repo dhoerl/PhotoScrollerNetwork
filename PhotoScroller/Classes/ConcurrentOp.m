@@ -217,7 +217,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	self.connection =  [[NSURLConnection alloc] initWithRequest:request delegate:self];
 
 #ifdef LIBJPEG_TURBO
-	 decompressor = tjInitDecompress();
+	if(decoder == libjpegTurboDecoder) {
+		 decompressor = tjInitDecompress();
+	}
 #endif
 
 	[thread setName:@"ConcurrentOp"];
@@ -347,11 +349,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		[connection cancel];
 		return;
 	}
-#ifndef LIBJPEG
 	if(decoder != libjpegIncremental) {
 		[webData appendData:data];
 	}
-#else
+#ifdef LIBJPEG
 	if(decoder == libjpegIncremental) {
 		unsigned char *oldDataPtr = (unsigned char *)[webData mutableBytes];
 		[webData appendData:data];
@@ -455,7 +456,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		return;
 	}
 #ifndef NDEBUG
-	//NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
+	NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
 #endif
 
 #ifdef LIBJPEG
@@ -468,7 +469,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 
 #ifdef LIBJPEG_TURBO
-	if(decoder == libjpegIncremental) {
+	if(decoder == libjpegTurboDecoder) {
 		unsigned char *jpegBuf = (unsigned char *)[webData mutableBytes]; // const ???
 		unsigned long jpegSize = [webData length];
 		int width, height, jpegSubsamp;
@@ -480,7 +481,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			&jpegSubsamp 
 			);
 		assert(ret == 0);
-		
+NSLog(@"HAH - OK %@", url);		
 		TiledImageBuilder *tb = [TiledImageBuilder new];
 		addr = [tb mapMemoryForWidth:width height:height];
 		self.imageBuilder = tb;
@@ -498,7 +499,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			);	
 		assert(ret == 0);
 	}
-}
 #endif
 
 	if(decoder == cgimageDecoder) {

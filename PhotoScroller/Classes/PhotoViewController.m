@@ -54,8 +54,9 @@ static char *runnerContext = "runnerContext";
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (nonatomic, strong) NSMutableSet *operations;
 
-- (void)operationDidFinish:(ConcurrentOp *)operation;
 - (IBAction)cancelNow:(id)sender;
+
+- (void)operationDidFinish:(ConcurrentOp *)operation;
 
 - (void)configurePage:(ImageScrollView *)page forIndex:(NSUInteger)index;
 - (BOOL)isDisplayingPageForIndex:(NSUInteger)index;

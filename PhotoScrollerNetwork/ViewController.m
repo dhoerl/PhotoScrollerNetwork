@@ -39,6 +39,12 @@
 #import "PhotoViewController.h"
 #import "ConcurrentOp.h"
 
+@interface ViewController ()
+
+- (IBAction)segmentChanged:(id)sender;
+
+@end
+
 @implementation ViewController
 {
 	IBOutlet UIButton *runButton;
@@ -46,6 +52,16 @@
 	IBOutlet UISwitch *useInternet;
 }
 @synthesize spinner;
+
+- (IBAction)segmentChanged:(id)sender
+{
+	if(technology.selectedSegmentIndex) {
+		useInternet.on = YES;
+		useInternet.enabled = NO;
+	} else {
+		useInternet.enabled = YES;
+	}
+}
 
 - (IBAction)button:(id)sender
 {

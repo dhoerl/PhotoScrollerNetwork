@@ -37,7 +37,7 @@
 
 @class TiledImageBuilder;
 
-typedef enum { cgimageDecoder, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
+typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
 
 @interface ConcurrentOp : NSOperation
 @property (nonatomic, assign) imageDecoder decoder;

@@ -4,9 +4,17 @@ So, you want to use a scrolling view with zoomable images in an iOS device. You 
 
 It looks really nice and seems to be exactly what you need! And you see three jpeg images with the three images you see in the UIScrollView. But, you dig deeper, and with a growing pit in your stomach, you discover that the project is a facade - it only works since those beautiful three jpegs are pre-tiles into 800 or so small png tiles, prepared to meet the needs of the CATiledLayer backing the scrollview.
 
-This code leverages my github ConcurrentNSOperations project, as image fetching is done using Concurrent Operations.
+This code leverages my github ConcurrentNSOperations project, as image fetching is done using Concurrent Operations. The images were uploaded to my public Dropbox folder - you will see the URL if you look around.
 
 The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo as explained below.
+
+KNOWN BUGS:
+
+- if you quit the project with the scroll view showing, you get a crash
+- the jpeg error handler is not yet setup properly
+
+
+
 
 PhotoScollerNetwork Target: FAST AND EFFICIENT TILING
 
@@ -33,9 +41,9 @@ In the end, you have n files, each containing image tiles which can be memcpy'd 
 This solution scales to huge images. The limiting factor is the amount of file space. That said, you may need to tweak the mmap strategy if you have threads mapping in several huge images.
 
 
-<<<< THE TURBO PROJECT IS NOT YET FINISHED - YOU CAN READ ABOUT IT BUT IT WILL NOT BUILD AT THE MOMENT >>>>>
 
-PhotoScollerNetworkTURBO Target: INCREMENTAL DECODING
+
+PhotoScollerNetworkTURBO Target: INCREMENTAL DECODING (see http://sourceforge.net/projects/libjpeg-turbo)
 
 When you download jpegs from the internet, the processor is idling waiting for the complete image to arrive, after which it decodes the image. If it were possible to have CGImageSourceCreateIncremental incrementally decode the image as it arrives (and you feed it more data), then my job would have been done. Alas, it does not do that, and my DTS event to find out some way to cajole it to do so was wasted. Thus, you will not find CGImageSourceCreateIncremental used in this project - in no case could it be used to make the process any faster than it is.
 
