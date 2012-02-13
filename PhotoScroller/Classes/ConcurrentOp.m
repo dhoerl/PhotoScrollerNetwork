@@ -175,8 +175,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		[self didChangeValueForKey:@"isFinished"];
 		return;
 	}
-
+#ifndef NDEBUG
 	NSLog(@"OP: start");
+#endif
 	@autoreleasepool
 	{
 		loops = 1;	// testing
@@ -211,8 +212,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (BOOL)setup
 {
+#ifndef NDEBUG
 	NSLog(@"OP: setup");
-
+#endif
 	NSURLRequest *request = [NSURLRequest requestWithURL:url];
 	self.connection =  [[NSURLConnection alloc] initWithRequest:request delegate:self];
 
@@ -223,7 +225,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 
 	[thread setName:@"ConcurrentOp"];
-	NSLog(@"Thread ptr=%p stackSize=%u", thread, [thread stackSize]);
 	return YES;
 }
 
@@ -295,7 +296,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	NSUInteger responseLength = response.expectedContentLength == NSURLResponseUnknownLength ? 1024*1000 : response.expectedContentLength;
 
 #ifndef NDEBUG
-	NSLog(@"ConcurrentOp: response=%@ len=%lu", response, (unsigned long)responseLength);
+	//NSLog(@"ConcurrentOp: response=%@ len=%lu", response, (unsigned long)responseLength);
 #endif
 	self.webData = [NSMutableData dataWithCapacity:responseLength];
 	
@@ -456,7 +457,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		return;
 	}
 #ifndef NDEBUG
-	NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
+	//NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
 #endif
 
 #ifdef LIBJPEG
@@ -481,7 +482,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			&jpegSubsamp 
 			);
 		assert(ret == 0);
-NSLog(@"HAH - OK %@", url);		
 		TiledImageBuilder *tb = [TiledImageBuilder new];
 		addr = [tb mapMemoryForWidth:width height:height];
 		self.imageBuilder = tb;
@@ -519,8 +519,9 @@ NSLog(@"HAH - OK %@", url);
 	}
 	[imageBuilder run];
 	milliSeconds = (uint32_t)DeltaMAT(timeStamp, [self timeStamp]);
-NSLog(@"FINISH: %u milliseconds", milliSeconds);
-
+#ifndef NDEBUG
+	NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
 	assert(self.imageBuilder );
 
 	[self finish];

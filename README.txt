@@ -4,6 +4,8 @@ So, you want to use a scrolling view with zoomable images in an iOS device. You 
 
 It looks really nice and seems to be exactly what you need! And you see three jpeg images with the three images you see in the UIScrollView. But, you dig deeper, and with a growing pit in your stomach, you discover that the project is a facade - it only works since those beautiful three jpegs are pre-tiled into 800 or so small png tiles, prepared to meet the needs of the CATiledLayer backing the scrollview.
 
+Fear not! Now you have PhotoScrollerNetwork to the rescue! Not only does this project solve the problem of using a single image in an efficient and elegant manner, but it also shows you how to fetch images from the network using Concurrent NSOperations, and then how to efficiently decode and re-format them for rapid display by the CATiledLayer. Note that for single core processors like the 3GS and 4, the decode time is additive. I challenge anyone to make this faster!
+
 This code leverages my github Concurrent_NSOperations project (https://github.com/dhoerl/Concurrent_NSOperations), as image fetching is done using Concurrent NSOperations. The images were uploaded to my public Dropbox folder - you will see the URL if you look around.
 
 The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo, both explained below.
@@ -18,7 +20,7 @@ KNOWN BUGS:
 
 PhotoScollerNetwork Target: FAST AND EFFICIENT TILING
 
-Fear not! Now you have PhotoScrollerNetwork to the rescue! Not only does this project solve the problem of using a single image in an efficient and elegant manner, but it also shows you how to fetch images from the network using Concurrent NSOperations, and then how to efficiently decode and re-format them for rapid display by the CATiledLayer. I challenge anyone to make this faster!
+This target does exactly what the PhotoScroller does, but it only needs a single jpeg per view, and it dynamically creates all the tiles as sections of a larger file instead of using individual files.
 
 Process:
 
@@ -47,7 +49,7 @@ This solution scales to huge images. The limiting factor is the amount of file s
 
 PhotoScollerNetworkTURBO Target: INCREMENTAL DECODING (see http://sourceforge.net/projects/libjpeg-turbo)
 
-When you download jpegs from the internet, the processor is idling waiting for the complete image to arrive, after which it decodes the image. If it were possible to have CGImageSourceCreateIncremental incrementally decode the image as it arrives (and you feed it more data), then my job would have been done. Alas, it does not do that, and my DTS event to find out some way to cajole it to do so was wasted. Thus, you will not find CGImageSourceCreateIncremental used in this project - in no case could it be used to make the process any faster than it is.
+When you download jpegs from the internet, the processor is idling waiting for the complete image to arrive, after which it decodes the image. If it were possible to have CGImageSourceCreateIncremental incrementally decode the image as it arrives (and you feed it this data), then my job would have been done. Alas, it does not do that, and my DTS event to find out some way to cajole it to do so was wasted. Thus, you will not find CGImageSourceCreateIncremental used in this project - in no case could it be used to make the process any faster than it is.
 
 So, when using a highly compressed images and a fast WIFI connection, a large component of the total time between starting the image fetches and their display is the decode time. Decode time is the duration of decompressing a encoded image blob into a bit map in memory.
 

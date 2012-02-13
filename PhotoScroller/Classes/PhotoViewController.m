@@ -92,6 +92,8 @@ static char *runnerContext = "runnerContext";
     CGFloat			percentScrolledIntoFirstVisiblePage;
 
 	NSMutableArray	*tileBuilders;
+	
+	NSUInteger		milliSeconds;
 }
 @synthesize isWebTest;
 @synthesize queue;
@@ -182,13 +184,15 @@ static char *runnerContext = "runnerContext";
 	if(op.isCancelled) return;
 	
 	// We either failed in setup or succeeded doing something.
-	NSLog(@"Operation Succeeded: index=%d", op.index);
+	// NSLog(@"Operation Succeeded: index=%d", op.index);
 	
 	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
+	milliSeconds += op.milliSeconds;
 
 	if(![operations count]) {
 		[spinner stopAnimating];
 		[self tilePages];
+		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds];
 	}
 }
 

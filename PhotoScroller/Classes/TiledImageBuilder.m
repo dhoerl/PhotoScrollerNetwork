@@ -141,14 +141,14 @@ assert(image);
 		height = CGImageGetHeight(image);
 		bytesPerRow = calcBytesPerRow(width);
 		CFRelease(imageSourcRef), imageSourcRef = NULL;
-NSLog(@"MAP MEMORY");
+		// NSLog(@"MAP MEMORY");
 		[self mapMemory];
-NSLog(@"DRAW IMAGE");
+		// NSLog(@"DRAW IMAGE");
 		[self drawImage:image]; // releases
-NSLog(@"RUN");
+		// NSLog(@"RUN");
 	
 		[self run];
-NSLog(@"END");
+		// NSLog(@"END");
 	}
 	return self;
 }
@@ -214,7 +214,7 @@ NSLog(@"END");
 	lastAddr = addr;
 	lastEmptyAddr = emptyAddr;
 
-//NSLog(@"imageSize=%ld", imageSize);
+	//NSLog(@"imageSize=%ld", imageSize);
 	emptyAddr = mmap(NULL, imageSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0); //  | MAP_NOCACHE
 	addr = (char *)emptyAddr + emptyTileRowSize;
 	if(emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
@@ -243,15 +243,8 @@ NSLog(@"END");
 	size_t lastHeight = 0;
 	size_t lastBytesPerRow = 0;
 	
-	//void *emptyAddr = NULL;
-	//void *addr = NULL;
-
 	for(size_t idx=0; idx < ZOOM_LEVELS; ++idx) {
-NSLog(@"idx=%ld", idx);
-
-		if(idx == 0) {
-			assert(addr);
-		} else {
+		if(idx) {
 			lastWidth = width;
 			lastHeight = height;
 			lastBytesPerRow = bytesPerRow;
@@ -259,50 +252,7 @@ NSLog(@"idx=%ld", idx);
 			width /= 2;
 			height /= 2;
 			[self mapMemory];
-		}
-#if 0
-		bytesPerRow = calcBytesPerRow(width);
-		emptyTileRowSize = bytesPerRow * tileDimension;
-		imageSize = bytesPerRow * calcDimension(height) + emptyTileRowSize;	// need temp space
 
-		// have to expand the file to correct size first
-		NSString *tmpFile = [NSString stringWithCString:tempnam([NSTemporaryDirectory() cStringUsingEncoding:NSUTF8StringEncoding], "ps") encoding:NSUTF8StringEncoding];
-		const char *fileName = [tmpFile cStringUsingEncoding:NSUTF8StringEncoding];
-		
-		int fd = open(fileName, O_CREAT | O_RDWR | O_TRUNC, 0777);
-		if(fd == -1) NSLog(@"OPEN failed file %s %s", fileName, strerror(errno));
-		assert(fd >= 0);
-
-		lseek(fd, imageSize - 1, SEEK_SET);
-		char tmp = 0;
-		write(fd, &tmp, 1);
-		unlink(fileName);	// so it goes away when the fd is closed or we on a crash
-
-		void *lastAddr = addr;
-		void *lastEmptyAddr = emptyAddr;
-
-		emptyAddr = mmap(NULL, imageSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0); //  | MAP_NOCACHE
-		addr = (char *)emptyAddr + emptyTileRowSize;
-		if(emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
-		assert(emptyAddr != MAP_FAILED);
-#endif
-
-		if(idx == 0) {
-//NSLog(@"img");
-
-#if 0
-			CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-			CGContextRef context = CGBitmapContextCreate(addr, width, height, bitsPerComponent, bytesPerRow, colorSpace, kCGImageAlphaNoneSkipFirst /* |  kCGBitmapByteOrder32Host*/);
-			assert(context);
-			CGRect rect = CGRectMake(0, 0, width, height);
-			CGContextDrawImage(context, rect, image);
-
-			CGColorSpaceRelease(colorSpace);
-			CGContextRelease(context);
-			CGImageRelease(image), image=NULL;
-#endif
-//NSLog(@"img done");
-		} else {
 #if USE_VIMAGE == 1
 		   vImage_Buffer src = {
 				.data = lastAddr,
@@ -326,7 +276,7 @@ NSLog(@"idx=%ld", idx);
 			);
 			assert(err == kvImageNoError);
 #else	
-//NSLog(@"boom: lastBPR=%ld bpr=%ld last=%p addr=%p", lastBytesPerRow, bytesPerRow, lastAddr, addr);		
+			//NSLog(@"boom: lastBPR=%ld bpr=%ld last=%p addr=%p", lastBytesPerRow, bytesPerRow, lastAddr, addr);		
 			{
 				uint32_t *inPtr = (uint32_t *)lastAddr;
 				uint32_t *outPtr = (uint32_t *)addr;
