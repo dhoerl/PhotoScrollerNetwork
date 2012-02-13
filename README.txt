@@ -2,11 +2,11 @@ PhotoScrollerNetwork Project
 
 So, you want to use a scrolling view with zoomable images in an iOS device. You discover that Apple has this really nice sample project called "PhotoScroller", so you download and run it.
 
-It looks really nice and seems to be exactly what you need! And you see three jpeg images with the three images you see in the UIScrollView. But, you dig deeper, and with a growing pit in your stomach, you discover that the project is a facade - it only works since those beautiful three jpegs are pre-tiles into 800 or so small png tiles, prepared to meet the needs of the CATiledLayer backing the scrollview.
+It looks really nice and seems to be exactly what you need! And you see three jpeg images with the three images you see in the UIScrollView. But, you dig deeper, and with a growing pit in your stomach, you discover that the project is a facade - it only works since those beautiful three jpegs are pre-tiled into 800 or so small png tiles, prepared to meet the needs of the CATiledLayer backing the scrollview.
 
-This code leverages my github ConcurrentNSOperations project, as image fetching is done using Concurrent Operations. The images were uploaded to my public Dropbox folder - you will see the URL if you look around.
+This code leverages my github Concurrent_NSOperations project (https://github.com/dhoerl/Concurrent_NSOperations), as image fetching is done using Concurrent NSOperations. The images were uploaded to my public Dropbox folder - you will see the URL if you look around.
 
-The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo as explained below.
+The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo, both explained below.
 
 KNOWN BUGS:
 
@@ -18,7 +18,7 @@ KNOWN BUGS:
 
 PhotoScollerNetwork Target: FAST AND EFFICIENT TILING
 
-Fear not! Now you have PhotoScrollerNetwork to the rescue! Not only does this project solve the problem of how to get those 800 tiles in an efficient and elegant manner, but it also shows you how to fetch images from the network using Concurrent NSOperations, then efficiently decode and re-format them for rapid display by the CATiledLayer. I challenge anyone to make this faster!
+Fear not! Now you have PhotoScrollerNetwork to the rescue! Not only does this project solve the problem of using a single image in an efficient and elegant manner, but it also shows you how to fetch images from the network using Concurrent NSOperations, and then how to efficiently decode and re-format them for rapid display by the CATiledLayer. I challenge anyone to make this faster!
 
 Process:
 
@@ -36,9 +36,11 @@ Process:
 
 - for each file, rearrange the image so that each 256x256 area maps exactly into one tile, in the same col/row order that the CATiledLayer draws
 
+- when the view requests a tile, provide it with an image that uses CGDataProviderCreateDirect, which knows how to mmap the image file and provide the data in a single memcpy, mapping the smallerst possbile number of pages.
+
 In the end, you have n files, each containing image tiles which can be memcpy'd efficiently with adjacent mmap areas (each tile consists of a contiguous block of memory pages). If the app crashes, the files go away so no cleanup. Once the images are created and go out of scope, they are unmapped. When the scrollview needs images, only those pages needed to populate the required tiles get mapped.
 
-This solution scales to huge images. The limiting factor is the amount of file space. That said, you may need to tweak the mmap strategy if you have threads mapping in several huge images.
+This solution scales to huge images. The limiting factor is the amount of file space. That said, you may need to tweak the mmap strategy if you have threads mapping in several huge images. [That is, in this case you would not map the whole file, but only rows of tiles as required.]
 
 
 
