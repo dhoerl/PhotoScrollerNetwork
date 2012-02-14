@@ -41,6 +41,7 @@
 barStyle  property UIBarStyleBlack
 translucent  property YES/NO
 */
+#import <mach/mach_time.h>	
 
 #import "PhotoViewController.h"
 #import "ImageScrollView.h"
@@ -49,6 +50,21 @@ translucent  property YES/NO
 #import "AppDelegate.h"
 
 static char *runnerContext = "runnerContext";
+
+static uint64_t DeltaMAT(uint64_t then, uint64_t now)
+{
+	uint64_t delta = now - then;
+
+	/* Get the timebase info */
+	mach_timebase_info_data_t info;
+	mach_timebase_info(&info);
+
+	/* Convert to nanoseconds */
+	delta *= info.numer;
+	delta /= info.denom;
+
+	return delta / 1e6; // ms
+}
 
 @interface PhotoViewController ()
 @property (nonatomic, strong) NSOperationQueue *queue;
@@ -91,7 +107,7 @@ static char *runnerContext = "runnerContext";
 
 	NSMutableArray	*tileBuilders;
 	
-	NSUInteger		milliSeconds;
+	uint64_t		earliestStartTime, latestFinishTime;
 }
 @synthesize isWebTest;
 @synthesize queue;
@@ -185,12 +201,16 @@ static char *runnerContext = "runnerContext";
 	// NSLog(@"Operation Succeeded: index=%d", op.index);
 	
 	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
-	milliSeconds += op.milliSeconds;
+	if(earliestStartTime) earliestStartTime = MIN(earliestStartTime, op.finishTime);
+	else earliestStartTime = op.finishTime;
 
+	latestFinishTime = MAX(latestFinishTime, op.finishTime);
+	
 	if(![operations count]) {
 		[spinner stopAnimating];
 		[self tilePages];
-		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds];
+	
+		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %llu ms", DeltaMAT(earliestStartTime, latestFinishTime)];
 	}
 }
 

@@ -42,7 +42,8 @@ typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } image
 @interface ConcurrentOp : NSOperation
 @property (nonatomic, assign) imageDecoder decoder;				// type of operation to perform
 @property (nonatomic, assign) NSUInteger index;					// if multiple operations, what index am i
-@property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started to decode
+@property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started decoding
+@property (nonatomic, assign) uint64_t finishTime;					// time stamp of when this operation finished  decoding
 @property (nonatomic, assign) NSUInteger milliSeconds;			// time it takes to decode the image
 @property (nonatomic, strong) NSThread *thread;					// convenience method for the curious
 @property (nonatomic, strong) NSURL *url;						// passed in - where to get the image

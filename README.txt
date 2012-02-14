@@ -1,5 +1,16 @@
 PhotoScrollerNetwork Project
 
+This sample code:
+
+- builds on Apple's PhotoScroller project by addressing its deficiencies
+- provides the means to process large images for use in a zoomable scrollview
+- is backed by a CATiledLayer so that only those tiles needed for display consume memory
+- tiles the files backing the CATiledLayer for rapid tile rendering
+- demonstrates how to use concurrent NSOperations to fetch several large images concurrently
+- measure the time from when the first image starts decoding til the last one finished for 3 technologies
+
+ * * *
+
 So, you want to use a scrolling view with zoomable images in an iOS device. You discover that Apple has this really nice sample project called "PhotoScroller", so you download and run it.
 
 It looks really nice and seems to be exactly what you need! And you see three jpeg images with the three images you see in the UIScrollView. But, you dig deeper, and with a growing pit in your stomach, you discover that the project is a facade - it only works since those beautiful three jpegs are pre-tiled into 800 or so small png tiles, prepared to meet the needs of the CATiledLayer backing the scrollview.
@@ -11,11 +22,12 @@ This code leverages my github Concurrent_NSOperations project (https://github.co
 The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo, both explained below.
 
 KNOWN BUGS:
-
 - if you quit the project with the scroll view showing, you get a crash
 - the jpeg error handler is not yet setup properly
 
-
+TODO:
+- instead of using drawRect: and UIImages, use drawLayer: and CGImageRefs directly
+- fix the zoom problem that appears sometime when zooming an image close to a boundary of another image (I suspect this is in the original Apple code)
 
 
 PhotoScollerNetwork Target: FAST AND EFFICIENT TILING
@@ -75,3 +87,6 @@ Process:
 - when the very last chunk of data arrives, the final few scan lines are processed, and the operation completes - a process taking only a few milliseconds.
 
 Using an iPhone 4 running iOS 5, the sample images take around a second each to decode using CGContextDrawImage. But using incremental decoding, that time is spread out during the download (effectively loading the processor with work during a time it's normally idling), taking that final second of delay down to effectively 0 seconds.
+
+For this networked code, a time metric that measures the time from when the first image starts to decode til the last one finishes. This would seem to be the best possible metric as it more accurately represents the time from when the first image finishes downloading until the user gets control of the scrollview. On my iphone 4, the this delay is halved by the incremental decoder relative to the CGContextDrawImage based code. I would have thought it would be quicker, but there is a lot going on in this single core device. Bet it really hums on the iPhone 4S.
+

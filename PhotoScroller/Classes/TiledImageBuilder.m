@@ -67,6 +67,8 @@ static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f
 static inline size_t calcDimension(size_t d) { return(d + (tileDimension-1)) & ~(tileDimension-1); }
 static inline size_t calcBytesPerRow(size_t row) { return calcDimension(row) * bytesPerPixel; }
 
+
+
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,
     void *buffer,
@@ -147,11 +149,8 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 
 - (void)decodeImage:(NSURL *)url
 {
-NSLog(@"TURBO %d", useTurbo);
-
 #ifdef LIBJPEG_TURBO
 	if(useTurbo) {
-NSLog(@"TURBO!!!");
 		tjhandle decompressor = tjInitDecompress();
 
 		NSData *data = [NSData dataWithContentsOfURL:url];
@@ -249,8 +248,8 @@ assert(image);
 	emptyTileRowSize = bytesPerRow * tileDimension;
 	imageSize = bytesPerRow * calcDimension(height) + emptyTileRowSize;	// need temp space
 
-	NSString *tmpFile = [NSString stringWithCString:tempnam([NSTemporaryDirectory() cStringUsingEncoding:NSUTF8StringEncoding], "ps") encoding:NSUTF8StringEncoding];
-	const char *fileName = [tmpFile cStringUsingEncoding:NSUTF8StringEncoding];
+#warning Need a better routine here - "man tempnam" says there are race conditions. TBD
+	const char *fileName = tempnam([NSTemporaryDirectory() fileSystemRepresentation], "ps");
 	
 	fd = open(fileName, O_CREAT | O_RDWR | O_TRUNC, 0777);
 	if(fd == -1) NSLog(@"OPEN failed file %s %s", fileName, strerror(errno));

@@ -98,7 +98,6 @@ typedef struct {
 
 #endif
 
-
 static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 	uint64_t delta = now - then;
@@ -149,6 +148,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 }
 @synthesize index;
 @synthesize startTime;
+@synthesize finishTime;
 @synthesize milliSeconds;
 @synthesize thread;
 @synthesize executing, finished;
@@ -532,7 +532,8 @@ NSLog(@"YIKES! SETJUMP");
 		}
 	}
 	[imageBuilder run];
-	milliSeconds = (uint32_t)DeltaMAT(startTime, [self timeStamp]);
+	finishTime = [self timeStamp];
+	milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
 #ifndef NDEBUG
 	NSLog(@"FINISH: %u milliseconds", milliSeconds);
 #endif
