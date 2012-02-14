@@ -69,11 +69,11 @@ Fortunately, libjpeg provides the mechanism to incrementally decode jpegs (well,
 
 To use this feature, you have to have the libturbojpeg.a libray (and headers). You have three options:
 
-1) download my libjpeg-turbo-builder project and do a "Build" (it uses svn to pull the source). You'll need the latest autoconfig etc tools in this case.
+1) use the installer for 1.2.0 from http://sourceforge.net/projects/libjpeg-turbo. I have not yet tested this but it should work.
 
-2) use the installer for 1.2.0 from http://sourceforge.net/projects/libjpeg-turbo. The downside is that it appears the ARM library didn't pull in the NEON turbo code, but for purposes of decoding the jpegs incrementally it hardly matters.
+2) download my libjpeg-turbo-builder project and do a "Build" (it uses svn to pull the source). You'll need the latest autoconfig etc tools in this case. This way you can build either latest svn or a tagged release.
 
-3) Use the libturbojpeg.a file I've included in this project (its 1.2.0)
+3) Use the libturbojpeg.a file I've included in this project (it's 1.2.0 that I build myself using the Xcode project as described above).
 
 
 Process:
