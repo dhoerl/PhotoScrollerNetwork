@@ -35,7 +35,7 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import <mach/mach_time.h>
+#import <mach/mach_time.h>	
 
 #import <ImageIO/ImageIO.h>
 #import <MobileCoreServices/MobileCoreServices.h> // kUTTypePNG
@@ -62,8 +62,8 @@
 #include <jpeglib.h>
 #include <setjmp.h>
 
-#define SCAN_LINE_MAX			4	// docs imply this is the most you can get
-#define INCREMENT_THRESHOLD		4096*8	// what's used for the file data source, so why not reuse it here (could make it a lot bigger if you wanted to
+#define SCAN_LINE_MAX			4			// libjpeg docs imply this is the most you can get, but all I see is 1 at a time
+#define INCREMENT_THRESHOLD		4096*8		// tuneable parameter - small is bad, very large is bad, so need something 8K to 64K. Did not really experiment
 
 static void my_error_exit(j_common_ptr cinfo);
 
@@ -117,7 +117,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 @interface ConcurrentOp ()
 @property (nonatomic, assign) BOOL executing, finished;
-@property (nonatomic, assign) int loops;
 @property (nonatomic, strong) NSTimer *timer;
 @property (nonatomic, strong) NSURLConnection *connection;
 
@@ -139,8 +138,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 	void							*addr;
 	NSUInteger						highWaterMark;
-//	NSUInteger						markIncrement;
-	uint64_t						timeStamp;
 #ifdef LIBJPEG_TURBO	
 	tjhandle						decompressor;
 #endif
@@ -151,10 +148,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 }
 @synthesize index;
+@synthesize startTime;
 @synthesize milliSeconds;
 @synthesize thread;
 @synthesize executing, finished;
-@synthesize loops;
 @synthesize timer;
 @synthesize connection;
 @synthesize webData;
@@ -180,10 +177,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 	@autoreleasepool
 	{
-		loops = 1;	// testing
 		self.thread	= [NSThread currentThread];	// do this first, to enable future messaging
+		// makes runloop functional
 		self.timer	= [NSTimer scheduledTimerWithTimeInterval:60*60 target:self selector:@selector(timer:) userInfo:nil repeats:NO];
-			// makes runloop functional
 		
 		[self willChangeValueForKey:@"isExecuting"];
 		executing = YES;
@@ -194,7 +190,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		if(allOK) {
 			while(![self isFinished]) {
 				assert([NSThread currentThread] == thread);
-				//NSLog(@"main: sitting in loop (loops=%d)", loops);
 				BOOL ret = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
 				assert(ret && "first assert"); // could remove this - its here to convince myself all is well
 			}
@@ -202,7 +197,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		} else {
 			[self finish];
 
+#ifndef NDEBUG
 			NSLog(@"OP: finished - setup failed");
+#endif
 		}
 		// Objects retaining us
 		[timer invalidate], self.timer = nil;
@@ -318,7 +315,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		src_mgr.start_of_stream			= TRUE;
 		src_mgr.failed					= FALSE;
 
-	#warning Error handling does not work yet.
+#warning Error handling does not work yet.
 		/* We set up the normal JPEG error routines, then override error_exit. */
 		src_mgr.cinfo.err = jpeg_std_error(&src_mgr.jerr.pub);
 		src_mgr.jerr.pub.error_exit = my_error_exit;
@@ -327,7 +324,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			/* If we get here, the JPEG code has signaled an error.
 			 * We need to clean up the JPEG object, close the input file, and return.
 			 */
-	NSLog(@"YIKES! SETJUMP");
+NSLog(@"YIKES! SETJUMP");
 			src_mgr.failed = YES;
 			[self cancel];
 		} else {
@@ -418,14 +415,30 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			unsigned char *inPtr = scanLines[idx];
 			unsigned char *lastOutPtr = outPtr;
 
-			int width = src_mgr.cinfo.output_width;
-			for(int col=0; col<width; ++col) {
-				outPtr[0] = 0xFF;
-				outPtr[1] = inPtr[2];
-				outPtr[2] = inPtr[1];
-				outPtr[3] = inPtr[0];
+			int width4 = src_mgr.cinfo.output_width/4;
+			for(int col=0; col<width4; ++col) {
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
 
-				outPtr += 4;
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
+
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
+
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
 				inPtr += 3;
 			}
 			outPtr = lastOutPtr + imageBuilder.image0BytesPerRow;
@@ -450,7 +463,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)conn
 {
-	timeStamp = [self timeStamp];
+	startTime = [self timeStamp];
 
 	if([super isCancelled]) {
 		[connection cancel];
@@ -513,12 +526,13 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 				self.imageBuilder = tb;
 				addr = [tb mapMemoryForWidth:width height:height];
 				[tb drawImage:image]; // releases image
-				CFRelease(imageSource);
 			}
+			CGImageRelease(image);
+			CFRelease(imageSource);
 		}
 	}
 	[imageBuilder run];
-	milliSeconds = (uint32_t)DeltaMAT(timeStamp, [self timeStamp]);
+	milliSeconds = (uint32_t)DeltaMAT(startTime, [self timeStamp]);
 #ifndef NDEBUG
 	NSLog(@"FINISH: %u milliseconds", milliSeconds);
 #endif
@@ -581,8 +595,8 @@ static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 			src->pub.next_input_byte += (size_t)num_bytes;
 			src->pub.bytes_in_buffer -= (size_t)num_bytes;
 		} else {
-			src->pub.bytes_in_buffer	= 0;
 			src->consumed_data			+= num_bytes - src->pub.bytes_in_buffer;
+			src->pub.bytes_in_buffer	= 0;
 		}
 	}
 }

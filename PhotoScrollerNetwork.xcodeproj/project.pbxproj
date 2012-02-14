@@ -526,7 +526,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = (
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-NDEBUG",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -559,6 +562,8 @@
 				OTHER_CFLAGS = (
 					"-DLIBJPEG_TURBO",
 					"-DLIBJPEG",
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-NDEBUG",
 				);
 				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
@@ -566,7 +571,7 @@
 			};
 			name = Release;
 		};
-		DE588D5E14E81ABA00C7E151 /* ReleaseNoAsserts */ = {
+		DE588D5E14E81ABA00C7E151 /* ReleaseWithAsserts */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -587,9 +592,9 @@
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};
-			name = ReleaseNoAsserts;
+			name = ReleaseWithAsserts;
 		};
-		DE588D5F14E81ABA00C7E151 /* ReleaseNoAsserts */ = {
+		DE588D5F14E81ABA00C7E151 /* ReleaseWithAsserts */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -599,9 +604,9 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
-			name = ReleaseNoAsserts;
+			name = ReleaseWithAsserts;
 		};
-		DE588D6014E81ABA00C7E151 /* ReleaseNoAsserts */ = {
+		DE588D6014E81ABA00C7E151 /* ReleaseWithAsserts */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -616,7 +621,7 @@
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				WRAPPER_EXTENSION = app;
 			};
-			name = ReleaseNoAsserts;
+			name = ReleaseWithAsserts;
 		};
 /* End XCBuildConfiguration section */
 
@@ -626,7 +631,7 @@
 			buildConfigurations = (
 				DE4AD94914DC783D00D63E5A /* Debug */,
 				DE4AD94A14DC783D00D63E5A /* Release */,
-				DE588D5E14E81ABA00C7E151 /* ReleaseNoAsserts */,
+				DE588D5E14E81ABA00C7E151 /* ReleaseWithAsserts */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -636,7 +641,7 @@
 			buildConfigurations = (
 				DE4AD94C14DC783D00D63E5A /* Debug */,
 				DE4AD94D14DC783D00D63E5A /* Release */,
-				DE588D5F14E81ABA00C7E151 /* ReleaseNoAsserts */,
+				DE588D5F14E81ABA00C7E151 /* ReleaseWithAsserts */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -646,7 +651,7 @@
 			buildConfigurations = (
 				DE4ADA4414E1A56500D63E5A /* Debug */,
 				DE4ADA4514E1A56500D63E5A /* Release */,
-				DE588D6014E81ABA00C7E151 /* ReleaseNoAsserts */,
+				DE588D6014E81ABA00C7E151 /* ReleaseWithAsserts */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

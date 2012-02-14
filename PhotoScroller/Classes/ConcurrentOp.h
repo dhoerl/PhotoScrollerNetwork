@@ -40,13 +40,14 @@
 typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
 
 @interface ConcurrentOp : NSOperation
-@property (nonatomic, assign) imageDecoder decoder;
-@property (nonatomic, assign) NSUInteger index;
-@property (nonatomic, assign) NSUInteger milliSeconds;
-@property (nonatomic, strong) NSThread *thread;
-@property (nonatomic, strong) NSURL *url;
-@property (nonatomic, strong) NSMutableData *webData;
-@property (nonatomic, strong) TiledImageBuilder *imageBuilder;
+@property (nonatomic, assign) imageDecoder decoder;				// type of operation to perform
+@property (nonatomic, assign) NSUInteger index;					// if multiple operations, what index am i
+@property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started to decode
+@property (nonatomic, assign) NSUInteger milliSeconds;			// time it takes to decode the image
+@property (nonatomic, strong) NSThread *thread;					// convenience method for the curious
+@property (nonatomic, strong) NSURL *url;						// passed in - where to get the image
+@property (nonatomic, strong) NSMutableData *webData;			// could be private, but sometimes useful. Where the URL cvonnection saves data
+@property (nonatomic, strong) TiledImageBuilder *imageBuilder;	// controller for the bit maps used to provide CATiles
 
 - (void)finish;				// should be run on the operation's thread - could create a convenience method that does this then hide thread
 - (void)runConnection;		// convenience method - messages using proper thread

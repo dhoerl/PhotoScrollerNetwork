@@ -51,11 +51,10 @@
 	IBOutlet UISegmentedControl *technology;
 	IBOutlet UISwitch *useInternet;
 }
-@synthesize spinner;
 
 - (IBAction)segmentChanged:(id)sender
 {
-	if(technology.selectedSegmentIndex) {
+	if(technology.selectedSegmentIndex == 2) {
 		useInternet.on = YES;
 		useInternet.enabled = NO;
 	} else {
@@ -83,8 +82,6 @@
 {
     [super viewDidLoad];
 
-	spinner.hidden = YES;
-
 #if defined(LIBJPEG) || defined(LIBJPEG_TURBO)
 	technology.hidden = NO;
 	
@@ -105,7 +102,6 @@
 - (void)viewDidUnload
 {
 	runButton = nil;
-	spinner = nil;
 	technology = nil;
 	useInternet = nil;
     [super viewDidUnload];

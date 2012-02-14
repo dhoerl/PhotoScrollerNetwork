@@ -114,7 +114,7 @@
             // if the tile would stick outside of our bounds, we need to truncate it so as to avoid
             // stretching out the partial tiles at the right and bottom edges
             tileRect = CGRectIntersection(self.bounds, tileRect);
-			if(!tileRect.size.width || !tileRect.size.height) { NSLog(@"Continue"); continue; }
+			if(!tileRect.size.width || !tileRect.size.height) { NSLog(@"WTF"); continue; }
 			
             UIImage *tile = [tb tileForScale:scale row:row col:col];
             [tile drawInRect:tileRect];

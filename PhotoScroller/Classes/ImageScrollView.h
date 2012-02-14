@@ -41,7 +41,6 @@
 @property (assign) NSUInteger index;
 
 - (void)displayImage:(UIImage *)image;
-//- (void)displayTiledImageNamed:(NSString *)imageName size:(CGSize)imageSize;
 - (void)displayTiledImage:(TiledImageBuilder *)tiledImage;
 
 - (void)setMaxMinZoomScalesForCurrentBounds;

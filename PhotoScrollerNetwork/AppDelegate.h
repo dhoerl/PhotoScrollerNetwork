@@ -35,8 +35,6 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import <UIKit/UIKit.h>
-
 @class ViewController;
 @class AppDelegate;
 
@@ -47,7 +45,5 @@ extern AppDelegate *appDelegate;
 
 @property (strong, nonatomic) UIWindow *window;
 @property (strong, nonatomic) UINavigationController *viewController;
-
-- (void)spinSpinner:(BOOL)startYes_stopNo;
 
 @end

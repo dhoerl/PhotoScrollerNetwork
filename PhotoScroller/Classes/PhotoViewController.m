@@ -61,7 +61,6 @@ static char *runnerContext = "runnerContext";
 - (void)configurePage:(ImageScrollView *)page forIndex:(NSUInteger)index;
 - (BOOL)isDisplayingPageForIndex:(NSUInteger)index;
 
-//- (CGRect)frameForPagingScrollView;
 - (CGRect)frameForPageAtIndex:(NSUInteger)index;
 - (CGSize)contentSizeForPagingScrollView;
 
@@ -71,7 +70,6 @@ static char *runnerContext = "runnerContext";
 - (NSUInteger)imageCount;
 - (NSString *)imageNameAtIndex:(NSUInteger)index;
 - (CGSize)imageSizeAtIndex:(NSUInteger)index;
-//- (UIImage *)imageAtIndex:(NSUInteger)index;
 
 - (void)constructStaticImages;
 - (void)fetchWebImages;
@@ -214,7 +212,7 @@ static char *runnerContext = "runnerContext";
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
-				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path];
+				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path turbo:decoder == libjpegTurboDecoder];
 				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; NSLog(@"tilebuilder RETURNED"); });
 			} );
 	}
@@ -377,14 +375,15 @@ static char *runnerContext = "runnerContext";
 
 #if 0
 #define PADDING  10
-
-- (CGRect)frameForPagingScrollView {
+- (CGRect)frameForPagingScrollView
+{
     CGRect frame = [[UIScreen mainScreen] bounds];
     frame.origin.x -= PADDING;
     frame.size.width += (2 * PADDING);
     return frame;
 }
-- (CGRect)frameForPageAtIndex:(NSUInteger)index {
+- (CGRect)frameForPageAtIndex:(NSUInteger)index
+{
     // We have to use our paging scroll view's bounds, not frame, to calculate the page placement. When the device is in
     // landscape orientation, the frame will still be in portrait because the pagingScrollView is the root view controller's
     // view, so its frame is in window coordinate space, which is never rotated. Its bounds, however, will be in landscape

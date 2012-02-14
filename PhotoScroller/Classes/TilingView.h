@@ -38,7 +38,6 @@
 @class TiledImageBuilder;
 
 @interface TilingView : UIView {
-    //NSString *imageName;
     BOOL      annotates;
 }
 @property (assign) BOOL annotates;

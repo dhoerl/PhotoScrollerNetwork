@@ -47,6 +47,11 @@
 #if USE_VIMAGE == 1
 #import <Accelerate/Accelerate.h>
 #endif
+
+#ifdef LIBJPEG_TURBO
+#include <turbojpeg.h>
+#endif
+
 #import <ImageIO/ImageIO.h>
 #import <MobileCoreServices/MobileCoreServices.h> // kUTTypePNG
 
@@ -59,7 +64,6 @@ static const size_t tileBytesPerRow = tileDimension * bytesPerPixel;
 static const size_t tileSize = tileBytesPerRow * tileDimension;
 
 static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
-//static inline size_t calcBytesPerRow(size_t w) { return((bytesPerPixel * w) + 15) & ~15; }
 static inline size_t calcDimension(size_t d) { return(d + (tileDimension-1)) & ~(tileDimension-1); }
 static inline size_t calcBytesPerRow(size_t row) { return calcDimension(row) * bytesPerPixel; }
 
@@ -102,6 +106,7 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 
 @interface TiledImageBuilder ()
 
+- (void)decodeImage:(NSURL *)url;
 - (void)mapMemory;
 
 @end
@@ -110,7 +115,8 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 {
 	NSString *imagePath;
 	imageMemory ims[ZOOM_LEVELS];
-	
+	BOOL useTurbo;
+
 	// Used by the image building routines
 	int fd;
 	size_t width;
@@ -126,12 +132,60 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 @synthesize failed;
 @dynamic image0BytesPerRow;
 
-- (id)initWithImagePath:(NSString *)path
+- (id)initWithImagePath:(NSString *)path turbo:(BOOL)useIt
 {
 	if((self = [super init])) {
 		imagePath = path;
+		useTurbo = useIt;
 
-		NSURL *url = [NSURL fileURLWithPath:imagePath];
+		[self decodeImage:[NSURL fileURLWithPath:imagePath]];
+		[self run];
+		// NSLog(@"END");
+	}
+	return self;
+}
+
+- (void)decodeImage:(NSURL *)url
+{
+NSLog(@"TURBO %d", useTurbo);
+
+#ifdef LIBJPEG_TURBO
+	if(useTurbo) {
+NSLog(@"TURBO!!!");
+		tjhandle decompressor = tjInitDecompress();
+
+		NSData *data = [NSData dataWithContentsOfURL:url];
+		unsigned char *jpegBuf = (unsigned char *)[data bytes]; // const ???
+		unsigned long jpegSize = [data length];
+		int jwidth, jheight, jpegSubsamp;
+		int ret = tjDecompressHeader2(decompressor,
+			jpegBuf,
+			jpegSize,
+			&jwidth,
+			&jheight,
+			&jpegSubsamp 
+			);
+		assert(ret == 0);
+		
+		[self mapMemoryForWidth:jwidth height:jheight];
+		
+		// NSLog(@"HEADER w%d bpr%ld h%d", width, imageBuilder.image0BytesPerRow, height);	
+		ret = tjDecompress2(decompressor,
+			jpegBuf,
+			jpegSize,
+			addr,
+			width,
+			self.image0BytesPerRow,
+			height,
+			TJPF_ABGR,
+			TJFLAG_NOREALLOC
+			);	
+		assert(ret == 0);
+
+		tjDestroy(decompressor);
+	} else
+#endif
+	{
 		CGImageSourceRef imageSourcRef = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
 assert(imageSourcRef);
 		CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
@@ -144,13 +198,10 @@ assert(image);
 		// NSLog(@"MAP MEMORY");
 		[self mapMemory];
 		// NSLog(@"DRAW IMAGE");
-		[self drawImage:image]; // releases
+		[self drawImage:image];
+		CGImageRelease(image);
 		// NSLog(@"RUN");
-	
-		[self run];
-		// NSLog(@"END");
 	}
-	return self;
 }
 
 - (void)dealloc
@@ -209,7 +260,7 @@ assert(image);
 	lseek(fd, imageSize - 1, SEEK_SET);
 	char tmp = 0;
 	write(fd, &tmp, 1);
-	unlink(fileName);	// so it goes away when the fd is closed or we on a crash
+	unlink(fileName);	// so it goes away when the fd is closed or on a crash
 
 	lastAddr = addr;
 	lastEmptyAddr = emptyAddr;
@@ -233,20 +284,23 @@ assert(image);
 
 		CGColorSpaceRelease(colorSpace);
 		CGContextRelease(context);
-		CGImageRelease(image);
 	}
 }
 
 - (void)run
 {
+#if USE_VIMAGE == 1
 	size_t lastWidth = 0;
 	size_t lastHeight = 0;
+#endif
 	size_t lastBytesPerRow = 0;
 	
 	for(size_t idx=0; idx < ZOOM_LEVELS; ++idx) {
 		if(idx) {
+#if USE_VIMAGE == 1
 			lastWidth = width;
 			lastHeight = height;
+#endif
 			lastBytesPerRow = bytesPerRow;
 
 			width /= 2;
@@ -278,6 +332,8 @@ assert(image);
 #else	
 			//NSLog(@"boom: lastBPR=%ld bpr=%ld last=%p addr=%p", lastBytesPerRow, bytesPerRow, lastAddr, addr);		
 			{
+				// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
+				// Got a better idea? Submit a pull request.
 				uint32_t *inPtr = (uint32_t *)lastAddr;
 				uint32_t *outPtr = (uint32_t *)addr;
 				for(size_t row=0; row<height; ++row) {
@@ -366,9 +422,10 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	imageMemory *im = (imageMemory *)info;
 
 	size_t mapSize = tileDimension*tileBytesPerRow;
+	// Don't think caching here would help but didn't test myself.
 	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED /*| MAP_NOCACHE */, im->fd, (im->row*im->cols + im->col) * mapSize);
 
-	memcpy(buffer, startPtr+position, origCount);
+	memcpy(buffer, startPtr+position, origCount);	// blit the image, then quit. How nice is that!
 	munmap(startPtr, mapSize);
 
 	return origCount;
@@ -387,7 +444,7 @@ static void tileBuilder(imageMemory *im, unsigned char *addr)
 	unsigned char *iptr = addr + im->slopSpace;
 	
 	//NSLog(@"tile...");
-	// Now, we are going to pre-tile the image, so we can map in contigous chunks of memory
+	// Now, we are going to pre-tile the image in 256x256 tiles, so we can map in contigous chunks of memory
 	for(int row=0; row<im->rows; ++row) {
 		unsigned char *tileIptr = iptr;
 		for(int col=0; col<im->cols; ++col) {

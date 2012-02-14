@@ -102,14 +102,4 @@ AppDelegate *appDelegate;
 	 */
 }
 
-- (void)spinSpinner:(BOOL)startYes_stopNo
-{
-	UIActivityIndicatorView *spinner = vc.spinner;
-	if(startYes_stopNo) {
-		[spinner startAnimating];
-	} else {
-		[spinner stopAnimating];
-	}
-}
-
 @end
