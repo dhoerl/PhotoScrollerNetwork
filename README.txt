@@ -22,6 +22,7 @@ This code leverages my github Concurrent_NSOperations project (https://github.co
 The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo, both explained below.
 
 KNOWN BUGS:
+- really large images - say 8000x12000 fail as the code tries to map the whole image into memory at once. I know how to fix this just going to take a bit more time.
 - if you quit the project with the scroll view showing, you get a crash
 - the jpeg error handler is not yet setup properly
 
