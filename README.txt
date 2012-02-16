@@ -1,5 +1,7 @@
 PhotoScrollerNetwork Project
 
+NOTE 2/15/2012: This project is undergoing major refactoring to handle images of unbounded size. Suggest you revisit on Feb 20th.
+
 This sample code:
 
 - builds on Apple's PhotoScroller project by addressing its deficiencies
