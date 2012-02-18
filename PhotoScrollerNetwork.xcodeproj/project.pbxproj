@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DE07428C14F0441500439550 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE07428B14F0441500439550 /* Accelerate.framework */; };
 		DE4AD93214DC783D00D63E5A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD93114DC783D00D63E5A /* UIKit.framework */; };
 		DE4AD93414DC783D00D63E5A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD93314DC783D00D63E5A /* Foundation.framework */; };
 		DE4AD93614DC783D00D63E5A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD93514DC783D00D63E5A /* CoreGraphics.framework */; };
@@ -72,6 +73,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DE07428B14F0441500439550 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		DE33213714EC623500F92FE3 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		DE4AD92D14DC783D00D63E5A /* PhotoScrollerNetwork.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetwork.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE4AD93114DC783D00D63E5A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -136,6 +138,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE07428C14F0441500439550 /* Accelerate.framework in Frameworks */,
 				DE4ADA2914E1A56500D63E5A /* ImageIO.framework in Frameworks */,
 				DE4ADA2A14E1A56500D63E5A /* QuartzCore.framework in Frameworks */,
 				DE4ADA2B14E1A56500D63E5A /* UIKit.framework in Frameworks */,
@@ -171,6 +174,7 @@
 		DE4AD93014DC783D00D63E5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				DE07428B14F0441500439550 /* Accelerate.framework */,
 				DE4AD99F14DC7AF800D63E5A /* ImageIO.framework */,
 				DE4AD9A014DC7AF800D63E5A /* QuartzCore.framework */,
 				DE4AD93114DC783D00D63E5A /* UIKit.framework */,

@@ -42,7 +42,7 @@
 #include <sys/mount.h>
 #include <sys/sysctl.h>
 
-#define USE_VIMAGE 0
+#define USE_VIMAGE 1
 
 #if USE_VIMAGE == 1
 #import <Accelerate/Accelerate.h>
@@ -118,15 +118,34 @@ typedef struct {
 	// scale
 	size_t index;
 	
-	// used by tiles
+	// construction and tile prep
+	size_t outLine;	
+	
+	// used by tiles and during construction
+	size_t row;
+	
+	// tiling only
 	size_t tileHeight;		
 	size_t tileWidth;
 	size_t col;
-	size_t row;
 
 } imageMemory;
 
-static void tileBuilder(imageMemory *im);
+static void dumpIMS(const char *str, imageMemory *i)
+{
+	printf("IMS: %s\n", str);
+	dumpMapper("map:", &i->map);
+
+	printf(" idx = %ld\n", i->index);
+	printf(" cols = %ld\n", i->cols);
+	printf(" rows = %ld\n", i->rows);
+	printf(" outline = %ld\n", i->outLine);
+	printf(" col = %ld\n", i->col);
+	printf(" row = %ld\n", i->row);
+	putchar('\n');
+}
+
+static void tileBuilder(imageMemory *im, BOOL useMMAP);
 
 #ifdef LIBJPEG	
 
@@ -165,21 +184,14 @@ typedef struct {
 	boolean								failed;
 } co_jpeg_source_mgr;
 
-typedef struct {
-  struct jpeg_destination_mgr			pub;
-
-  unsigned char							*outbuffer;
-  unsigned long							*outsize;
-  size_t								bufsize;
-} co_jpeg_destination_mgr;
-
 #endif
 
 @interface TiledImageBuilder ()
 
 - (void)decodeImage:(NSURL *)url;
 - (void)mapMemory:(mapper *)mapP; 
-- (void)mapMemoryForWidth:(size_t)w height:(size_t)h;
+- (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h;
+- (void)partialTile:(BOOL)final;
 
 #ifdef LIBJPEG
 
@@ -220,8 +232,7 @@ typedef struct {
 		if(decoder == libjpegIncremental) {
 			pageSize = getpagesize();
 			[self jpegInitFile:path];
-	NSLog(@"RUNIT");
-			[self run];
+			//[self run];
 		} else
 #endif		
 		{
@@ -240,7 +251,6 @@ typedef struct {
 	if((self = [super init])) {
 		decoder = libjpegIncremental;
 		[self jpegInitNetwork];
-		[self run];
 	}
 	return self;
 }
@@ -304,44 +314,29 @@ typedef struct {
 		assert(src_mgr.cinfo.num_components == 3);
 		assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
 		//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
-
-		[self mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
 		
-		oneLine = malloc(ims[0].map.bytesPerRow);
-		assert(oneLine);
-
-#if 0
-		ims[0].map.mappedSize = SCAN_LINE_MAX * ims[0].map.bytesPerRow;
-		ims[0].map.emptyAddr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, 0); //  | MAP_NOCACHE
-		if(ims[0].map.emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
-		assert(ims[0].map.emptyAddr != MAP_FAILED);
-
-		unsigned char *scratch = ims[0].map.emptyAddr;
-		for(int i=0; i<SCAN_LINE_MAX; ++i) {
-			scanLines[i] = scratch;
-			scratch += ims[0].map.bytesPerRow;
+		// Create files
+		size_t scale = 1;
+		for(size_t idx=0; idx<ZOOM_LEVELS; ++idx) {
+			[self mapMemoryForIndex:idx width:src_mgr.cinfo.image_width/scale height:src_mgr.cinfo.image_height/scale];
+			scale *= 2;
 		}
-#endif
+
 		(void)jpeg_start_decompress(&src_mgr.cinfo);
 		
 		while(![self outputScanLines]) ;
-		
-//munmap(ims[0].map.emptyAddr, ims[0].map.mappedSize);
+		NSLog(@"WOW!");
 	}
 	jpeg_destroy_decompress(&src_mgr.cinfo);
 	fclose(infile), infile = NULL;
-	
-	mapWholeFile = YES;
-	[self mapMemory:&ims[0].map];
 }
 
-#if 1
 - (BOOL)outputScanLines
 {
 	//NSLog(@"START LINES: %ld width=%d", src_mgr.writtenLines, src_mgr.cinfo.output_width);
 	while(src_mgr.cinfo.output_scanline <  src_mgr.cinfo.image_height) {
 	
-		unsigned char *outPtr;
+		unsigned char *scanPtr;
 		{
 			size_t tmpMapSize = ims[0].map.bytesPerRow;
 			size_t offset = src_mgr.writtenLines*ims[0].map.bytesPerRow+ims[0].map.emptyTileRowSize;
@@ -351,106 +346,85 @@ typedef struct {
 			
 			ims[0].map.mappedSize = tmpMapSize;
 			ims[0].map.addr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);
-			outPtr = ims[0].map.addr + over;
+			scanPtr = ims[0].map.addr + over;
 		
 			if(ims[0].map.addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
 			assert(ims[0].map.addr != MAP_FAILED);
 			
 		}
 	
-		scanLines[0] = outPtr;
+		scanLines[0] = scanPtr;
 		int lines = jpeg_read_scanlines(&src_mgr.cinfo, scanLines, SCAN_LINE_MAX);
-		munmap(ims[0].map.addr, ims[0].map.mappedSize);
-		if(lines <= 0) break;
+		if(lines <= 0) {
+			munmap(ims[0].map.addr, ims[0].map.mappedSize);
+			break;
+		}
+		ims[0].outLine = src_mgr.writtenLines;
 
-		src_mgr.writtenLines += lines;
-	}
-	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr.writtenLines, src_mgr.cinfo.output_scanline);
-	return src_mgr.cinfo.output_scanline ==  src_mgr.cinfo.image_height;
-}
-#else
-- (BOOL)outputScanLines
-{
-	//NSLog(@"START LINES: %ld width=%d", src_mgr.writtenLines, src_mgr.cinfo.output_width);
-	while(src_mgr.cinfo.output_scanline <  src_mgr.cinfo.image_height) {
-		int lines = jpeg_read_scanlines(&src_mgr.cinfo, scanLines, SCAN_LINE_MAX);
-		if(lines <= 0) break;
-dumpMapper("Crasher", &ims[0].map);
-//NSLog(@"tmpMapSize=%ld offset=%ld", tmpMapSize, src_mgr.writtenLines*ims[0].map.bytesPerRow+ims[0].map.emptyTileRowSize);
+		// if even number need to dup it
+		if(!(src_mgr.writtenLines & 1)) {
+			size_t scale = 2;
+			imageMemory *im = &ims[1];
+			for(size_t idx=1; idx<ZOOM_LEVELS; ++idx, scale *= 2, ++im) {
+				if(src_mgr.writtenLines & (scale-1)) break;
 
+				im->outLine = src_mgr.writtenLines/scale;
+				
+				size_t tmpMapSize = im->map.bytesPerRow;
+				size_t offset = im->outLine*tmpMapSize+im->map.emptyTileRowSize;
+				size_t over = offset % pageSize;
+				offset -= over;
+				tmpMapSize += over;
+				
+				im->map.mappedSize = tmpMapSize;
+				im->map.addr = mmap(NULL, im->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, offset);
+				if(ims[0].map.addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+				assert(ims[0].map.addr != MAP_FAILED);
 
-unsigned char *outPtr;
-size_t tmpMapSize = lines*ims[0].map.bytesPerRow;
-{
-	size_t offset = src_mgr.writtenLines*ims[0].map.bytesPerRow+ims[0].map.emptyTileRowSize;
-	size_t over = offset % pageSize;
-	offset -= over;
-	tmpMapSize += over;
-ims[0].map.addr = mmap(NULL, tmpMapSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);
-	outPtr = ims[0].map.addr + over;
-
-
-
-}
-if(ims[0].map.addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
-assert(ims[0].map.addr != MAP_FAILED);
-		for(int idx=0; idx<lines; ++idx) {
-			unsigned char *inPtr = scanLines[idx];
-			unsigned char *lastOutPtr = outPtr;
-
-			int width4 = src_mgr.cinfo.output_width/4;
-			for(int col=0; col<width4; ++col) {
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-				*outPtr++ = *inPtr++;
-#if 0
-				*outPtr++ = 0xFF;
-				*outPtr++ = inPtr[2];
-				*outPtr++ = inPtr[1];
-				*outPtr++ = inPtr[0];
-				inPtr += 3;
-
-				*outPtr++ = 0xFF;
-				*outPtr++ = inPtr[2];
-				*outPtr++ = inPtr[1];
-				*outPtr++ = inPtr[0];
-				inPtr += 3;
-
-				*outPtr++ = 0xFF;
-				*outPtr++ = inPtr[2];
-				*outPtr++ = inPtr[1];
-				*outPtr++ = inPtr[0];
-				inPtr += 3;
-
-				*outPtr++ = 0xFF;
-				*outPtr++ = inPtr[2];
-				*outPtr++ = inPtr[1];
-				*outPtr++ = inPtr[0];
-				inPtr += 3;
-#endif
+				uint32_t *outPtr = (uint32_t *)(im->map.addr + over);
+				uint32_t *inPtr  = (uint32_t *)scanPtr;
+				
+				for(size_t col=0; col<ims[0].map.width; col += scale) {
+					*outPtr++ = *inPtr;
+					inPtr += scale;
+				}
+				munmap(im->map.addr, im->map.mappedSize);
 			}
-			outPtr = lastOutPtr + ims[0].map.bytesPerRow;
+		}
+		munmap(ims[0].map.addr, ims[0].map.mappedSize);
+
+		// try to increase tile if we can
+		if(ims[0].outLine && !(ims[0].outLine % TILE_SIZE)) {
+			[self partialTile:NO];
 		}
 		src_mgr.writtenLines += lines;
-		munmap(ims[0].map.addr, tmpMapSize), ims[0].map.addr = NULL;
 	}
 	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr.writtenLines, src_mgr.cinfo.output_scanline);
-	return src_mgr.cinfo.output_scanline ==  src_mgr.cinfo.image_height;
+	BOOL ret = src_mgr.cinfo.output_scanline == src_mgr.cinfo.image_height;
+	
+	if(ret) {
+		[self partialTile:YES];
+	}
+	return ret;
 }
-#endif
+
+- (void)partialTile:(BOOL)final
+{
+	imageMemory *im = ims;
+	for(size_t idx=0; idx<ZOOM_LEVELS; ++idx, ++im) {
+		// got enought to tile one row now?
+		if(final || (im->outLine && !(im->outLine % TILE_SIZE))) {
+			size_t rows = im->rows;		// cheat
+			if(!final) im->rows = im->row + 1;		// just do one tile
+		
+//NSLog(@"DO A TILE");
+			tileBuilder(im, YES);
+			++im->row;
+			im->rows = rows;
+		}
+	}
+}
+
 - (void)jpegInitNetwork
 {
 	src_mgr.pub.next_input_byte		= NULL;
@@ -525,8 +499,7 @@ NSLog(@"YIKES! SETJUMP");
 			assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
 			//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
 
-			[self mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
-
+			[self mapMemoryForIndex:0 width:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
 			unsigned char *scratch = ims[0].map.emptyAddr;
 			//NSLog(@"Scratch=%p rowBytes=%ld", scratch, rowBytes);
 			for(int i=0; i<SCAN_LINE_MAX; ++i) {
@@ -565,8 +538,8 @@ NSLog(@"URL=%@", url);
 			);
 		assert(ret == 0);
 		
-		[self mapMemoryForWidth:jwidth height:jheight];
-		
+		[self mapMemoryForIndex:0 width:jwidth height:jheight];
+
 		// NSLog(@"HEADER w%d bpr%ld h%d", width, imageBuilder.image0BytesPerRow, height);	
 		ret = tjDecompress2(decompressor,
 			jpegBuf,
@@ -591,7 +564,7 @@ assert(image);
 
 		CFRelease(imageSourcRef), imageSourcRef = NULL;
 		// NSLog(@"MAP MEMORY");
-		[self mapMemoryForWidth:CGImageGetWidth(image) height:CGImageGetHeight(image)];
+		[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
 		// NSLog(@"DRAW IMAGE");
 		[self drawImage:image];
 		CGImageRelease(image);
@@ -623,20 +596,25 @@ assert(0);
 	return 0; // calcBytesPerRow(map.width);
 }
 
-- (void)mapMemoryForWidth:(size_t)w height:(size_t)h
+- (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h
 {
-	mapper *mapP = &ims[0].map;
-	mapP->width = w;
-	mapP->height = h;
+	imageMemory *imsP = &ims[idx];
 	
-	[self mapMemory:mapP];
+	imsP->map.width = w;
+	imsP->map.height = h;
+	
+	imsP->index = idx;
+	imsP->rows = calcDimension(imsP->map.height)/tileDimension;
+	imsP->cols = calcDimension(imsP->map.width)/tileDimension;
+	
+	[self mapMemory:&imsP->map];
 }
 
 - (void)mapMemory:(mapper *)mapP
 {
 	mapP->bytesPerRow = calcBytesPerRow(mapP->width);
 	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
-	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;	// need temp space
+	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;	// may need temp space
 
 	if(!mapP->fd) {
 #warning Need a better routine here - "man tempnam" says there are race conditions. TBD
@@ -653,12 +631,8 @@ assert(0);
 		unlink(fileName);	// so it goes away when the fd is closed or on a crash
 	}
 
-	//lastMap.addr = map.addr;
-	//lastMap.emptyAddr = map.emptyAddr;
-
 	// NSLog(@"imageSize=%ld", imageSize);
-	if(mapWholeFile) {
-NSLog(@"MAPPER: addr=%p size=%ld fd=%d", mapP->emptyAddr, mapP->mappedSize, mapP->fd);
+	if(mapWholeFile && !mapP->emptyAddr) {
 		mapP->emptyAddr = mmap(NULL, mapP->mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, mapP->fd, 0); //  | MAP_NOCACHE
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
 		if(mapP->emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
@@ -683,12 +657,6 @@ NSLog(@"MAPPER: addr=%p size=%ld fd=%d", mapP->emptyAddr, mapP->mappedSize, mapP
 
 - (void)run
 {
-#if USE_VIMAGE == 1
-	size_t lastWidth = 0;
-	size_t lastHeight = 0;
-#endif
-	//size_t lastBytesPerRow = 0;
-	
 	mapper *lastMap = NULL;
 	mapper *currMap = NULL;
 
@@ -696,29 +664,22 @@ NSLog(@"MAPPER: addr=%p size=%ld fd=%d", mapP->emptyAddr, mapP->mappedSize, mapP
 		lastMap = currMap;	// unused first loop
 		currMap = &ims[idx].map;
 		if(idx) {
-#if USE_VIMAGE == 1
-			lastWidth = width;
-			lastHeight = height;
-#endif
-			//lastBytesPerRow = bytesPerRow;
-			//memset(currMap, 0, sizeof(currMap) );
-			currMap->width = lastMap->width/2;
-			currMap->height = lastMap->height/2;
-			[self mapMemory:currMap];
+			[self mapMemoryForIndex:idx width:lastMap->width/2 height:lastMap->height/2];
+//dumpIMS("RUN", &ims[idx]);
 
 #if USE_VIMAGE == 1
 		   vImage_Buffer src = {
-				.data = lastAddr,
-				.height = lastHeight,
-				.width = lastWidth,
-				.rowBytes = lastBytesPerRow
+				.data = lastMap->addr,
+				.height = lastMap->height,
+				.width = lastMap->width,
+				.rowBytes = lastMap->bytesPerRow
 			};
 			
 		   vImage_Buffer dest = {
-				.data = addr,
-				.height = height,
-				.width = width,
-				.rowBytes = bytesPerRow
+				.data = currMap->addr,
+				.height = currMap->height,
+				.width = currMap->width,
+				.rowBytes = currMap->bytesPerRow
 			};
 
 			vImage_Error err = vImageScale_ARGB8888 (
@@ -729,52 +690,37 @@ NSLog(@"MAPPER: addr=%p size=%ld fd=%d", mapP->emptyAddr, mapP->mappedSize, mapP
 			);
 			assert(err == kvImageNoError);
 #else	
-			//NSLog(@"boom: lastBPR=%ld bpr=%ld last=%p addr=%p", lastBytesPerRow, bytesPerRow, lastAddr, addr);
-			if(mapWholeFile) {
-dumpMapper("Last Map", lastMap);
-dumpMapper("Curr Map", currMap);
-				// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
-				// Got a better idea? Submit a pull request.
-				uint32_t *inPtr = (uint32_t *)lastMap->addr;
-				uint32_t *outPtr = (uint32_t *)currMap->addr;
-				for(size_t row=0; row<currMap->height; ++row) {
-					char *lastInPtr = (char *)inPtr;
-					char *lastOutPtr = (char *)outPtr;
-					for(size_t col = 0; col < currMap->width; ++col) {
-//assert(inPtr < (uint32_t *)(lastMap.addr + lastMap.mappedSize - lastMap.emptyTileRowSize) && inPtr >= (uint32_t *)(lastMap.addr));
-//if(!(outPtr < (uint32_t *)(currMap.addr + currMap.mappedSize - currMap.emptyTileRowSize) && outPtr >= (uint32_t *)(currMap.addr))) {
-//	NSLog(@"col=%ld row=%ld", col, row);
-//}
-//assert(outPtr < (uint32_t *)(currMap.addr + currMap.mappedSize - currMap.emptyTileRowSize) && outPtr >= (uint32_t *)(currMap.addr));
-						*outPtr++ = *inPtr;
-						inPtr += 2;
-					}
-					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
-					outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
+//dumpMapper("Last Map", lastMap);
+//dumpMapper("Curr Map", currMap);
+			// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
+			// Got a better idea? Submit a pull request.
+			uint32_t *inPtr = (uint32_t *)lastMap->addr;
+			uint32_t *outPtr = (uint32_t *)currMap->addr;
+			for(size_t row=0; row<currMap->height; ++row) {
+				char *lastInPtr = (char *)inPtr;
+				char *lastOutPtr = (char *)outPtr;
+				for(size_t col = 0; col < currMap->width; ++col) {
+
+#if 0
+assert(inPtr < (uint32_t *)(lastMap->addr + lastMap->mappedSize - lastMap->emptyTileRowSize) && inPtr >= (uint32_t *)(lastMap->addr));
+if(!(outPtr < (uint32_t *)(currMap->addr + currMap->mappedSize - currMap->emptyTileRowSize) && outPtr >= (uint32_t *)(currMap->addr))) {
+NSLog(@"col=%ld row=%ld", col, row);
+}
+assert(outPtr < (uint32_t *)(currMap->addr + currMap->mappedSize - currMap->emptyTileRowSize) && outPtr >= (uint32_t *)(currMap->addr));
+#endif
+					*outPtr++ = *inPtr;
+					inPtr += 2;
 				}
+				inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
+				outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
 			}
 #endif
-			if(mapWholeFile) {
-				// make tiles
-				tileBuilder(&ims[idx-1]);
-			}
+			// make tiles
+			tileBuilder(&ims[idx-1], NO);
 		}
-
-		ims[idx].index = idx;
-		//ims[idx].height = height;
-		//ims[idx].width = width;
-		ims[idx].rows = calcDimension(currMap->height)/tileDimension;
-		ims[idx].cols = calcDimension(currMap->width)/tileDimension;
-		//ims[idx].mappedSpace = imageSize;
-		//ims[idx].imageBytesPerRow = bytesPerRow;
-		//ims[idx].slopSpace = emptyTileRowSize;
 	}
-NSLog(@"Last One!");
-	if(mapWholeFile) {
-		tileBuilder(&ims[ZOOM_LEVELS-1]);
-	}
+	tileBuilder(&ims[ZOOM_LEVELS-1], NO);
 NSLog(@"SUCCESS!");
-//exit(0);
 	return;
 	
   eRR:
@@ -849,15 +795,27 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 }
 
 
-static void tileBuilder(imageMemory *im)
+static void tileBuilder(imageMemory *im, BOOL useMMAP)
 {
 	unsigned char *optr = im->map.emptyAddr;
 	unsigned char *iptr = im->map.addr;
 	
 	//NSLog(@"tile...");
 	// Now, we are going to pre-tile the image in 256x256 tiles, so we can map in contigous chunks of memory
-	for(int row=0; row<im->rows; ++row) {
-		unsigned char *tileIptr = iptr;
+	for(size_t row=im->row; row<im->rows; ++row) {
+		unsigned char *tileIptr;
+		if(useMMAP) {
+			im->map.mappedSize = im->map.emptyTileRowSize*2;	// two tile rows
+			im->map.emptyAddr = mmap(NULL, im->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED /*| MAP_NOCACHE */, im->map.fd, row*im->map.emptyTileRowSize);
+			assert(im->map.emptyAddr != MAP_FAILED);
+			im->map.addr = im->map.emptyAddr + im->map.emptyTileRowSize;
+			
+			iptr = im->map.addr;
+			optr = im->map.emptyAddr;
+			tileIptr = im->map.emptyAddr;
+		} else {
+			tileIptr = iptr;
+		}
 		for(int col=0; col<im->cols; ++col) {
 			unsigned char *lastIptr = iptr;
 			for(int i=0; i<tileDimension; ++i) {
@@ -867,17 +825,23 @@ static void tileBuilder(imageMemory *im)
 			}
 			iptr = lastIptr + tileBytesPerRow;	// move to the next image
 		}
-		iptr = tileIptr + im->map.emptyTileRowSize;
+		if(useMMAP) {
+			munmap(im->map.emptyAddr, im->map.mappedSize);
+		} else {
+			iptr = tileIptr + im->map.emptyTileRowSize;
+		}
 	}
 	//NSLog(@"...tile");
 
-	// OK we're done with this memory now
-	munmap(im->map.emptyAddr, im->map.mappedSize);
+	if(!useMMAP) {
+		// OK we're done with this memory now
+		munmap(im->map.emptyAddr, im->map.mappedSize);
 
-	// don't need the scratch space now
-	off_t properLen = im->map.mappedSize - im->map.emptyTileRowSize;
-	ftruncate(im->map.fd, properLen);
-	im->map.mappedSize = 0;
+		// don't need the scratch space now
+		off_t properLen = im->map.mappedSize - im->map.emptyTileRowSize;
+		ftruncate(im->map.fd, properLen);
+		im->map.mappedSize = 0;
+	}
 }
 
 #ifdef LIBJPEG
