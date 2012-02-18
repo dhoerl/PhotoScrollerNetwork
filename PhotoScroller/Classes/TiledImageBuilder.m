@@ -48,6 +48,11 @@
 #import <Accelerate/Accelerate.h>
 #endif
 
+#ifdef LIBJPEG	
+#include <jpeglib.h>
+#include <setjmp.h>
+#endif
+
 #ifdef LIBJPEG_TURBO
 #include <turbojpeg.h>
 #endif
@@ -68,7 +73,6 @@ static inline size_t calcDimension(size_t d) { return(d + (tileDimension-1)) & ~
 static inline size_t calcBytesPerRow(size_t row) { return calcDimension(row) * bytesPerPixel; }
 
 
-
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,
     void *buffer,
@@ -81,17 +85,35 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 
 typedef struct {
 	int fd;
+	unsigned char *addr;
+	unsigned char *emptyAddr;
+	size_t mappedSize;
+	size_t height;
+	size_t width;
+	size_t bytesPerRow;			// expanded to full tile
+	size_t emptyTileRowSize;
+} mapper;
 
-	// needed early on
-	size_t imageBytesPerRow;
-	size_t mappedSpace;
-	size_t slopSpace;
+static void dumpMapper(const char *str, mapper *m)
+{
+	printf("MAP: %s\n", str);
+	printf(" fd = %d\n", m->fd);
+	printf(" addr = %p\n", m->addr);
+	printf(" emptyAddr = %p\n", m->emptyAddr);
+	printf(" mappedSize = %lu\n", m->mappedSize);
+	printf(" height = %lu\n", m->height);
+	printf(" width = %lu\n", m->width);
+	printf(" bytesPerRow = %lu\n", m->bytesPerRow);
+	printf(" emptyTileRowSize = %lu\n", m->emptyTileRowSize);
+	putchar('\n');
+}
+
+typedef struct {
+	mapper map;
 
 	// whole image
 	size_t cols;
 	size_t rows;
-	size_t height;
-	size_t width;
 
 	// scale
 	size_t index;
@@ -104,12 +126,67 @@ typedef struct {
 
 } imageMemory;
 
-static void tileBuilder(imageMemory *im, unsigned char *addr);
+static void tileBuilder(imageMemory *im);
+
+#ifdef LIBJPEG	
+
+#define SCAN_LINE_MAX			1			// libjpeg docs imply this is the most you can get, but all I see is 1 at a time
+#define INCREMENT_THRESHOLD		4096*8		// tuneable parameter - small is bad, very large is bad, so need something 8K to 64K. Did not really experiment
+
+static void my_error_exit(j_common_ptr cinfo);
+
+static void init_source(j_decompress_ptr cinfo);
+static boolean fill_input_buffer(j_decompress_ptr cinfo);
+static void skip_input_data(j_decompress_ptr cinfo, long num_bytes);
+static boolean resync_to_restart(j_decompress_ptr cinfo, int desired);
+static void term_source(j_decompress_ptr cinfo);
+
+/*
+ * Here's the routine that will replace the standard error_exit method:
+ */
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;		/* "public" fields */
+  jmp_buf setjmp_buffer;			/* for return to caller */
+};
+typedef struct my_error_mgr * my_error_ptr;
+
+typedef struct {
+	struct jpeg_source_mgr				pub;
+	struct jpeg_decompress_struct		cinfo;
+	struct my_error_mgr					jerr;
+	
+	// input data management
+	unsigned char						*data;
+	size_t								data_length;
+	size_t								consumed_data;		// where the next chunk of data should come from, offset into the NSData object
+	size_t								writtenLines;
+	boolean								start_of_stream;
+	boolean								got_header;
+	boolean								failed;
+} co_jpeg_source_mgr;
+
+typedef struct {
+  struct jpeg_destination_mgr			pub;
+
+  unsigned char							*outbuffer;
+  unsigned long							*outsize;
+  size_t								bufsize;
+} co_jpeg_destination_mgr;
+
+#endif
 
 @interface TiledImageBuilder ()
 
 - (void)decodeImage:(NSURL *)url;
-- (void)mapMemory;
+- (void)mapMemory:(mapper *)mapP; 
+- (void)mapMemoryForWidth:(size_t)w height:(size_t)h;
+
+#ifdef LIBJPEG
+
+- (void)jpegInitFile:(NSString *)path;
+- (void)jpegInitNetwork;
+
+#endif
 
 @end
 
@@ -117,40 +194,362 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 {
 	NSString *imagePath;
 	imageMemory ims[ZOOM_LEVELS];
-	BOOL useTurbo;
+	imageDecoder decoder;
+	BOOL mapWholeFile;
 
-	// Used by the image building routines
-	int fd;
-	size_t width;
-	size_t height;
-	void *emptyAddr;
-	void *addr;
-	size_t bytesPerRow;
-	size_t imageSize;
-	size_t emptyTileRowSize;
-	void *lastAddr;
-	void *lastEmptyAddr;
+#ifdef LIBJPEG
+	// input
+	FILE				*infile;
+	NSUInteger			highWaterMark;
+	co_jpeg_source_mgr	src_mgr;
+	// output
+	unsigned char		*scanLines[SCAN_LINE_MAX];
+	size_t				pageSize;
+	unsigned char		*oneLine;
+#endif
 }
 @synthesize failed;
 @dynamic image0BytesPerRow;
 
-- (id)initWithImagePath:(NSString *)path turbo:(BOOL)useIt
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec
 {
 	if((self = [super init])) {
 		imagePath = path;
-		useTurbo = useIt;
-
-		[self decodeImage:[NSURL fileURLWithPath:imagePath]];
-		[self run];
+		decoder = dec;
+#ifdef LIBJPEG
+		if(decoder == libjpegIncremental) {
+			pageSize = getpagesize();
+			[self jpegInitFile:path];
+	NSLog(@"RUNIT");
+			[self run];
+		} else
+#endif		
+		{
+			mapWholeFile = YES;
+			[self decodeImage:[NSURL fileURLWithPath:imagePath]];
+	NSLog(@"RUNIT");
+			[self run];
+		}
 		// NSLog(@"END");
 	}
 	return self;
 }
+#ifdef LIBJPEG
+- (id)initForNetworkDownload
+{
+	if((self = [super init])) {
+		decoder = libjpegIncremental;
+		[self jpegInitNetwork];
+		[self run];
+	}
+	return self;
+}
+#endif
+- (void)dealloc
+{
+	if(!failed) {
+		for(int idx=0; idx<ZOOM_LEVELS;++idx) {
+			close(ims[idx].map.fd);
+		}
+	}
+#ifdef LIBJPEG
+	if(src_mgr.cinfo.src) jpeg_destroy_decompress(&src_mgr.cinfo);
+	free(oneLine);
+#endif
+}
+
+#ifdef LIBJPEG
+- (void)jpegInitFile:(NSString *)path
+{
+	const char *file = [path fileSystemRepresentation];
+	int jfd = open(file, O_RDONLY, 0);
+	if(jfd <= 0) {
+		NSLog(@"Error: failed to open input image file \"%s\" for reading (%d).\n", file, errno);
+		failed = YES;
+		return;
+	}
+	int ret = fcntl(jfd, F_NOCACHE, 1);	// don't clog up the system's disk cache
+	if(ret == -1) {
+		NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
+	}
+	if ((infile = fdopen(jfd, "r")) == NULL) {
+		NSLog(@"Error: failed to fdopen input image file \"%s\" for reading (%d).", file, errno);
+		failed = YES;
+		return;
+	}
+
+	/* Step 1: allocate and initialize JPEG decompression object */
+
+	/* We set up the normal JPEG error routines, then override error_exit. */
+	src_mgr.cinfo.err = jpeg_std_error(&src_mgr.jerr.pub);
+	src_mgr.jerr.pub.error_exit = my_error_exit;
+	/* Establish the setjmp return context for my_error_exit to use. */
+	if (setjmp(src_mgr.jerr.setjmp_buffer)) {
+	/* If we get here, the JPEG code has signaled an error.
+	 * We need to clean up the JPEG object, close the input file, and return.
+	 */
+		failed = YES;
+	} else {
+		/* Now we can initialize the JPEG decompression object. */
+		jpeg_create_decompress(&src_mgr.cinfo);
+
+		/* Step 2: specify data source (eg, a file) */
+		jpeg_stdio_src(&src_mgr.cinfo, infile);
+
+		/* Step 3: read file parameters with jpeg_read_header() */
+		(void) jpeg_read_header(&src_mgr.cinfo, TRUE);
+
+		src_mgr.cinfo.out_color_space =  JCS_EXT_ABGR;
+	
+		assert(src_mgr.cinfo.num_components == 3);
+		assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
+		//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
+
+		[self mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
+		
+		oneLine = malloc(ims[0].map.bytesPerRow);
+		assert(oneLine);
+
+#if 0
+		ims[0].map.mappedSize = SCAN_LINE_MAX * ims[0].map.bytesPerRow;
+		ims[0].map.emptyAddr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, 0); //  | MAP_NOCACHE
+		if(ims[0].map.emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+		assert(ims[0].map.emptyAddr != MAP_FAILED);
+
+		unsigned char *scratch = ims[0].map.emptyAddr;
+		for(int i=0; i<SCAN_LINE_MAX; ++i) {
+			scanLines[i] = scratch;
+			scratch += ims[0].map.bytesPerRow;
+		}
+#endif
+		(void)jpeg_start_decompress(&src_mgr.cinfo);
+		
+		while(![self outputScanLines]) ;
+		
+//munmap(ims[0].map.emptyAddr, ims[0].map.mappedSize);
+	}
+	jpeg_destroy_decompress(&src_mgr.cinfo);
+	fclose(infile), infile = NULL;
+	
+	mapWholeFile = YES;
+	[self mapMemory:&ims[0].map];
+}
+
+#if 1
+- (BOOL)outputScanLines
+{
+	//NSLog(@"START LINES: %ld width=%d", src_mgr.writtenLines, src_mgr.cinfo.output_width);
+	while(src_mgr.cinfo.output_scanline <  src_mgr.cinfo.image_height) {
+	
+		unsigned char *outPtr;
+		{
+			size_t tmpMapSize = ims[0].map.bytesPerRow;
+			size_t offset = src_mgr.writtenLines*ims[0].map.bytesPerRow+ims[0].map.emptyTileRowSize;
+			size_t over = offset % pageSize;
+			offset -= over;
+			tmpMapSize += over;
+			
+			ims[0].map.mappedSize = tmpMapSize;
+			ims[0].map.addr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);
+			outPtr = ims[0].map.addr + over;
+		
+			if(ims[0].map.addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+			assert(ims[0].map.addr != MAP_FAILED);
+			
+		}
+	
+		scanLines[0] = outPtr;
+		int lines = jpeg_read_scanlines(&src_mgr.cinfo, scanLines, SCAN_LINE_MAX);
+		munmap(ims[0].map.addr, ims[0].map.mappedSize);
+		if(lines <= 0) break;
+
+		src_mgr.writtenLines += lines;
+	}
+	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr.writtenLines, src_mgr.cinfo.output_scanline);
+	return src_mgr.cinfo.output_scanline ==  src_mgr.cinfo.image_height;
+}
+#else
+- (BOOL)outputScanLines
+{
+	//NSLog(@"START LINES: %ld width=%d", src_mgr.writtenLines, src_mgr.cinfo.output_width);
+	while(src_mgr.cinfo.output_scanline <  src_mgr.cinfo.image_height) {
+		int lines = jpeg_read_scanlines(&src_mgr.cinfo, scanLines, SCAN_LINE_MAX);
+		if(lines <= 0) break;
+dumpMapper("Crasher", &ims[0].map);
+//NSLog(@"tmpMapSize=%ld offset=%ld", tmpMapSize, src_mgr.writtenLines*ims[0].map.bytesPerRow+ims[0].map.emptyTileRowSize);
+
+
+unsigned char *outPtr;
+size_t tmpMapSize = lines*ims[0].map.bytesPerRow;
+{
+	size_t offset = src_mgr.writtenLines*ims[0].map.bytesPerRow+ims[0].map.emptyTileRowSize;
+	size_t over = offset % pageSize;
+	offset -= over;
+	tmpMapSize += over;
+ims[0].map.addr = mmap(NULL, tmpMapSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);
+	outPtr = ims[0].map.addr + over;
+
+
+
+}
+if(ims[0].map.addr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+assert(ims[0].map.addr != MAP_FAILED);
+		for(int idx=0; idx<lines; ++idx) {
+			unsigned char *inPtr = scanLines[idx];
+			unsigned char *lastOutPtr = outPtr;
+
+			int width4 = src_mgr.cinfo.output_width/4;
+			for(int col=0; col<width4; ++col) {
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+				*outPtr++ = *inPtr++;
+#if 0
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
+
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
+
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
+
+				*outPtr++ = 0xFF;
+				*outPtr++ = inPtr[2];
+				*outPtr++ = inPtr[1];
+				*outPtr++ = inPtr[0];
+				inPtr += 3;
+#endif
+			}
+			outPtr = lastOutPtr + ims[0].map.bytesPerRow;
+		}
+		src_mgr.writtenLines += lines;
+		munmap(ims[0].map.addr, tmpMapSize), ims[0].map.addr = NULL;
+	}
+	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr.writtenLines, src_mgr.cinfo.output_scanline);
+	return src_mgr.cinfo.output_scanline ==  src_mgr.cinfo.image_height;
+}
+#endif
+- (void)jpegInitNetwork
+{
+	src_mgr.pub.next_input_byte		= NULL;
+	src_mgr.pub.bytes_in_buffer		= 0;
+	src_mgr.pub.init_source			= init_source;
+	src_mgr.pub.fill_input_buffer	= fill_input_buffer;
+	src_mgr.pub.skip_input_data		= skip_input_data;
+	src_mgr.pub.resync_to_restart	= resync_to_restart;
+	src_mgr.pub.term_source			= term_source;
+	
+	src_mgr.consumed_data			= 0;
+	src_mgr.start_of_stream			= TRUE;
+	src_mgr.failed					= FALSE;
+
+	/* We set up the normal JPEG error routines, then override error_exit. */
+	src_mgr.cinfo.err = jpeg_std_error(&src_mgr.jerr.pub);
+	src_mgr.jerr.pub.error_exit = my_error_exit;
+	/* Establish the setjmp return context for my_error_exit to use. */
+	if (setjmp(src_mgr.jerr.setjmp_buffer)) {
+		/* If we get here, the JPEG code has signaled an error.
+		 * We need to clean up the JPEG object, close the input file, and return.
+		 */
+NSLog(@"YIKES! SETJUMP");
+		src_mgr.failed = YES;
+		//[self cancel];
+	} else {
+		/* Now we can initialize the JPEG decompression object. */
+		jpeg_create_decompress(&src_mgr.cinfo);
+		src_mgr.cinfo.src = &src_mgr.pub; // MUST be after the jpeg_create_decompress - ask me how I know this :-)
+		//src_mgr.pub.bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
+		//src_mgr.pub.next_input_byte = NULL; /* until buffer loaded */
+	}
+}
+
+- (void)jpegAdvance:(NSMutableData *)webData
+{
+#if 0
+	unsigned char *oldDataPtr = (unsigned char *)[webData mutableBytes];
+	[webData appendData:data];
+	unsigned char *newDataPtr = (unsigned char *)[webData mutableBytes];
+	if(oldDataPtr != newDataPtr) {
+		// NSLog(@"CHANGED!"); // I never saw it, probably could happen
+		size_t diff = src_mgr.pub.next_input_byte - src_mgr.data;
+		src_mgr.pub.next_input_byte = newDataPtr + diff;
+	}
+	src_mgr.data = newDataPtr;
+	src_mgr.data_length = [webData length];
+
+	//NSLog(@"s1=%ld s2=%d", src_mgr.data_length, highWaterMark);
+	if (setjmp(src_mgr.jerr.setjmp_buffer)) {
+		/* If we get here, the JPEG code has signaled an error.
+		 * We need to clean up the JPEG object, close the input file, and return.
+		 */
+NSLog(@"YIKES! SETJUMP");
+		src_mgr.failed = YES;
+		return;
+	}
+#endif
+	if(src_mgr.data_length > highWaterMark && !src_mgr.failed) {
+		highWaterMark += INCREMENT_THRESHOLD;	// update_levels added in so the final chunk is deferred to the end
+		//NSLog(@"len=%u high=%u", [webData length], highWaterMark);
+
+		if(!src_mgr.got_header) {
+			/* Step 3: read file parameters with jpeg_read_header() */
+			int jret = jpeg_read_header(&src_mgr.cinfo, FALSE);
+			if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return;
+			//NSLog(@"GOT header");
+			src_mgr.got_header = YES;
+			src_mgr.start_of_stream = NO;
+
+			assert(src_mgr.cinfo.num_components == 3);
+			assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
+			//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
+
+			[self mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
+
+			unsigned char *scratch = ims[0].map.emptyAddr;
+			//NSLog(@"Scratch=%p rowBytes=%ld", scratch, rowBytes);
+			for(int i=0; i<SCAN_LINE_MAX; ++i) {
+				scanLines[i] = scratch;
+				scratch += ims[0].map.bytesPerRow;
+			}
+			(void)jpeg_start_decompress(&src_mgr.cinfo);
+		}
+		if(src_mgr.got_header && !src_mgr.failed) {
+			[self outputScanLines];
+		}
+	}
+}
+
+
+#endif
+
 
 - (void)decodeImage:(NSURL *)url
 {
+NSLog(@"URL=%@", url);
 #ifdef LIBJPEG_TURBO
-	if(useTurbo) {
+	if(decoder == libjpegTurboDecoder) {
 		tjhandle decompressor = tjInitDecompress();
 
 		NSData *data = [NSData dataWithContentsOfURL:url];
@@ -172,10 +571,10 @@ static void tileBuilder(imageMemory *im, unsigned char *addr);
 		ret = tjDecompress2(decompressor,
 			jpegBuf,
 			jpegSize,
-			addr,
-			width,
-			self.image0BytesPerRow,
-			height,
+			ims[0].map.addr,
+			jwidth,
+			ims[0].map.bytesPerRow,
+			jheight,
 			TJPF_ABGR,
 			TJFLAG_NOREALLOC
 			);	
@@ -190,12 +589,9 @@ assert(imageSourcRef);
 		CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
 assert(image);
 
-		width = CGImageGetWidth(image);
-		height = CGImageGetHeight(image);
-		bytesPerRow = calcBytesPerRow(width);
 		CFRelease(imageSourcRef), imageSourcRef = NULL;
 		// NSLog(@"MAP MEMORY");
-		[self mapMemory];
+		[self mapMemoryForWidth:CGImageGetWidth(image) height:CGImageGetHeight(image)];
 		// NSLog(@"DRAW IMAGE");
 		[self drawImage:image];
 		CGImageRelease(image);
@@ -203,82 +599,81 @@ assert(image);
 	}
 }
 
-- (void)dealloc
-{
-	if(!failed) {
-		for(int idx=0; idx<ZOOM_LEVELS;++idx) {
-			close(ims[idx].fd);
-		}
-	}
-}
 
 - (size_t)image0BytesPerRow
 {
-	return calcDimension(width) * bytesPerPixel;
+assert(0);
+	return 0; // calcDimension(map.width) * bytesPerPixel;
 }
 
 - (CGSize)imageSize
 {
-	return CGSizeMake(ims[0].width, ims[0].height);
+	return CGSizeMake(ims[0].map.width, ims[0].map.height);
 }
 
 - (void *)scratchSpace
 {
-	return emptyAddr;
+assert(0);
+	return 0; // map.emptyAddr;
 }
 
 - (size_t)scratchRowBytes
 {
-	return calcBytesPerRow(width);
+assert(0);
+	return 0; // calcBytesPerRow(map.width);
 }
 
-- (void *)mapMemoryForWidth:(size_t)w height:(size_t)h
+- (void)mapMemoryForWidth:(size_t)w height:(size_t)h
 {
-	width = w;
-	height = h;
+	mapper *mapP = &ims[0].map;
+	mapP->width = w;
+	mapP->height = h;
 	
-	[self mapMemory];
-	
-	return addr;
+	[self mapMemory:mapP];
 }
 
-- (void)mapMemory
+- (void)mapMemory:(mapper *)mapP
 {
-	bytesPerRow = calcBytesPerRow(width);
-	emptyTileRowSize = bytesPerRow * tileDimension;
-	imageSize = bytesPerRow * calcDimension(height) + emptyTileRowSize;	// need temp space
+	mapP->bytesPerRow = calcBytesPerRow(mapP->width);
+	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
+	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;	// need temp space
 
+	if(!mapP->fd) {
 #warning Need a better routine here - "man tempnam" says there are race conditions. TBD
-	const char *fileName = tempnam([NSTemporaryDirectory() fileSystemRepresentation], "ps");
-	
-	fd = open(fileName, O_CREAT | O_RDWR | O_TRUNC, 0777);
-	if(fd == -1) NSLog(@"OPEN failed file %s %s", fileName, strerror(errno));
-	assert(fd >= 0);
+		const char *fileName = tempnam([NSTemporaryDirectory() fileSystemRepresentation], "ps");
+		
+		mapP->fd = open(fileName, O_CREAT | O_RDWR | O_TRUNC, 0777);
+		if(mapP->fd == -1) NSLog(@"OPEN failed file %s %s", fileName, strerror(errno));
+		assert(mapP->fd >= 0);
 
-	// have to expand the file to correct size first
-	lseek(fd, imageSize - 1, SEEK_SET);
-	char tmp = 0;
-	write(fd, &tmp, 1);
-	unlink(fileName);	// so it goes away when the fd is closed or on a crash
+		// have to expand the file to correct size first
+		lseek(mapP->fd, mapP->mappedSize - 1, SEEK_SET);
+		char tmp = 0;
+		write(mapP->fd, &tmp, 1);
+		unlink(fileName);	// so it goes away when the fd is closed or on a crash
+	}
 
-	lastAddr = addr;
-	lastEmptyAddr = emptyAddr;
+	//lastMap.addr = map.addr;
+	//lastMap.emptyAddr = map.emptyAddr;
 
-	//NSLog(@"imageSize=%ld", imageSize);
-	emptyAddr = mmap(NULL, imageSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0); //  | MAP_NOCACHE
-	addr = (char *)emptyAddr + emptyTileRowSize;
-	if(emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
-	assert(emptyAddr != MAP_FAILED);
+	// NSLog(@"imageSize=%ld", imageSize);
+	if(mapWholeFile) {
+NSLog(@"MAPPER: addr=%p size=%ld fd=%d", mapP->emptyAddr, mapP->mappedSize, mapP->fd);
+		mapP->emptyAddr = mmap(NULL, mapP->mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, mapP->fd, 0); //  | MAP_NOCACHE
+		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
+		if(mapP->emptyAddr == MAP_FAILED) NSLog(@"errno=%s", strerror(errno) );
+		assert(mapP->emptyAddr != MAP_FAILED);
+	}
 }
 
 - (void)drawImage:(CGImageRef)image
 {
 	if(image) {
-	assert(addr);
+	assert(ims[0].map.addr);
 		CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-		CGContextRef context = CGBitmapContextCreate(addr, width, height, bitsPerComponent, bytesPerRow, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little);	// BRGA flipped (little Endian)
+		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little);	// BRGA flipped (little Endian)
 		assert(context);
-		CGRect rect = CGRectMake(0, 0, width, height);
+		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
 
 		CGColorSpaceRelease(colorSpace);
@@ -292,19 +687,24 @@ assert(image);
 	size_t lastWidth = 0;
 	size_t lastHeight = 0;
 #endif
-	size_t lastBytesPerRow = 0;
+	//size_t lastBytesPerRow = 0;
 	
+	mapper *lastMap = NULL;
+	mapper *currMap = NULL;
+
 	for(size_t idx=0; idx < ZOOM_LEVELS; ++idx) {
+		lastMap = currMap;	// unused first loop
+		currMap = &ims[idx].map;
 		if(idx) {
 #if USE_VIMAGE == 1
 			lastWidth = width;
 			lastHeight = height;
 #endif
-			lastBytesPerRow = bytesPerRow;
-
-			width /= 2;
-			height /= 2;
-			[self mapMemory];
+			//lastBytesPerRow = bytesPerRow;
+			//memset(currMap, 0, sizeof(currMap) );
+			currMap->width = lastMap->width/2;
+			currMap->height = lastMap->height/2;
+			[self mapMemory:currMap];
 
 #if USE_VIMAGE == 1
 		   vImage_Buffer src = {
@@ -329,40 +729,52 @@ assert(image);
 			);
 			assert(err == kvImageNoError);
 #else	
-			//NSLog(@"boom: lastBPR=%ld bpr=%ld last=%p addr=%p", lastBytesPerRow, bytesPerRow, lastAddr, addr);		
-			{
+			//NSLog(@"boom: lastBPR=%ld bpr=%ld last=%p addr=%p", lastBytesPerRow, bytesPerRow, lastAddr, addr);
+			if(mapWholeFile) {
+dumpMapper("Last Map", lastMap);
+dumpMapper("Curr Map", currMap);
 				// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
 				// Got a better idea? Submit a pull request.
-				uint32_t *inPtr = (uint32_t *)lastAddr;
-				uint32_t *outPtr = (uint32_t *)addr;
-				for(size_t row=0; row<height; ++row) {
+				uint32_t *inPtr = (uint32_t *)lastMap->addr;
+				uint32_t *outPtr = (uint32_t *)currMap->addr;
+				for(size_t row=0; row<currMap->height; ++row) {
 					char *lastInPtr = (char *)inPtr;
 					char *lastOutPtr = (char *)outPtr;
-					for(size_t col = 0; col < width; ++col) {
+					for(size_t col = 0; col < currMap->width; ++col) {
+//assert(inPtr < (uint32_t *)(lastMap.addr + lastMap.mappedSize - lastMap.emptyTileRowSize) && inPtr >= (uint32_t *)(lastMap.addr));
+//if(!(outPtr < (uint32_t *)(currMap.addr + currMap.mappedSize - currMap.emptyTileRowSize) && outPtr >= (uint32_t *)(currMap.addr))) {
+//	NSLog(@"col=%ld row=%ld", col, row);
+//}
+//assert(outPtr < (uint32_t *)(currMap.addr + currMap.mappedSize - currMap.emptyTileRowSize) && outPtr >= (uint32_t *)(currMap.addr));
 						*outPtr++ = *inPtr;
 						inPtr += 2;
 					}
-					inPtr = (uint32_t *)(lastInPtr + lastBytesPerRow*2);
-					outPtr = (uint32_t *)(lastOutPtr + bytesPerRow);
+					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
+					outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
 				}
 			}
 #endif
-			// make tiles
-			tileBuilder(&ims[idx-1], lastEmptyAddr);
+			if(mapWholeFile) {
+				// make tiles
+				tileBuilder(&ims[idx-1]);
+			}
 		}
 
-		ims[idx].fd = fd;
 		ims[idx].index = idx;
-		ims[idx].height = height;
-		ims[idx].width = width;
-		ims[idx].rows = calcDimension(height)/tileDimension;
-		ims[idx].cols = calcDimension(width)/tileDimension;
-		ims[idx].mappedSpace = imageSize;
-		ims[idx].imageBytesPerRow = bytesPerRow;
-		ims[idx].slopSpace = emptyTileRowSize;
+		//ims[idx].height = height;
+		//ims[idx].width = width;
+		ims[idx].rows = calcDimension(currMap->height)/tileDimension;
+		ims[idx].cols = calcDimension(currMap->width)/tileDimension;
+		//ims[idx].mappedSpace = imageSize;
+		//ims[idx].imageBytesPerRow = bytesPerRow;
+		//ims[idx].slopSpace = emptyTileRowSize;
 	}
-
-	tileBuilder(&ims[ZOOM_LEVELS-1], emptyAddr);
+NSLog(@"Last One!");
+	if(mapWholeFile) {
+		tileBuilder(&ims[ZOOM_LEVELS-1]);
+	}
+NSLog(@"SUCCESS!");
+//exit(0);
 	return;
 	
   eRR:
@@ -381,8 +793,8 @@ assert(image);
 	size_t x = col * tileDimension;
 	size_t y = row * tileDimension;
 	
-	im->tileWidth = MIN(im->width-x, tileDimension);
-	im->tileHeight = MIN(im->height-y, tileDimension);
+	im->tileWidth = MIN(im->map.width-x, tileDimension);
+	im->tileHeight = MIN(im->map.height-y, tileDimension);
 
 	size_t imgSize = tileBytesPerRow*im->tileHeight;
 	struct CGDataProviderDirectCallbacks callBacks = { 0, 0, 0, PhotoScrollerProviderGetBytesAtPosition, PhotoScrollerProviderReleaseInfoCallback};
@@ -422,7 +834,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 
 	size_t mapSize = tileDimension*tileBytesPerRow;
 	// Don't think caching here would help but didn't test myself.
-	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED /*| MAP_NOCACHE */, im->fd, (im->row*im->cols + im->col) * mapSize);
+	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED /*| MAP_NOCACHE */, im->map.fd, (im->row*im->cols + im->col) * mapSize);
 
 	memcpy(buffer, startPtr+position, origCount);	// blit the image, then quit. How nice is that!
 	munmap(startPtr, mapSize);
@@ -437,10 +849,10 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 }
 
 
-static void tileBuilder(imageMemory *im, unsigned char *addr)
+static void tileBuilder(imageMemory *im)
 {
-	unsigned char *optr = addr;
-	unsigned char *iptr = addr + im->slopSpace;
+	unsigned char *optr = im->map.emptyAddr;
+	unsigned char *iptr = im->map.addr;
 	
 	//NSLog(@"tile...");
 	// Now, we are going to pre-tile the image in 256x256 tiles, so we can map in contigous chunks of memory
@@ -450,19 +862,95 @@ static void tileBuilder(imageMemory *im, unsigned char *addr)
 			unsigned char *lastIptr = iptr;
 			for(int i=0; i<tileDimension; ++i) {
 				memcpy(optr, iptr, tileBytesPerRow);
-				iptr += im->imageBytesPerRow;
+				iptr += im->map.bytesPerRow;
 				optr += tileBytesPerRow;
 			}
 			iptr = lastIptr + tileBytesPerRow;	// move to the next image
 		}
-		iptr = tileIptr + im->slopSpace;
+		iptr = tileIptr + im->map.emptyTileRowSize;
 	}
 	//NSLog(@"...tile");
 
 	// OK we're done with this memory now
-	munmap(addr, im->mappedSpace);
+	munmap(im->map.emptyAddr, im->map.mappedSize);
 
 	// don't need the scratch space now
-	off_t properLen = im->mappedSpace - im->slopSpace;
-	ftruncate(im->fd, properLen);
+	off_t properLen = im->map.mappedSize - im->map.emptyTileRowSize;
+	ftruncate(im->map.fd, properLen);
+	im->map.mappedSize = 0;
 }
+
+#ifdef LIBJPEG
+static void my_error_exit(j_common_ptr cinfo)
+{
+  /* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+  my_error_ptr myerr = (my_error_ptr) cinfo->err;
+
+  /* Always display the message. */
+  /* We could postpone this until after returning, if we chose. */
+  (*cinfo->err->output_message) (cinfo);
+
+  /* Return control to the setjmp point */
+  longjmp(myerr->setjmp_buffer, 1);
+}
+
+static void init_source(j_decompress_ptr cinfo)
+{
+	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
+	src->start_of_stream = TRUE;
+}
+
+static boolean fill_input_buffer(j_decompress_ptr cinfo)
+{
+	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
+
+	size_t unreadLen = src->data_length - src->consumed_data;
+//NSLog(@"unreadLen=%ld", unreadLen);
+	if((long)unreadLen <= 0) {
+		return FALSE;
+	}
+	
+	src->pub.next_input_byte = src->data + src->consumed_data;
+	src->consumed_data = src->data_length;
+
+	src->pub.bytes_in_buffer = unreadLen;
+	src->start_of_stream = FALSE;
+//NSLog(@"returning %ld bytes consumed=%ld this_offset=%ld", unreadLen, src->consumed_data, src->this_offset);
+
+	return TRUE;
+}
+
+static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
+{
+	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
+
+//NSLog(@"SKIPPER: %ld", num_bytes);
+
+	if (num_bytes > 0) {
+//NSLog(@"HAVE: %ld skip=%ld", src->pub.bytes_in_buffer, num_bytes);
+		if(num_bytes <= src->pub.bytes_in_buffer) {
+			src->pub.next_input_byte += (size_t)num_bytes;
+			src->pub.bytes_in_buffer -= (size_t)num_bytes;
+		} else {
+			src->consumed_data			+= num_bytes - src->pub.bytes_in_buffer;
+			src->pub.bytes_in_buffer	= 0;
+		}
+	}
+}
+
+static boolean resync_to_restart(j_decompress_ptr cinfo, int desired)
+{
+	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
+
+	NSLog(@"YIKES: resync_to_restart!!!");
+
+	src->failed = TRUE;
+	return FALSE;
+}
+
+static void term_source(j_decompress_ptr cinfo)
+{
+}
+
+#endif
+

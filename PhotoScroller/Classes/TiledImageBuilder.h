@@ -36,18 +36,19 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#define TILE_SIZE	256
-#define ZOOM_LEVELS 4		// could make this as many as you want
+#import "Common.h"
+
 
 @interface TiledImageBuilder : NSObject
 @property (nonatomic, assign, readonly) BOOL failed;
 @property (nonatomic, assign, readonly) size_t image0BytesPerRow;
 
 // For use with image files (probably in the bundle)
-- (id)initWithImagePath:(NSString *)path turbo:(BOOL)useTurbo;
-
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder;
+#ifdef LIBJPEG
+- (id)initForNetworkDownload;
+#endif
 // For use with downloaded images
-- (void *)mapMemoryForWidth:(size_t)w height:(size_t)h;
 - (void)drawImage:(CGImageRef)image;
 - (void)run;
 
@@ -57,6 +58,9 @@
 // For libjpeg-turbo
 - (void *)scratchSpace;
 - (size_t)scratchRowBytes;
+
+- (void)jpegAdvance:(NSMutableData *)data;
+- (BOOL)outputScanLines;	// YES when done
 
 @end
 

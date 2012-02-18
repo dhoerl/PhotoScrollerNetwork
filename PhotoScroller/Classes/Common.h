@@ -35,23 +35,7 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import "Common.h"
+typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
 
-@class TiledImageBuilder;
-
-@interface ConcurrentOp : NSOperation
-@property (nonatomic, assign) imageDecoder decoder;				// type of operation to perform
-@property (nonatomic, assign) NSUInteger index;					// if multiple operations, what index am i
-@property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started decoding
-@property (nonatomic, assign) uint64_t finishTime;					// time stamp of when this operation finished  decoding
-@property (nonatomic, assign) NSUInteger milliSeconds;			// time it takes to decode the image
-@property (nonatomic, strong) NSThread *thread;					// convenience method for the curious
-@property (nonatomic, strong) NSURL *url;						// passed in - where to get the image
-@property (nonatomic, strong) NSMutableData *webData;			// could be private, but sometimes useful. Where the URL cvonnection saves data
-@property (nonatomic, strong) TiledImageBuilder *imageBuilder;	// controller for the bit maps used to provide CATiles
-
-- (void)finish;				// should be run on the operation's thread - could create a convenience method that does this then hide thread
-- (void)runConnection;		// convenience method - messages using proper thread
-- (void)cancel;				// subclassed convenience method
-
-@end
+#define TILE_SIZE	256		// could make larger or smaller, but power of 2
+#define ZOOM_LEVELS 4		// could make this as many as you want

@@ -54,12 +54,14 @@
 
 - (IBAction)segmentChanged:(id)sender
 {
+#if 0
 	if(technology.selectedSegmentIndex == 2) {
 		useInternet.on = YES;
 		useInternet.enabled = NO;
 	} else {
 		useInternet.enabled = YES;
 	}
+#endif
 }
 
 - (IBAction)button:(id)sender

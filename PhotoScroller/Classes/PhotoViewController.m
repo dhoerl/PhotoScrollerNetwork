@@ -232,8 +232,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
-				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path turbo:decoder == libjpegTurboDecoder];
-				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; NSLog(@"tilebuilder RETURNED"); });
+				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder];
+				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; });
 			} );
 	}
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^

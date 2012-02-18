@@ -47,12 +47,6 @@
 #if ! __has_feature(objc_arc)
 #error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
 #endif
-
-// Defines for All
-#define UPDATE_LEVELS 4
-
-//#undef LIBJPEG
-//#define LIBJPEG_TURBO
  
 #ifdef LIBJPEG_TURBO
 #include <turbojpeg.h>
@@ -136,12 +130,12 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 @implementation ConcurrentOp
 {
 	void							*addr;
-	NSUInteger						highWaterMark;
 #ifdef LIBJPEG_TURBO	
 	tjhandle						decompressor;
 #endif
 
 #ifdef LIBJPEG
+	NSUInteger						highWaterMark;
 	co_jpeg_source_mgr				src_mgr;
 	unsigned char					*scanLines[SCAN_LINE_MAX];
 #endif
@@ -315,7 +309,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		src_mgr.start_of_stream			= TRUE;
 		src_mgr.failed					= FALSE;
 
-#warning Error handling does not work yet.
+//#warning Error handling does not work yet.
 		/* We set up the normal JPEG error routines, then override error_exit. */
 		src_mgr.cinfo.err = jpeg_std_error(&src_mgr.jerr.pub);
 		src_mgr.jerr.pub.error_exit = my_error_exit;
@@ -382,7 +376,8 @@ NSLog(@"YIKES! SETJUMP");
 				//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
 
 				TiledImageBuilder *tb = [TiledImageBuilder new];
-				addr = [tb mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
+#warning MISSING STATEMENT
+				//addr = [tb mapMemoryForWidth:src_mgr.cinfo.image_width height:src_mgr.cinfo.image_height];
 				self.imageBuilder = tb;
 
 				unsigned char *scratch = [tb scratchSpace];
@@ -496,7 +491,8 @@ NSLog(@"YIKES! SETJUMP");
 			);
 		assert(ret == 0);
 		TiledImageBuilder *tb = [TiledImageBuilder new];
-		addr = [tb mapMemoryForWidth:width height:height];
+#warning MISSING STATEMENT
+		// addr = [tb mapMemoryForWidth:width height:height];
 		self.imageBuilder = tb;
 		
 		// NSLog(@"HEADER w%d bpr%ld h%d", width, imageBuilder.image0BytesPerRow, height);	
@@ -524,7 +520,8 @@ NSLog(@"YIKES! SETJUMP");
 			if(width && height) {
 				TiledImageBuilder *tb = [TiledImageBuilder new];
 				self.imageBuilder = tb;
-				addr = [tb mapMemoryForWidth:width height:height];
+#warning MISSING STATEMENT
+				//addr = [tb mapMemoryForWidth:width height:height];
 				[tb drawImage:image]; // releases image
 			}
 			CGImageRelease(image);

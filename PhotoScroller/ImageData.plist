@@ -3,28 +3,8 @@
 <plist version="1.0">
 <array>
 	<dict>
-		<key>height</key>
-		<real>2736</real>
-		<key>name</key>
-		<string>Tree</string>
-		<key>width</key>
-		<integer>3648</integer>
-	</dict>
-	<dict>
-		<key>height</key>
-		<real>3648</real>
-		<key>name</key>
-		<string>Shed</string>
-		<key>width</key>
-		<real>2736</real>
-	</dict>
-	<dict>
-		<key>height</key>
-		<real>4752</real>
 		<key>name</key>
 		<string>Lake</string>
-		<key>width</key>
-		<real>3168</real>
 	</dict>
 </array>
 </plist>
