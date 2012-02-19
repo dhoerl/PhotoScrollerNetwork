@@ -1,9 +1,10 @@
 PhotoScrollerNetwork Project
-v 1.2 Feb 19, 2012
+v 1.3 Feb 19, 2012
 
 This sample code:
 
 - blazingly fast tile rendering - visually much much faster than Apple's code (which uses png files in the file system)
+- supports both drawLayer: and drawRect: (drawLayer: appears much faster with less delay on tile rendering)
 - builds on Apple's PhotoScroller project by addressing its deficiencies (mostly the pretiled images)
 - provides the means to process very large images for use in a zoomable scrollview
 - is backed by a CATiledLayer so that only those tiles needed for display consume memory
@@ -31,7 +32,6 @@ KNOWN BUGS:
 
 TODO:
 - TiledImageBuilder does error checking and sets the "failed" flag, but my testing of this mechanism has been brief and not exhaustive!
-- instead of using drawRect: and UIImages, use drawLayer: and CGImageRefs directly
 - fix the zoom problem that appears sometime when zooming an image close to a boundary of another image (I suspect this is in the original Apple code)
 - if an image is truly huge, then incrementally create tiles instead of having to map in two rows of tiles
 - currently, the cgimagesource and libturbo decoders use a memory object that could get pretty big, instead the code could write data to a file, then decode from the file.

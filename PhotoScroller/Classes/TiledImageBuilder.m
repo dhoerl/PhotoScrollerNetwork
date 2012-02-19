@@ -190,6 +190,8 @@ typedef struct {
 
 #endif
 
+static CGColorSpaceRef colorSpace;
+
 @interface TiledImageBuilder ()
 
 - (void)decodeImageURL:(NSURL *)url;
@@ -227,6 +229,13 @@ typedef struct {
 #endif
 }
 @synthesize failed;
+
++ (void)initialize
+{
+	if(self == [TiledImageBuilder class]) {
+		colorSpace = CGColorSpaceCreateDeviceRGB();
+	}
+}
 
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec
 {
@@ -689,13 +698,11 @@ typedef struct {
 {
 	if(image && !failed) {
 		assert(ims[0].map.addr);
-		CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
 		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little);	// BRGA flipped (little Endian)
 		assert(context);
 		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
 
-		CGColorSpaceRelease(colorSpace);
 		CGContextRelease(context);
 	}
 }
@@ -767,6 +774,13 @@ typedef struct {
 
 - (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col
 {
+	CGImageRef image = [self imageForScale:scale row:row col:col];
+	UIImage *img = [UIImage imageWithCGImage:image];
+	CGImageRelease(image);
+	return img;
+}
+- (CGImageRef)imageForScale:(CGFloat)scale row:(int)row col:(int)col
+{
 	if(failed) return nil;
 
 	long idx = offsetFromScale(scale);
@@ -785,7 +799,6 @@ typedef struct {
 	struct CGDataProviderDirectCallbacks callBacks = { 0, 0, 0, PhotoScrollerProviderGetBytesAtPosition, PhotoScrollerProviderReleaseInfoCallback};
 	CGDataProviderRef dataProvider = CGDataProviderCreateDirect(im, imgSize, &callBacks);
 	
-	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
 	CGImageRef image = CGImageCreate (
 	   im->tileWidth,
 	   im->tileHeight,
@@ -799,12 +812,8 @@ typedef struct {
 	   false,
 	   kCGRenderingIntentPerceptual
 	);
-	CGColorSpaceRelease(colorSpace);
 	CGDataProviderRelease(dataProvider);
-	UIImage *img = [UIImage imageWithCGImage:image];
-	CGImageRelease(image);
-	
-	return img;
+	return image;
 }
 
 @end

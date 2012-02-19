@@ -46,6 +46,8 @@
 - (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec;
 
 - (CGSize)imageSize;
+
+- (CGImageRef)imageForScale:(CGFloat)scale row:(int)row col:(int)col;
 - (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col;
 
 #ifdef LIBJPEG

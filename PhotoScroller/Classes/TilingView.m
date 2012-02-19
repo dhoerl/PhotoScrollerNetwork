@@ -59,11 +59,12 @@
 }
 @synthesize annotates;
 
-+ (Class)layerClass {
++ (Class)layerClass
+{
 	return [FastCATiledLayer class];
 }
 
-- (id)initWithImage:(TiledImageBuilder *)imageBuilder
+- (id)initWithImageBuilder:(TiledImageBuilder *)imageBuilder
 {
 	CGRect rect = { CGPointMake(0, 0), [imageBuilder imageSize] };
 	
@@ -76,6 +77,37 @@
     return self;
 }
 
+#if 1
+- (void)drawLayer:(CALayer*)layer inContext:(CGContextRef)context
+{
+	if(tb.failed) return;
+	
+    CGFloat scale = CGContextGetCTM(context).a;
+
+	// Fetch clip box in *view* space; context's CTM is preconfigured for view space->tile space transform
+	CGRect box = CGContextGetClipBoundingBox(context);
+
+	CGContextTranslateCTM(context, 0, box.origin.y + box.size.height);
+	CGContextScaleCTM(context, 1.0, -1.0);
+
+	// Calculate tile index
+	CGSize tileSize = [(CATiledLayer*)layer tileSize];
+	CGFloat col = box.origin.x * scale / tileSize.width;
+	CGFloat row = box.origin.y * scale / tileSize.height;
+
+	CGImageRef image = [tb imageForScale:scale row:lrintf(row) col:lrintf(col)];
+	box.origin.y = 0;
+	CGContextDrawImage(context, box, image);
+	CFRelease(image);
+
+	if(self.annotates) {
+		CGContextSetStrokeColorWithColor(context, [[UIColor whiteColor] CGColor]);
+		CGContextSetLineWidth(context, 6.0 / scale);
+		CGContextStrokeRect(context, box);
+	}
+}
+
+#else
 
 - (void)drawRect:(CGRect)rect
 {
@@ -127,6 +159,8 @@
         }
     }
 }
+
+#endif
 
 - (CGSize)imageSize
 {

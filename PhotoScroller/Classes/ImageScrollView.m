@@ -112,7 +112,7 @@
     self.zoomScale = 1.0;
     
     // make a new TilingView for the new image
-    imageView = [[TilingView alloc] initWithImage:tiledImage];
+    imageView = [[TilingView alloc] initWithImageBuilder:tiledImage];
     [(TilingView *)imageView setAnnotates:YES]; // ** remove this line to remove the white tile grid **
     [self addSubview:imageView];
     
