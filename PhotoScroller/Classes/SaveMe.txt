@@ -1,4 +1,12 @@
 
+#if 0
+assert(inPtr < (uint32_t *)(lastMap->addr + lastMap->mappedSize - lastMap->emptyTileRowSize) && inPtr >= (uint32_t *)(lastMap->addr));
+if(!(outPtr < (uint32_t *)(currMap->addr + currMap->mappedSize - currMap->emptyTileRowSize) && outPtr >= (uint32_t *)(currMap->addr))) {
+NSLog(@"col=%ld row=%ld", col, row);
+}
+assert(outPtr < (uint32_t *)(currMap->addr + currMap->mappedSize - currMap->emptyTileRowSize) && outPtr >= (uint32_t *)(currMap->addr));
+#endif
+
 
 #if 0
 		oneLine = malloc(ims[0].map.bytesPerRow);

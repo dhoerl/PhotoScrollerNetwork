@@ -1,15 +1,17 @@
 PhotoScrollerNetwork Project
-
-NOTE 2/15/2012: This project is undergoing major refactoring to handle images of unbounded size. Suggest you revisit on Feb 20th.
+v 1.2 Feb 19, 2012
 
 This sample code:
 
-- builds on Apple's PhotoScroller project by addressing its deficiencies
-- provides the means to process large images for use in a zoomable scrollview
+- builds on Apple's PhotoScroller project by addressing its deficiencies (mostly the pretiled images)
+- provides the means to process very large images for use in a zoomable scrollview
 - is backed by a CATiledLayer so that only those tiles needed for display consume memory
-- tiles the files backing the CATiledLayer for rapid tile rendering
-- demonstrates how to use concurrent NSOperations to fetch several large images concurrently
-- measure the time from when the first image starts decoding til the last one finished for 3 technologies
+- each zoom level has one dedicated temp file rearranged into tiles for rapid tile rendering
+- demonstrates how to use concurrent NSOperations to fetch several large images concurrently from the web
+- measure the interval from when the first image starts downloading til the last one finished for 3 technologies
+- supports two targets, one just using Apple APIs and the other (Turbo) using libturbojpeg
+- the second target lets you test with 3 means to download and process images
+- the incremental approach makes sparse use of mmap, does its processing as the image downloads, and can handle very large images
 
  * * *
 
@@ -24,16 +26,16 @@ This code leverages my github Concurrent_NSOperations project (https://github.co
 The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo, both explained below.
 
 KNOWN BUGS:
-- really large images - say 8000x12000 fail as the code tries to map the whole image into memory at once. I know how to fix this just going to take a bit more time.
-- if you quit the project with the scroll view showing, you get a crash
-- the jpeg error handler is not yet setup properly
+- if you stop the executable with the scroll view showing, you often get a crash
 
 TODO:
+- TiledImageBuilder does error checking and sets the "failed" flag, but my testing of this mechanism has been brief and not exhaustive!
 - instead of using drawRect: and UIImages, use drawLayer: and CGImageRefs directly
 - fix the zoom problem that appears sometime when zooming an image close to a boundary of another image (I suspect this is in the original Apple code)
+- if an image is truly huge, then incrementally create tiles instead of having to map in two rows of tiles
+- currently, the cgimagesource and libturbo decoders use a memory object that could get pretty big, instead the code could write data to a file, then decode from the file.
 
-
-PhotoScollerNetwork Target: FAST AND EFFICIENT TILING
+PhotoScollerNetwork Target: FAST AND EFFICIENT TILING USING A CGIMAGESOURCE
 
 This target does exactly what the PhotoScroller does, but it only needs a single jpeg per view, and it dynamically creates all the tiles as sections of a larger file instead of using individual files.
 
@@ -45,20 +47,19 @@ Process:
 
 - once opened, unlink the file so it will actually disappear when the file descriptor is closed (old unix trick)
 
-- mmap the complete file for reading and writing
+- mmap the complete file for reading and writing (cgimageref and turbo modes), or just two rows of tiles (libjpegincrmental)
 
-- use the address returned from mmap with a CGBitmapContext, and use CGContextDrawImage to populate the bits
+- non-incrmental methods use the address returned from mmap with a CGBitmapContext, and use CGContextDrawImage to populate the bits
 
-- for each zoom out level, create a similar file half the size, and efficiently (or with vImage) populate it
+- for each zoom out level, create a similar file half the size, and efficiently (or with vImage) draw it
 
-- for each file, rearrange the image so that each 256x256 area maps exactly into one tile, in the same col/row order that the CATiledLayer draws
+- for each file, rearrange the image so that continguous 256x256*4 memory chunks map exactly into one tile, in the same col/row order that the CATiledLayer draws
 
 - when the view requests a tile, provide it with an image that uses CGDataProviderCreateDirect, which knows how to mmap the image file and provide the data in a single memcpy, mapping the smallerst possbile number of pages.
 
-In the end, you have n files, each containing image tiles which can be memcpy'd efficiently with adjacent mmap areas (each tile consists of a contiguous block of memory pages). If the app crashes, the files go away so no cleanup. Once the images are created and go out of scope, they are unmapped. When the scrollview needs images, only those pages needed to populate the required tiles get mapped.
+In the end, you have n files, each containing image tiles which can be memcpy'd efficiently (each tile consists of a contiguous block of memory pages). If the app crashes, the files go away so no cleanup. Once the images are created and go out of scope, they are unmapped. When the scrollview needs images, only those pages needed to populate the required tiles get mapped, and only long enought to memcpy the bits.
 
-This solution scales to huge images. The limiting factor is the amount of file space. That said, you may need to tweak the mmap strategy if you have threads mapping in several huge images. [That is, in this case you would not map the whole file, but only rows of tiles as required.]
-
+This solution scales to huge images. The limiting factor is the amount of file space. That said, you may need to tweak the mmap strategy if you have threads mapping in several huge images. For instance, you might use a serial queue to only allows one mmap to occur at a time if you have many downloads going at once.
 
 
 
@@ -66,7 +67,7 @@ PhotoScollerNetworkTURBO Target: INCREMENTAL DECODING (see http://sourceforge.ne
 
 When you download jpegs from the internet, the processor is idling waiting for the complete image to arrive, after which it decodes the image. If it were possible to have CGImageSourceCreateIncremental incrementally decode the image as it arrives (and you feed it this data), then my job would have been done. Alas, it does not do that, and my DTS event to find out some way to cajole it to do so was wasted. Thus, you will not find CGImageSourceCreateIncremental used in this project - in no case could it be used to make the process any faster than it is.
 
-So, when using a highly compressed images and a fast WIFI connection, a large component of the total time between starting the image fetches and their display is the decode time. Decode time is the duration of decompressing a encoded image blob into a bit map in memory.
+So, when using a highly compressed images and a fast WIFI connection, a large component of the total time between starting the image fetches and their display is the decode time. Decode time is the duration of decompressing a encoded image data object into a bit map in memory.
 
 Fortunately, libjpeg provides the mechanism to incrementally decode jpegs (well, it cannot do this for progressive images so be aware of the type). There are scant examples of this on the web so I had to spend quite a bit of timed getting it to work. While I could have used libjpeg, I tripped over the libjpeg-turbo open source library. If your have to use an external library, might as well use one that has accelleration for the ARM chips used by iOS devices. It has the added benefit that once linked into your project, you can use it for faster decoding of on-file images.
 
@@ -85,11 +86,13 @@ Process:
 
 - when web data appears, first get the header, then allocate the full file needed to hold the image
 
-- as data arrives, the jpeg decoder supplies lines of decoded image using the file scratch space area, and from there are mapped appropriately to the real image area on file
-
-- when the very last chunk of data arrives, the final few scan lines are processed, and the operation completes - a process taking only a few milliseconds.
+- as data arrives, the jpeg decoder:
+  * writes lines of decoded image into a file
+  * it write compressed lines into the other zoomable levels
+  * when it gets a set of lines modulo the tile size, it processes one chunk of the image into tiles, ditto for the other zoomable levels
+  * when the final chunk of memory arrives from the network, virtually all of the image processing work is done, and the images can be rendered immediately
 
 Using an iPhone 4 running iOS 5, the sample images take around a second each to decode using CGContextDrawImage. But using incremental decoding, that time is spread out during the download (effectively loading the processor with work during a time it's normally idling), taking that final second of delay down to effectively 0 seconds.
 
-For this networked code, a time metric that measures the time from when the first image starts to decode til the last one finishes. This would seem to be the best possible metric as it more accurately represents the time from when the first image finishes downloading until the user gets control of the scrollview. On my iphone 4, the this delay is halved by the incremental decoder relative to the CGContextDrawImage based code. I would have thought it would be quicker, but there is a lot going on in this single core device. Bet it really hums on the iPhone 4S.
+For this networked code, a time metric that measures the time from when the first image starts to download til the last one finishes. 
 

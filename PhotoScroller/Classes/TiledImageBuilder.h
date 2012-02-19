@@ -41,26 +41,18 @@
 
 @interface TiledImageBuilder : NSObject
 @property (nonatomic, assign, readonly) BOOL failed;
-@property (nonatomic, assign, readonly) size_t image0BytesPerRow;
 
-// For use with image files (probably in the bundle)
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder;
-#ifdef LIBJPEG
-- (id)initForNetworkDownload;
-#endif
-// For use with downloaded images
-- (void)drawImage:(CGImageRef)image;
-- (void)run;
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec;
 
 - (CGSize)imageSize;
 - (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col;
 
-// For libjpeg-turbo
-- (void *)scratchSpace;
-- (size_t)scratchRowBytes;
-
+#ifdef LIBJPEG
 - (void)jpegAdvance:(NSMutableData *)data;
-- (BOOL)outputScanLines;	// YES when done
+#endif
+
+- (void)decodeImageData:(NSData *)data;
 
 @end
 

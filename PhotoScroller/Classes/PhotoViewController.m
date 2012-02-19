@@ -201,8 +201,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	// NSLog(@"Operation Succeeded: index=%d", op.index);
 	
 	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
-	if(earliestStartTime) earliestStartTime = MIN(earliestStartTime, op.finishTime);
-	else earliestStartTime = op.finishTime;
+	if(earliestStartTime) earliestStartTime = MIN(earliestStartTime, op.startTime);
+	else earliestStartTime = op.startTime;
 
 	latestFinishTime = MAX(latestFinishTime, op.finishTime);
 	
@@ -250,8 +250,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 }
 
 - (void)fetchWebImages
-{		
-	for(NSUInteger idx=0; idx<[self imageCount]; ++idx) {
+{
+	NSUInteger count = [self imageCount];
+	for(NSUInteger idx=0; idx<count; ++idx) {
 		[tileBuilders addObject:@""];
 		
 		NSString *imageName = [self imageNameAtIndex:idx];
@@ -330,10 +331,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
     
     // Use tiled images
     [page displayTiledImage:[tileBuilders objectAtIndex:index]];
-    
-    // To use full images instead of tiled images, replace the "displayTiledImageNamed:" call
-    // above by the following line:
-    // [page displayImage:[self imageAtIndex:index]];
 }
 
 

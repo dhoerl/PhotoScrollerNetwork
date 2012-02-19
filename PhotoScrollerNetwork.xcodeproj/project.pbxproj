@@ -68,8 +68,6 @@
 		DE4ADA3D14E1A56500D63E5A /* iTunesArtwork in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97114DC788F00D63E5A /* iTunesArtwork */; };
 		DE4ADA3E14E1A56500D63E5A /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97914DC788F00D63E5A /* ReadMe.txt */; };
 		DE4ADA3F14E1A56500D63E5A /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */; };
-		DEF5B0B214EACDCB002D1707 /* Coffee.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEF5B0B114EACDCB002D1707 /* Coffee.jpg */; };
-		DEF5B0B314EACDCB002D1707 /* Coffee.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEF5B0B114EACDCB002D1707 /* Coffee.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -118,7 +116,6 @@
 		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; };
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE588D8614E9433A00C7E151 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
-		DEF5B0B114EACDCB002D1707 /* Coffee.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Coffee.jpg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -252,7 +249,6 @@
 		DE4AD96214DC788F00D63E5A /* Full Images */ = {
 			isa = PBXGroup;
 			children = (
-				DEF5B0B114EACDCB002D1707 /* Coffee.jpg */,
 				DE4AD96414DC788F00D63E5A /* Lake.jpg */,
 				DE4AD96714DC788F00D63E5A /* Shed.jpg */,
 				DE4AD96A14DC788F00D63E5A /* Tree.jpg */,
@@ -318,7 +314,7 @@
 		DE4AD92414DC783D00D63E5A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0430;
 			};
 			buildConfigurationList = DE4AD92714DC783D00D63E5A /* Build configuration list for PBXProject "PhotoScrollerNetwork" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -360,7 +356,6 @@
 				DE4AD99614DC788F00D63E5A /* iTunesArtwork in Resources */,
 				DE4AD99A14DC788F00D63E5A /* ReadMe.txt in Resources */,
 				DE4AD9A314DC811900D63E5A /* PhotoViewController.xib in Resources */,
-				DEF5B0B214EACDCB002D1707 /* Coffee.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -385,7 +380,6 @@
 				DE4ADA3D14E1A56500D63E5A /* iTunesArtwork in Resources */,
 				DE4ADA3E14E1A56500D63E5A /* ReadMe.txt in Resources */,
 				DE4ADA3F14E1A56500D63E5A /* PhotoViewController.xib in Resources */,
-				DEF5B0B314EACDCB002D1707 /* Coffee.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

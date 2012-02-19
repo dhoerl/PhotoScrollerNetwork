@@ -40,9 +40,7 @@
 @interface ImageScrollView : UIScrollView <UIScrollViewDelegate>
 @property (assign) NSUInteger index;
 
-- (void)displayImage:(UIImage *)image;
 - (void)displayTiledImage:(TiledImageBuilder *)tiledImage;
-
 - (void)setMaxMinZoomScalesForCurrentBounds;
 
 - (CGPoint)pointToCenterAfterRotation;
