@@ -3,15 +3,16 @@ v 1.2 Feb 19, 2012
 
 This sample code:
 
+- blazingly fast tile rendering - visually much much faster than Apple's code (which uses png files in the file system)
 - builds on Apple's PhotoScroller project by addressing its deficiencies (mostly the pretiled images)
 - provides the means to process very large images for use in a zoomable scrollview
 - is backed by a CATiledLayer so that only those tiles needed for display consume memory
 - each zoom level has one dedicated temp file rearranged into tiles for rapid tile rendering
 - demonstrates how to use concurrent NSOperations to fetch several large images concurrently from the web
-- measure the interval from when the first image starts downloading til the last one finished for 3 technologies
 - supports two targets, one just using Apple APIs and the other (Turbo) using libturbojpeg
-- the second target lets you test with 3 means to download and process images
+- the second target lets you test with 3 techniques to download and process images: CGImageSourceRef, libturbojpef, and incremental decode using libjpeg (turbo version)
 - the incremental approach makes sparse use of mmap, does its processing as the image downloads, and can handle very large images
+- measures the interval from when the first image starts downloading til the last one finished for 3 technologies
 
  * * *
 
