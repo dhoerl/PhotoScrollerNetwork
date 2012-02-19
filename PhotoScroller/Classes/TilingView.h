@@ -38,9 +38,6 @@
 @class TiledImageBuilder;
 
 @interface TilingView : UIView
-{
-    BOOL      annotates;
-}
 @property (assign) BOOL annotates;
 
 - (id)initWithImageBuilder:(TiledImageBuilder *)imageBuilder;

@@ -52,7 +52,6 @@
 
 @end
 
-
 @implementation TilingView
 {
 	TiledImageBuilder *tb;
