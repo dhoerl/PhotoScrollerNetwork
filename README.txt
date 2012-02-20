@@ -4,16 +4,17 @@ v 1.4 Feb 20, 2012
 This sample code:
 
 - blazingly fast tile rendering - visually much much faster than Apple's code (which uses png files in the file system)
-- supports both drawLayer: and drawRect: (drawLayer: appears much faster with less delay on tile rendering)
+- you supply a single jpeg file or URL and this code does all the tiling for you, quickly and painlessly
+- supports both drawLayer: and drawRect: (latter appears to be faster)
 - builds on Apple's PhotoScroller project by addressing its deficiencies (mostly the pretiled images)
 - provides the means to process very large images for use in a zoomable scrollview
 - is backed by a CATiledLayer so that only those tiles needed for display consume memory
-- each zoom level has one dedicated temp file rearranged into tiles for rapid tile rendering
-- demonstrates how to use concurrent NSOperations to fetch several large images concurrently from the web
-- supports two targets, one just using Apple APIs and the other (Turbo) using libturbojpeg
-- the second target lets you test with 3 techniques to download and process images: CGImageSourceRef, libturbojpef, and incremental decode using libjpeg (turbo version)
-- the incremental approach makes sparse use of mmap, does its processing as the image downloads, and can handle very large images
-- measures the interval from when the first image starts downloading til the last one finished for 3 technologies
+- each zoom level has one dedicated temp file rearranged into tiles for rapid tile access & rendering
+- demonstrates how to use concurrent NSOperations to fetch several large images from the web or to process local image files
+- provides two targets, one using just Apple APIs (CGImageRef and friends), and the other (Turbo) using libturbojpeg
+- Turbo target lets you test with 3 techniques for both downloads and local file processing using CGImageSourceRef, libturbojpef, and incremental decode using libjpeg (turbo version)
+- the incremental approach uses mmap, only maps small parts of the image at a time, and does its processing as the image downloads and can thus handle very large images
+- averages the decode time for all 3 technologies
 
 RECENT CHANGES:
 
