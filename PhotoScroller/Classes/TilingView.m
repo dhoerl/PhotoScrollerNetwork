@@ -72,11 +72,15 @@
 
         CATiledLayer *tiledLayer = (CATiledLayer *)[self layer];
         tiledLayer.levelsOfDetail = ZOOM_LEVELS;
+		
+		self.opaque = YES;
+		self.clearsContextBeforeDrawing = NO;
     }
     return self;
 }
 
-#if 1
+#if 1 // user drawLayer if possible for better performance
+
 - (void)drawLayer:(CALayer*)layer inContext:(CGContextRef)context
 {
 	if(tb.failed) return;
