@@ -16,6 +16,8 @@ This sample code:
 - the incremental approach uses mmap, only maps small parts of the image at a time, and does its processing as the image downloads and can thus handle very large images
 - averages the decode time for all 3 technologies
 
+Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
+
 RECENT CHANGES:
 
 v 1.4:
@@ -51,7 +53,8 @@ TODO:
 - TiledImageBuilder does error checking and sets the "failed" flag, but my testing of this mechanism has been brief and not exhaustive!
 - fix the zoom problem that appears sometime when zooming an image close to a boundary of another image (I suspect this is in the original Apple code)
 - if an image is truly huge, then incrementally create tiles instead of having to map in two rows of tiles
-- currently, the cgimagesource and libturbo decoders use a memory object that could get pretty big, instead the code could write data to a file, then decode from the file.
+
+
 
 PhotoScollerNetwork Target: FAST AND EFFICIENT TILING USING A CGIMAGESOURCE
 
