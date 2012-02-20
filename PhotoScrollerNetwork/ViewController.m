@@ -50,6 +50,7 @@
 	IBOutlet UIButton *runButton;
 	IBOutlet UISegmentedControl *technology;
 	IBOutlet UISwitch *useInternet;
+	IBOutlet UISwitch *justOneImage;
 }
 
 - (IBAction)segmentChanged:(id)sender
@@ -69,6 +70,8 @@
 	PhotoViewController *pvc = [[PhotoViewController alloc] initWithNibName:@"PhotoViewController" bundle:nil];
 	pvc.isWebTest = useInternet.on;
 	pvc.decoder = technology.selectedSegmentIndex;
+	pvc.justDoOneImage = justOneImage.on;
+
 	[self.navigationController pushViewController:pvc animated:YES];
 }
 
@@ -103,12 +106,7 @@
 
 - (void)viewDidUnload
 {
-	runButton = nil;
-	technology = nil;
-	useInternet = nil;
     [super viewDidUnload];
-    // Release any retained subviews of the main view.
-    // e.g. self.myOutlet = nil;
 }
 
 - (void)viewWillAppear:(BOOL)animated

@@ -38,8 +38,10 @@
 
 #import "Common.h"
 
-
 @interface TiledImageBuilder : NSObject
+@property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started decoding
+@property (nonatomic, assign) uint64_t finishTime;				// time stamp of when this operation finished  decoding
+@property (nonatomic, assign) uint32_t milliSeconds;						// elapsed time
 @property (nonatomic, assign, readonly) BOOL failed;
 
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder;
@@ -54,7 +56,8 @@
 - (void)jpegAdvance:(NSMutableData *)data;
 #endif
 
-- (void)decodeImageData:(NSData *)data;
+- (void)appendToImageFile:(NSData *)data;
+- (void)dataFinished;
 
 @end
 

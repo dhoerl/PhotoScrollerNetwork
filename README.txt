@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-v 1.3 Feb 19, 2012
+v 1.4 Feb 20, 2012
 
 This sample code:
 
@@ -14,6 +14,22 @@ This sample code:
 - the second target lets you test with 3 techniques to download and process images: CGImageSourceRef, libturbojpef, and incremental decode using libjpeg (turbo version)
 - the incremental approach makes sparse use of mmap, does its processing as the image downloads, and can handle very large images
 - measures the interval from when the first image starts downloading til the last one finished for 3 technologies
+
+RECENT CHANGES:
+
+v 1.4:
+- cgimageref and libturbojpeg fetchers write incoming data to a file, cgimageref decodes from a URL and for turbo data loaded into a NSData object then decoded
+- timing for all operations aggregates only the decode times (and averages) - there was just too much variation in network fetch times to make including that useful
+- added a single image load option. Useful if testing on 3G or a slow WIFI connection
+
+v 1.3:
+- added a drawLayer:, which is smaller and appears to make the tiling quicker.
+
+v 1.2:
+- lots of churn
+
+v 1.1:
+- original release
 
  * * *
 

@@ -41,7 +41,6 @@
 barStyle  property UIBarStyleBlack
 translucent  property YES/NO
 */
-#import <mach/mach_time.h>	
 
 #import "PhotoViewController.h"
 #import "ImageScrollView.h"
@@ -50,21 +49,6 @@ translucent  property YES/NO
 #import "AppDelegate.h"
 
 static char *runnerContext = "runnerContext";
-
-static uint64_t DeltaMAT(uint64_t then, uint64_t now)
-{
-	uint64_t delta = now - then;
-
-	/* Get the timebase info */
-	mach_timebase_info_data_t info;
-	mach_timebase_info(&info);
-
-	/* Convert to nanoseconds */
-	delta *= info.numer;
-	delta /= info.denom;
-
-	return delta / 1e6; // ms
-}
 
 @interface PhotoViewController ()
 @property (nonatomic, strong) NSOperationQueue *queue;
@@ -107,12 +91,13 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 	NSMutableArray	*tileBuilders;
 	
-	uint64_t		earliestStartTime, latestFinishTime;
+	__block uint32_t milliSeconds;
 }
 @synthesize isWebTest;
 @synthesize queue;
 @synthesize operations;
 @synthesize decoder;
+@synthesize justDoOneImage;
 
 #pragma mark -
 #pragma mark View loading and unloading
@@ -121,7 +106,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 	[spinner startAnimating];
 
-	self.operations = [NSMutableSet setWithCapacity:1];
+	self.operations = [NSMutableSet setWithCapacity:3];
 	self.queue = [NSOperationQueue new];
    
 	pagingScrollView = (UIScrollView *)self.view;
@@ -201,16 +186,14 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	// NSLog(@"Operation Succeeded: index=%d", op.index);
 	
 	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
-	if(earliestStartTime) earliestStartTime = MIN(earliestStartTime, op.startTime);
-	else earliestStartTime = op.startTime;
 
-	latestFinishTime = MAX(latestFinishTime, op.finishTime);
-	
+	milliSeconds += op.milliSeconds;
+
 	if(![operations count]) {
 		[spinner stopAnimating];
 		[self tilePages];
 	
-		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %llu ms", DeltaMAT(earliestStartTime, latestFinishTime)];
+		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds/[self imageCount]];
 	}
 }
 
@@ -233,7 +216,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
 				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder];
-				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; });
+				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; milliSeconds += tb.milliSeconds; });
 			} );
 	}
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
@@ -241,6 +224,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 			dispatch_async(dispatch_get_main_queue(), ^
 				{
+					self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds/[self imageCount]];
 					[spinner stopAnimating];
 					[self tilePages];
 				});
@@ -490,7 +474,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
     static NSUInteger __count = NSNotFound;  // only count the images once
     if (__count == NSNotFound) {
-        __count = [[self imageData] count];
+        __count = justDoOneImage ? 1 : [[self imageData] count];
     }
     return __count;
 }

@@ -35,8 +35,6 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import <mach/mach_time.h>	
-
 #import "ConcurrentOp.h"
 
 #import "TiledImageBuilder.h"
@@ -45,22 +43,6 @@
 #error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
 #endif
  
-// Compliments to Rainer Brockerhoff
-static uint64_t DeltaMAT(uint64_t then, uint64_t now)
-{
-	uint64_t delta = now - then;
-
-	/* Get the timebase info */
-	mach_timebase_info_data_t info;
-	mach_timebase_info(&info);
-
-	/* Convert to nanoseconds */
-	delta *= info.numer;
-	delta /= info.denom;
-
-	return delta / 1e6; // ms
-}
-
 
 @interface ConcurrentOp ()
 @property (nonatomic, assign) BOOL executing, finished;
@@ -69,7 +51,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (BOOL)setup;
 - (void)timer:(NSTimer *)timer;
-- (uint64_t)timeStamp;
 
 @end
 
@@ -82,9 +63,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	void							*addr;
 }
 @synthesize index;
-@synthesize startTime;
-@synthesize finishTime;
-@synthesize milliSeconds;
+@dynamic milliSeconds;
 @synthesize thread;
 @synthesize executing, finished;
 @synthesize timer;
@@ -142,6 +121,14 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	}
 }
 
+- (void)dealloc
+{
+	//NSLog(@"OP: dealloc"); // didn't always see this message :-)
+
+	[timer invalidate], timer = nil;
+	[connection cancel], connection = nil;
+}
+
 - (BOOL)setup
 {
 #ifndef NDEBUG
@@ -187,17 +174,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 }
 
-- (void)dealloc
+- (uint32_t)milliSeconds
 {
-	NSLog(@"OP: dealloc"); // didn't always see this message :-)
-
-	[timer invalidate], timer = nil;
-	[connection cancel], connection = nil;
-}
-
-- (uint64_t)timeStamp
-{
-	return mach_absolute_time();
+	return imageBuilder.milliSeconds;
 }
 
 @end
@@ -210,14 +189,20 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		[connection cancel];
 		return;
 	}
-	startTime = [self timeStamp];
 
-	NSUInteger responseLength = response.expectedContentLength == NSURLResponseUnknownLength ? 1024*1000 : response.expectedContentLength;
+	// Useful way to get maximum data, but not needed here
+	//NSUInteger responseLength = response.expectedContentLength == NSURLResponseUnknownLength ? 1024*1000 : response.expectedContentLength;
 
 #ifndef NDEBUG
 	//NSLog(@"ConcurrentOp: response=%@ len=%lu", response, (unsigned long)responseLength);
 #endif
-	self.webData = [NSMutableData dataWithCapacity:responseLength];
+
+#ifdef LIBJPEG
+	if(decoder == libjpegIncremental) {
+		// data may build up - the decoder consumes large chunks infrequently, we can then release the older not needed data
+		self.webData = [NSMutableData dataWithCapacity:100000];	// appears to be about right
+	}
+#endif
 	
 	imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:decoder];
 }
@@ -231,12 +216,15 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		[connection cancel];
 		return;
 	}
-	[webData appendData:data];
 #ifdef LIBJPEG
 	if(decoder == libjpegIncremental) {
+		[webData appendData:data];
 		[imageBuilder jpegAdvance:webData];
-	}
+	} else
 #endif
+	{
+		[imageBuilder appendToImageFile:data];
+	}
 }
 
 - (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *)error
@@ -263,14 +251,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 
 	if(decoder != libjpegIncremental) {
-		[imageBuilder decodeImageData:webData];
+		[imageBuilder dataFinished];
+		//[imageBuilder decodeImageData:webData];
 	}
-	finishTime = [self timeStamp];
-	milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-#ifndef NDEBUG
-	NSLog(@"FINISH: %u milliseconds", milliSeconds);
-#endif
-
 	[self finish];
 }
 

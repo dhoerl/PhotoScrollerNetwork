@@ -35,6 +35,7 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include <mach/mach_time.h>	
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -192,9 +193,28 @@ typedef struct {
 
 static CGColorSpaceRef colorSpace;
 
+// Compliments to Rainer Brockerhoff
+static uint64_t DeltaMAT(uint64_t then, uint64_t now)
+{
+	uint64_t delta = now - then;
+
+	/* Get the timebase info */
+	mach_timebase_info_data_t info;
+	mach_timebase_info(&info);
+
+	/* Convert to nanoseconds */
+	delta *= info.numer;
+	delta /= info.denom;
+
+	return delta / 1e6; // ms
+}
+
 @interface TiledImageBuilder ()
 
 - (void)decodeImageURL:(NSURL *)url;
+- (void)decodeImageData:(NSData *)data;
+
+- (int)createTempFile:(BOOL)unlinkFile;
 - (void)mapMemory:(mapper *)mapP; 
 - (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h;
 #ifdef LIBJPEG
@@ -208,20 +228,23 @@ static CGColorSpaceRef colorSpace;
 - (BOOL)jpegOutputScanLines;	// return YES when done
 #endif
 
+- (uint64_t)timeStamp;
+
 @end
 
 @implementation TiledImageBuilder
 {
 	NSString *imagePath;
+	FILE *imageFile;
+
 	size_t pageSize;
 	imageMemory ims[ZOOM_LEVELS];
 	imageDecoder decoder;
 	BOOL mapWholeFile;
+	BOOL deleteImageFile;
 
 #ifdef LIBJPEG
 	// input
-	FILE				*infile;
-	NSUInteger			highWaterMark;
 	co_jpeg_source_mgr	src_mgr;
 
 	// output
@@ -229,6 +252,9 @@ static CGColorSpaceRef colorSpace;
 #endif
 }
 @synthesize failed;
+@synthesize startTime;
+@synthesize finishTime;
+@synthesize milliSeconds;
 
 + (void)initialize
 {
@@ -240,9 +266,10 @@ static CGColorSpaceRef colorSpace;
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec
 {
 	if((self = [super init])) {
+		startTime = [self timeStamp];
+
 		decoder = dec;
 		pageSize = getpagesize();
-		imagePath = path;
 #ifdef LIBJPEG
 		if(decoder == libjpegIncremental) {
 			[self jpegInitFile:path];
@@ -250,8 +277,14 @@ static CGColorSpaceRef colorSpace;
 #endif		
 		{
 			mapWholeFile = YES;
-			[self decodeImageURL:[NSURL fileURLWithPath:imagePath]];
+			[self decodeImageURL:[NSURL fileURLWithPath:path]];
 		}
+		finishTime = [self timeStamp];
+		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
+
+#ifndef NDEBUG
+		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
 	}
 	return self;
 }
@@ -267,19 +300,52 @@ static CGColorSpaceRef colorSpace;
 #endif
 		{
 			mapWholeFile = YES;
+			[self createImageFile];
 		}
 	}
 	return self;
 }
 - (void)dealloc
 {
-		for(int idx=0; idx<ZOOM_LEVELS;++idx) {
-			int fd = ims[idx].map.fd;
-			if(fd>0) close(fd);
-		}
+	for(int idx=0; idx<ZOOM_LEVELS;++idx) {
+		int fd = ims[idx].map.fd;
+		if(fd>0) close(fd);
+	}
+	if(imageFile) fclose(imageFile);
+	if(imagePath) unlink([imagePath fileSystemRepresentation]);
 #ifdef LIBJPEG
 	if(src_mgr.cinfo.src) jpeg_destroy_decompress(&src_mgr.cinfo);
+	
 #endif
+}
+
+- (uint64_t)timeStamp
+{
+	return mach_absolute_time();
+}
+
+- (void)appendToImageFile:(NSData *)data
+{
+	if(!failed) {
+		fwrite([data bytes], [data length], 1, imageFile);
+	}
+}
+
+- (void)dataFinished
+{
+	if(!failed) {
+		startTime = [self timeStamp];
+
+		fclose(imageFile), imageFile = NULL;
+		[self decodeImageURL:[NSURL fileURLWithPath:imagePath]];
+		unlink([imagePath fileSystemRepresentation]), imagePath = NULL;
+		
+		finishTime = [self timeStamp];
+		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
+#ifndef NDEBUG
+		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
+	}
 }
 
 #ifdef LIBJPEG
@@ -296,7 +362,7 @@ static CGColorSpaceRef colorSpace;
 	if(ret == -1) {
 		NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
 	}
-	if ((infile = fdopen(jfd, "r")) == NULL) {
+	if ((imageFile = fdopen(jfd, "r")) == NULL) {
 		NSLog(@"Error: failed to fdopen input image file \"%s\" for reading (%d).", file, errno);
 		jpeg_destroy_decompress(&src_mgr.cinfo);
 		close(jfd);
@@ -320,7 +386,7 @@ static CGColorSpaceRef colorSpace;
 		jpeg_create_decompress(&src_mgr.cinfo);
 
 		/* Step 2: specify data source (eg, a file) */
-		jpeg_stdio_src(&src_mgr.cinfo, infile);
+		jpeg_stdio_src(&src_mgr.cinfo, imageFile);
 
 		/* Step 3: read file parameters with jpeg_read_header() */
 		(void) jpeg_read_header(&src_mgr.cinfo, TRUE);
@@ -347,7 +413,7 @@ static CGColorSpaceRef colorSpace;
 	jpeg_destroy_decompress(&src_mgr.cinfo);
 	src_mgr.cinfo.src = NULL;	// dealloc tests
 
-	fclose(infile), infile = NULL;
+	fclose(imageFile), imageFile = NULL;
 }
 
 - (void)jpegInitNetwork
@@ -463,7 +529,7 @@ static CGColorSpaceRef colorSpace;
 			ims[0].map.mappedSize = tmpMapSize;
 			ims[0].map.addr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);
 			if(ims[0].map.addr == MAP_FAILED) {
-				NSLog(@"errno=%s", strerror(errno) );
+				NSLog(@"errno1=%s", strerror(errno) );
 				failed = YES;
 				ims[0].map.addr = NULL;
 				ims[0].map.mappedSize = 0;
@@ -498,7 +564,7 @@ static CGColorSpaceRef colorSpace;
 				im->map.mappedSize = tmpMapSize;
 				im->map.addr = mmap(NULL, im->map.mappedSize, PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, offset); // write only 
 				if(im->map.addr == MAP_FAILED) {
-					NSLog(@"errno=%s", strerror(errno) );
+					NSLog(@"errno2=%s", strerror(errno) );
 					failed = YES;
 					im->map.addr = NULL;
 					im->map.mappedSize = 0;
@@ -584,6 +650,7 @@ static CGColorSpaceRef colorSpace;
 		}
 	}
 }
+
 - (void)decodeImageData:(NSData *)data
 {
 #ifdef LIBJPEG_TURBO
@@ -617,21 +684,8 @@ static CGColorSpaceRef colorSpace;
 		}
 	} else
 #endif
-	if(decoder == cgimageDecoder) {
-		failed = YES;
-		CGImageSourceRef imageSourcRef = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
-		if(imageSourcRef) {
-			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
-			CFRelease(imageSourcRef), imageSourcRef = NULL;
-			
-			if(image) {
-				failed = NO;
-				[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
-				// NSLog(@"DRAW IMAGE");
-				[self drawImage:image];
-				CGImageRelease(image);
-			}
-		}
+	{
+		assert(0);
 	}
 
 	if(!failed) [self run];
@@ -642,6 +696,49 @@ static CGColorSpaceRef colorSpace;
 	return CGSizeMake(ims[0].map.width, ims[0].map.height);
 }
 
+- (BOOL)createImageFile
+{
+	BOOL success;
+	int fd = [self createTempFile:NO];
+	if(fd == -1) {
+		failed = YES;
+		success = NO;
+	} else {
+
+		int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
+		if(ret == -1) {
+			NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
+		}
+		if ((imageFile = fdopen(fd, "r+")) == NULL) {
+			NSLog(@"Error: failed to fdopen image file \"%@\" for \"r+\" (%d).", imagePath, errno);
+			close(fd);
+			failed = YES;
+			success = NO;
+		} else {
+			success = YES;
+		}
+	}
+	return success;
+}
+
+- (int)createTempFile:(BOOL)unlinkFile
+{
+	char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"psXXXXXX"] fileSystemRepresentation]);
+	int fd = mkstemp(template);
+	if(fd == -1) {
+		failed = YES;
+		NSLog(@"OPEN failed file %s %s", template, strerror(errno));
+	} else {
+		if(unlinkFile) {
+			unlink(template);	// so it goes away when the fd is closed or on a crash
+		} else {
+			imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
+		}
+	}
+	free(template);
+
+	return fd;
+}
 - (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h
 {
 	imageMemory *imsP = &ims[idx];
@@ -662,17 +759,9 @@ static CGColorSpaceRef colorSpace;
 	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
 	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;	// may need temp space
 
-	if(!mapP->fd) {
-		char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"psXXXXXX"] fileSystemRepresentation]);
-		mapP->fd = mkstemp(template);
-		if(mapP->fd == -1) {
-			free(template);
-			failed = YES;
-			NSLog(@"OPEN failed file %s %s", template, strerror(errno));
-			return;
-		}
-		unlink(template);	// so it goes away when the fd is closed or on a crash
-		free(template);
+	if(mapP->fd <= 0) {
+		mapP->fd = [self createTempFile:YES];
+		if(mapP->fd == -1) return;
 
 		// have to expand the file to correct size first
 		lseek(mapP->fd, mapP->mappedSize - 1, SEEK_SET);
@@ -686,7 +775,7 @@ static CGColorSpaceRef colorSpace;
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
 		if(mapP->emptyAddr == MAP_FAILED) {
 			failed = YES;
-			NSLog(@"errno=%s", strerror(errno) );
+			NSLog(@"errno3=%s", strerror(errno) );
 			mapP->emptyAddr = NULL;
 			mapP->addr = NULL;
 			mapP->mappedSize = 0;
@@ -830,7 +919,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	// Don't think caching here would help but didn't test myself.
 	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->map.fd, (im->row*im->cols + im->col) * mapSize);  /*| MAP_NOCACHE */
 	if(startPtr == MAP_FAILED) {
-		NSLog(@"errno=%s", strerror(errno) );
+		NSLog(@"errno4=%s", strerror(errno) );
 		return 0;
 	}
 
