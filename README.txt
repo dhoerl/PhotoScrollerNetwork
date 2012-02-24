@@ -15,10 +15,14 @@ This sample code:
 - Turbo target lets you test with 3 techniques for both downloads and local file processing using CGImageSourceRef, libturbojpef, and incremental decode using libjpeg (turbo version)
 - the incremental approach uses mmap, only maps small parts of the image at a time, and does its processing as the image downloads and can thus handle very large images
 - averages the decode time for all 3 technologies
+- production quality - all "PhotoScroller/Classes" source being used in an upcoming Lot18 app (except PhotoViewController, which was absorbed into another class)
 
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v1.6:
+- set the blend mode on the context as Apple does in QA1708
 
 v1.5:
 - zoomLevels is now a run time value - set it to 1 if you have a low-resolution image, then replace the TileView with a real zooming level later
