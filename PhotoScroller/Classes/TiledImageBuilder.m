@@ -826,6 +826,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		assert(ims[0].map.addr);
 		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little);	// BRGA flipped (little Endian)
 		assert(context);
+		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
 		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
 
