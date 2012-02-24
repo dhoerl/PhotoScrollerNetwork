@@ -39,17 +39,19 @@
 #import "Common.h"
 
 @interface TiledImageBuilder : NSObject
+@property (nonatomic, assign) NSUInteger zoomLevels;			// explose the init setting
 @property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started decoding
 @property (nonatomic, assign) uint64_t finishTime;				// time stamp of when this operation finished  decoding
-@property (nonatomic, assign) uint32_t milliSeconds;						// elapsed time
-@property (nonatomic, assign, readonly) BOOL failed;
+@property (nonatomic, assign) uint32_t milliSeconds;			// elapsed time
+@property (nonatomic, assign, readonly) BOOL failed;			// global Error flags
 
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder;
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec;
+- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels;
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels;
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
 
 - (CGSize)imageSize;
 
-- (CGImageRef)imageForScale:(CGFloat)scale row:(int)row col:(int)col;
+- (CGImageRef)newImageForScale:(CGFloat)scale row:(int)row col:(int)col;
 - (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col;
 
 #ifdef LIBJPEG

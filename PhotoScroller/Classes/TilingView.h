@@ -38,7 +38,7 @@
 @class TiledImageBuilder;
 
 @interface TilingView : UIView
-@property (assign) BOOL annotates;
+@property (nonatomic, assign) BOOL annotates;
 
 - (id)initWithImageBuilder:(TiledImageBuilder *)imageBuilder;
 - (CGSize)imageSize;

@@ -206,11 +206,12 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	delta *= info.numer;
 	delta /= info.denom;
 
-	return delta / 1e6; // ms
+	return (uint64_t)((double)delta / 1e6); // ms
 }
 
 @interface TiledImageBuilder ()
 
+- (void)decodeImage:(CGImageRef)image;
 - (void)decodeImageURL:(NSURL *)url;
 - (void)decodeImageData:(NSData *)data;
 
@@ -238,7 +239,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	FILE *imageFile;
 
 	size_t pageSize;
-	imageMemory ims[ZOOM_LEVELS];
+	imageMemory *ims;
 	imageDecoder decoder;
 	BOOL mapWholeFile;
 	BOOL deleteImageFile;
@@ -251,6 +252,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	unsigned char		*scanLines[SCAN_LINE_MAX];
 #endif
 }
+@synthesize zoomLevels;
 @synthesize failed;
 @synthesize startTime;
 @synthesize finishTime;
@@ -263,11 +265,36 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	}
 }
 
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec
+- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels
 {
 	if((self = [super init])) {
 		startTime = [self timeStamp];
 
+		zoomLevels = levels;
+		ims = calloc(zoomLevels, sizeof(imageMemory));
+		decoder = cgimageDecoder;
+		pageSize = getpagesize();
+		{
+			mapWholeFile = YES;
+			[self decodeImage:image];
+		}
+		finishTime = [self timeStamp];
+		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
+
+#ifndef NDEBUG
+		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
+	}
+	return self;
+}
+
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec levels:(NSUInteger)levels
+{
+	if((self = [super init])) {
+		startTime = [self timeStamp];
+
+		zoomLevels = levels;
+		ims = calloc(zoomLevels, sizeof(imageMemory));
 		decoder = dec;
 		pageSize = getpagesize();
 #ifdef LIBJPEG
@@ -288,9 +315,11 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	}
 	return self;
 }
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels
 {
 	if((self = [super init])) {
+		zoomLevels = levels;
+		ims = calloc(zoomLevels, sizeof(imageMemory));
 		decoder = dec;
 		pageSize = getpagesize();
 #ifdef LIBJPEG
@@ -307,15 +336,16 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 }
 - (void)dealloc
 {
-	for(int idx=0; idx<ZOOM_LEVELS;++idx) {
+	for(NSUInteger idx=0; idx<zoomLevels;++idx) {
 		int fd = ims[idx].map.fd;
 		if(fd>0) close(fd);
 	}
+	free(ims);
+
 	if(imageFile) fclose(imageFile);
 	if(imagePath) unlink([imagePath fileSystemRepresentation]);
 #ifdef LIBJPEG
 	if(src_mgr.cinfo.src) jpeg_destroy_decompress(&src_mgr.cinfo);
-	
 #endif
 }
 
@@ -399,7 +429,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		
 		// Create files
 		size_t scale = 1;
-		for(size_t idx=0; idx<ZOOM_LEVELS; ++idx) {
+		for(size_t idx=0; idx<zoomLevels; ++idx) {
 			[self mapMemoryForIndex:idx width:src_mgr.cinfo.image_width/scale height:src_mgr.cinfo.image_height/scale];
 			if(failed) break;
 			scale *= 2;
@@ -494,7 +524,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 			// Create files
 			size_t scale = 1;
-			for(size_t idx=0; idx<ZOOM_LEVELS; ++idx) {
+			for(size_t idx=0; idx<zoomLevels; ++idx) {
 				[self mapMemoryForIndex:idx width:src_mgr.cinfo.image_width/scale height:src_mgr.cinfo.image_height/scale];
 				scale *= 2;
 			}
@@ -550,7 +580,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		if(!(src_mgr.writtenLines & 1)) {
 			size_t scale = 2;
 			imageMemory *im = &ims[1];
-			for(size_t idx=1; idx<ZOOM_LEVELS; ++idx, scale *= 2, ++im) {
+			for(size_t idx=1; idx<zoomLevels; ++idx, scale *= 2, ++im) {
 				if(src_mgr.writtenLines & (scale-1)) break;
 
 				im->outLine = src_mgr.writtenLines/scale;
@@ -606,7 +636,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 - (BOOL)partialTile:(BOOL)final
 {
 	imageMemory *im = ims;
-	for(size_t idx=0; idx<ZOOM_LEVELS; ++idx, ++im) {
+	for(size_t idx=0; idx<zoomLevels; ++idx, ++im) {
 		// got enought to tile one row now?
 		if(final || (im->outLine && !(im->outLine % TILE_SIZE))) {
 			size_t rows = im->rows;		// cheat
@@ -641,13 +671,20 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			CFRelease(imageSourcRef), imageSourcRef = NULL;
 			if(image) {
 				failed = NO;
-				[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
-			
-				[self drawImage:image];
+				[self decodeImage:image];
 				CGImageRelease(image);
-				if(!failed) [self run];
 			}
 		}
+	}
+}
+
+- (void)decodeImage:(CGImageRef)image
+{
+	if(decoder == cgimageDecoder) {
+		[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
+
+		[self drawImage:image];
+		if(!failed) [self run];
 	}
 }
 
@@ -801,7 +838,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	mapper *lastMap = NULL;
 	mapper *currMap = NULL;
 
-	for(size_t idx=0; idx < ZOOM_LEVELS; ++idx) {
+	for(NSUInteger idx=0; idx < zoomLevels; ++idx) {
 		lastMap = currMap;	// unused first loop
 		currMap = &ims[idx].map;
 		if(idx) {
@@ -853,7 +890,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			if(!ret) goto eRR;
 		}
 	}
-	failed = !tileBuilder(&ims[ZOOM_LEVELS-1], NO);
+assert(zoomLevels == 4);
+	failed = !tileBuilder(&ims[zoomLevels-1], NO);
 	return;
 	
   eRR:
@@ -863,12 +901,12 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col
 {
-	CGImageRef image = [self imageForScale:scale row:row col:col];
+	CGImageRef image = [self newImageForScale:scale row:row col:col];
 	UIImage *img = [UIImage imageWithCGImage:image];
 	CGImageRelease(image);
 	return img;
 }
-- (CGImageRef)imageForScale:(CGFloat)scale row:(int)row col:(int)col
+- (CGImageRef)newImageForScale:(CGFloat)scale row:(int)row col:(int)col
 {
 	if(failed) return nil;
 
@@ -958,9 +996,9 @@ static BOOL tileBuilder(imageMemory *im, BOOL useMMAP)
 		} else {
 			tileIptr = iptr;
 		}
-		for(int col=0; col<im->cols; ++col) {
+		for(size_t col=0; col<im->cols; ++col) {
 			unsigned char *lastIptr = iptr;
-			for(int i=0; i<tileDimension; ++i) {
+			for(size_t i=0; i<tileDimension; ++i) {
 				memcpy(optr, iptr, tileBytesPerRow);
 				iptr += im->map.bytesPerRow;
 				optr += tileBytesPerRow;

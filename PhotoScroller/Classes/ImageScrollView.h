@@ -38,7 +38,9 @@
 @class TiledImageBuilder;
 
 @interface ImageScrollView : UIScrollView <UIScrollViewDelegate>
-@property (assign) NSUInteger index;
+@property (nonatomic, assign) BOOL aspectFill;
+
+- (UIView *)imageView;
 
 - (void)displayTiledImage:(TiledImageBuilder *)tiledImage;
 - (void)setMaxMinZoomScalesForCurrentBounds;

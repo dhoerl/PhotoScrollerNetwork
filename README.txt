@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-v 1.4 Feb 20, 2012
+v 1.5 Feb 23, 2012
 
 This sample code:
 
@@ -19,6 +19,10 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v1.5:
+- zoomLevels is now a run time value - set it to 1 if you have a low-resolution image, then replace the TileView with a real zooming level later
+- name change so Xcode 4.3 "Analyze" doesn't complain
 
 v 1.4:
 - cgimageref and libturbojpeg fetchers write incoming data to a file, cgimageref decodes from a URL and for turbo data loaded into a NSData object then decoded

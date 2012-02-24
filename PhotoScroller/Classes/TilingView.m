@@ -71,7 +71,7 @@
         tb = imageBuilder;
 
         CATiledLayer *tiledLayer = (CATiledLayer *)[self layer];
-        tiledLayer.levelsOfDetail = ZOOM_LEVELS;
+        tiledLayer.levelsOfDetail = imageBuilder.zoomLevels;
 		
 		self.opaque = YES;
 		self.clearsContextBeforeDrawing = NO;
@@ -98,14 +98,14 @@
 	CGFloat col = box.origin.x * scale / tileSize.width;
 	CGFloat row = box.origin.y * scale / tileSize.height;
 
-	CGImageRef image = [tb imageForScale:scale row:lrintf(row) col:lrintf(col)];
+	CGImageRef image = [tb newImageForScale:scale row:lrintf(row) col:lrintf(col)];
 	box.origin.y = 0;
 	CGContextDrawImage(context, box, image);
 	CFRelease(image);
 
 	if(self.annotates) {
 		CGContextSetStrokeColorWithColor(context, [[UIColor whiteColor] CGColor]);
-		CGContextSetLineWidth(context, 6.0 / scale);
+		CGContextSetLineWidth(context, 6.0f / scale);
 		CGContextStrokeRect(context, box);
 	}
 }

@@ -72,6 +72,7 @@
 @synthesize url;
 @synthesize imageBuilder;
 @synthesize decoder;
+@synthesize zoomLevels;
 
 - (BOOL)isConcurrent { return YES; }
 - (BOOL)isExecuting { return executing; }
@@ -204,7 +205,7 @@
 	}
 #endif
 	
-	imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:decoder];
+	imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:decoder levels:zoomLevels];
 }
 
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data

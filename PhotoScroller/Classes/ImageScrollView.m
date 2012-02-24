@@ -41,9 +41,11 @@
 
 @implementation ImageScrollView
 {
-    UIView        *imageView;
+    UIView *imageView;
 }
-@synthesize index;
+@synthesize aspectFill;
+
+- (UIView *)imageView { return imageView;}
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -51,7 +53,7 @@
         self.showsVerticalScrollIndicator = NO;
         self.showsHorizontalScrollIndicator = NO;
         self.bouncesZoom = YES;
-        self.decelerationRate = UIScrollViewDecelerationRateFast;
+        self.decelerationRate = UIScrollViewDecelerationRateNormal; // DFH UIScrollViewDecelerationRateFast;
         self.delegate = self;        
     }
     return self;
@@ -150,11 +152,17 @@
     // calculate min/max zoomscale
     CGFloat xScale = boundsSize.width / imageSize.width;    // the scale needed to perfectly fit the image width-wise
     CGFloat yScale = boundsSize.height / imageSize.height;  // the scale needed to perfectly fit the image height-wise
-    CGFloat minScale = MIN(xScale, yScale);                 // use minimum of these to allow the image to become fully visible
+
+    CGFloat minScale;
+	if(aspectFill) {
+		minScale = MAX(xScale, yScale);						// use max of these to allow the image to fill the screen
+	} else {
+		minScale = MIN(xScale, yScale);                 // use minimum of these to allow the image to become fully visible
+	}
     
     // on high resolution screens we have double the pixel density, so we will be seeing every pixel if we limit the
     // maximum zoom scale to 0.5.
-    CGFloat maxScale = 1.0 / [[UIScreen mainScreen] scale];
+    CGFloat maxScale = 1.0f / [[UIScreen mainScreen] scale];
     
     // don't let minScale exceed maxScale. (If the image is smaller than the screen, we don't want to force it to be zoomed.) 
     if (minScale > maxScale) {
@@ -212,8 +220,8 @@
     // 2a: convert our desired center point back to our own coordinate space
     CGPoint boundsCenter = [self convertPoint:oldCenter fromView:imageView];
     // 2b: calculate the content offset that would yield that center point
-    CGPoint offset = CGPointMake(boundsCenter.x - self.bounds.size.width / 2.0, 
-                                 boundsCenter.y - self.bounds.size.height / 2.0);
+    CGPoint offset = CGPointMake(boundsCenter.x - self.bounds.size.width / 2.0f, 
+                                 boundsCenter.y - self.bounds.size.height / 2.0f);
     // 2c: restore offset, adjusted to be within the allowable range
     CGPoint maxOffset = [self maximumContentOffset];
     CGPoint minOffset = [self minimumContentOffset];

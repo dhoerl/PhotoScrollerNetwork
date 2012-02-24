@@ -50,6 +50,8 @@ translucent  property YES/NO
 
 static char *runnerContext = "runnerContext";
 
+#define ZOOM_LEVELS		4
+
 @interface PhotoViewController ()
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (nonatomic, strong) NSMutableSet *operations;
@@ -69,7 +71,6 @@ static char *runnerContext = "runnerContext";
 
 - (NSUInteger)imageCount;
 - (NSString *)imageNameAtIndex:(NSUInteger)index;
-- (CGSize)imageSizeAtIndex:(NSUInteger)index;
 
 - (void)constructStaticImages;
 - (void)fetchWebImages;
@@ -79,6 +80,7 @@ static char *runnerContext = "runnerContext";
 @implementation PhotoViewController
 {
 	IBOutlet UIActivityIndicatorView *spinner;
+	IBOutlet UIToolbar *toolbar;
 
     UIScrollView	*pagingScrollView;
     
@@ -102,6 +104,73 @@ static char *runnerContext = "runnerContext";
 #pragma mark -
 #pragma mark View loading and unloading
 
+- (IBAction)userDidTap:(id)sender
+{
+	NSLog(@"userDidTap");
+	NSUInteger index = NSNotFound;
+	for(NSUInteger i=0; i<[self imageCount]; ++i) {
+		if([self isDisplayingPageForIndex:i]) {
+			NSLog(@"DISPLAYING %d", i);
+			index = i;
+			break;
+		}
+	}
+	if(index != NSNotFound) {
+		for (ImageScrollView *page in visiblePages) {
+			if (page.tag == index) {
+				
+				CGRect r;
+				
+				r = [page.imageView convertRect:page.frame toView:nil];
+				NSLog(@"FRAME->WINDOW %@", NSStringFromCGRect(r) );
+				
+				//r = [page.imageView convertRect:page.bounds toView:nil];
+				//NSLog(@"BOUNDS->WINDOW %@", NSStringFromCGRect(r) );
+
+				NSLog(@"offset=%@ size=%@", NSStringFromCGPoint(page.contentOffset), NSStringFromCGSize(page.contentSize) );
+				
+				UIImageView *iv = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"Lake.jpg"]];
+				iv.frame = CGRectMake(0, r.origin.y, page.contentSize.width, page.contentSize.height);
+				
+				//UIWindow *window = self.view.window;
+				//NSLog(@"windowFrame %@", NSStringFromCGRect(window.frame) );
+				//[pagingScrollView removeFromSuperview];
+				[self.view.window addSubview:iv];
+				
+				toolbar.alpha = 0;
+				[self.view.window addSubview:toolbar];
+				toolbar.frame = CGRectMake(0, 480 - 44, 320, 44);
+				
+				for(int i=2; i<5; ++i) {
+					UIBarButtonItem *item = [toolbar.items objectAtIndex:i];
+					UIActivityIndicatorView *spnr = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
+					item.customView = spnr;
+					[spnr startAnimating];
+				}
+
+				page.hidden = YES;
+				
+				r.origin.y = 0;
+				r.origin.x = -160;
+				r.size.height = 480;
+				r.size.width = 640;
+				[UIView animateWithDuration:0.25f animations:^
+					{
+						[[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationFade]; //iOS4
+						[self.navigationController setNavigationBarHidden:YES animated:YES];
+
+						iv.frame = r;
+						toolbar.alpha = 1.0;
+					} ];
+
+
+				//animateWithDuration:(NSTimeInterval)duration delay:(NSTimeInterval)delay options:(UIViewAnimationOptions)options animations:(void (^)(void))animations completion:(void (^)(BOOL finished))completion
+
+				break;
+			}
+		}
+	}
+}
 - (void)viewDidLoad 
 {
 	[spinner startAnimating];
@@ -121,11 +190,15 @@ static char *runnerContext = "runnerContext";
 	} else {
 		[self constructStaticImages];
 	}
+	
+	UITapGestureRecognizer *tgr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(userDidTap:)];
+	[pagingScrollView addGestureRecognizer:tgr];
 }
 
 - (void)viewDidUnload
 {
 	spinner = nil;
+	toolbar = nil;
     [super viewDidUnload];
 
     pagingScrollView = nil;
@@ -215,7 +288,7 @@ static char *runnerContext = "runnerContext";
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
-				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder];
+				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder levels:ZOOM_LEVELS];
 				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; milliSeconds += tb.milliSeconds; });
 			} );
 	}
@@ -246,6 +319,7 @@ static char *runnerContext = "runnerContext";
 		op.url = [NSURL URLWithString:path];
 		op.decoder = decoder;
 		op.index = idx;
+		op.zoomLevels = ZOOM_LEVELS;
 
 		// Order is important here
 		[op addObserver:self forKeyPath:@"isFinished" options:0 context:runnerContext];	// First, observe isFinished
@@ -266,7 +340,7 @@ static char *runnerContext = "runnerContext";
     
     // Recycle no-longer-visible pages 
     for (ImageScrollView *page in visiblePages) {
-        if (page.index < firstNeededPageIndex || page.index > lastNeededPageIndex) {
+        if (page.tag < firstNeededPageIndex || page.tag > lastNeededPageIndex) {
             [recycledPages addObject:page];
             [page removeFromSuperview];
         }
@@ -300,7 +374,7 @@ static char *runnerContext = "runnerContext";
 {
     BOOL foundPage = NO;
     for (ImageScrollView *page in visiblePages) {
-        if (page.index == index) {
+        if (page.tag == index) {
             foundPage = YES;
             break;
         }
@@ -310,7 +384,7 @@ static char *runnerContext = "runnerContext";
 
 - (void)configurePage:(ImageScrollView *)page forIndex:(NSUInteger)index
 {
-    page.index = index;
+    page.tag = index;
     page.frame = [self frameForPageAtIndex:index];
     
     // Use tiled images
@@ -359,7 +433,7 @@ static char *runnerContext = "runnerContext";
     for (ImageScrollView *page in visiblePages) {
         CGPoint restorePoint = [page pointToCenterAfterRotation];
         CGFloat restoreScale = [page scaleToRestoreAfterRotation];
-        page.frame = [self frameForPageAtIndex:page.index];
+        page.frame = [self frameForPageAtIndex:page.tag];
         [page setMaxMinZoomScalesForCurrentBounds];
         [page restoreCenterPoint:restorePoint scale:restoreScale];
         
@@ -459,6 +533,7 @@ static char *runnerContext = "runnerContext";
     return name;
 }
 
+#if 0
 - (CGSize)imageSizeAtIndex:(NSUInteger)index
 {
     CGSize size = CGSizeZero;
@@ -469,6 +544,7 @@ static char *runnerContext = "runnerContext";
     }
     return size;
 }
+#endif
 
 - (NSUInteger)imageCount
 {
