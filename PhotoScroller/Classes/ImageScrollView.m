@@ -40,12 +40,8 @@
 #import "TiledImageBuilder.h"
 
 @implementation ImageScrollView
-{
-    UIView *imageView;
-}
+@synthesize imageView;
 @synthesize aspectFill;
-
-- (UIView *)imageView { return imageView;}
 
 - (id)initWithFrame:(CGRect)frame
 {

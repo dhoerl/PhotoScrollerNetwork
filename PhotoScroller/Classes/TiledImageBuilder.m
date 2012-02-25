@@ -230,6 +230,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 
 - (uint64_t)timeStamp;
+- (uint64_t)freeDiskspace;
 
 @end
 
@@ -891,7 +892,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			if(!ret) goto eRR;
 		}
 	}
-assert(zoomLevels == 4);
+	assert(zoomLevels);
 	failed = !tileBuilder(&ims[zoomLevels-1], NO);
 	return;
 	
@@ -942,6 +943,28 @@ assert(zoomLevels == 4);
 	);
 	CGDataProviderRelease(dataProvider);
 	return image;
+}
+
+- (uint64_t)freeDiskspace
+{
+    uint64_t totalSpace = 0;
+    uint64_t totalFreeSpace = 0;
+
+    __autoreleasing NSError *error = nil;  
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);  
+    NSDictionary *dictionary = [[NSFileManager defaultManager] attributesOfFileSystemForPath:[paths lastObject] error: &error];  
+
+    if (dictionary) {  
+        NSNumber *fileSystemSizeInBytes = [dictionary objectForKey: NSFileSystemSize];  
+        NSNumber *freeFileSystemSizeInBytes = [dictionary objectForKey:NSFileSystemFreeSize];
+        totalSpace = [fileSystemSizeInBytes unsignedLongLongValue];
+        totalFreeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
+        NSLog(@"Memory Capacity of %llu MiB with %llu MiB Free memory available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
+    } else {  
+        NSLog(@"Error Obtaining System Memory Info: Domain = %@, Code = %@", [error domain], [error code]);  
+    }  
+
+    return totalFreeSpace;
 }
 
 @end
