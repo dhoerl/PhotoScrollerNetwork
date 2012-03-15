@@ -761,7 +761,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (int)createTempFile:(BOOL)unlinkFile
 {
-	char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"psXXXXXX"] fileSystemRepresentation]);
+	char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"imXXXXXX"] fileSystemRepresentation]);
 	int fd = mkstemp(template);
 	if(fd == -1) {
 		failed = YES;
