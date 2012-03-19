@@ -212,6 +212,13 @@ static char *runnerContext = "runnerContext";
 	[self cancelNow:nil];
 }
 
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+
+	NSLog(@"Yikes! PhotoViewController didReceiveMemoryWarning!");
+}
+
 - (IBAction)cancelNow:(id)sender
 {
 	[operations enumerateObjectsUsingBlock:^(id obj, BOOL *stop) { [obj removeObserver:self forKeyPath:@"isFinished"]; }];   

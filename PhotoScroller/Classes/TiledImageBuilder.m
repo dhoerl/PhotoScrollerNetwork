@@ -35,7 +35,13 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <mach/mach_time.h>	
+#define MEMORY_DEBUGGING	0		// set to 1 if you want to see how memory changes when images are processed (non Turbo)
+#define USE_VIMAGE			0		// set to 1 if you want vImage to downsize images (slightly better quality, much much slower)
+
+#include <mach/mach.h>			// freeMemory
+#include <mach/mach_host.h>		// freeMemory
+#include <mach/mach_time.h>		// time metrics
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -43,7 +49,6 @@
 #include <sys/mount.h>
 #include <sys/sysctl.h>
 
-#define USE_VIMAGE 0
 
 #if USE_VIMAGE == 1
 #import <Accelerate/Accelerate.h>
@@ -93,6 +98,13 @@ typedef struct {
 	size_t bytesPerRow;
 	size_t emptyTileRowSize;
 } mapper;
+
+typedef struct {
+	size_t freeMemory;
+	size_t usedMemory;
+	size_t totlMemory;
+} freeMemory;
+
 
 #ifndef NDEBUG
 static void dumpMapper(const char *str, mapper *m)
@@ -231,6 +243,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (uint64_t)timeStamp;
 - (uint64_t)freeDiskspace;
+- (freeMemory)freeMemory;
 
 @end
 
@@ -684,7 +697,16 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	if(decoder == cgimageDecoder) {
 		[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
 
+#ifdef MEMORY_DEBUGGING
+		NSLog(@"Start[%p]: free disk space %llu", self, [self freeDiskspace]);
+		[self freeMemory];
+#endif
 		[self drawImage:image];
+#ifdef MEMORY_DEBUGGING
+		NSLog(@"End[%p]: free disk space %llu", self, [self freeDiskspace]);
+		[self freeMemory];
+#endif
+
 		if(!failed) [self run];
 	}
 }
@@ -830,7 +852,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
 		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
-
+#ifdef MEMORY_DEBUGGING
+		NSLog(@"Mid[%p]: free disk space %llu", self, [self freeDiskspace]);
+		[self freeMemory];
+#endif
 		CGContextRelease(context);
 	}
 }
@@ -945,8 +970,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	return image;
 }
 
+
 - (uint64_t)freeDiskspace
 {
+	// http://stackoverflow.com/questions/5712527
     uint64_t totalSpace = 0;
     uint64_t totalFreeSpace = 0;
 
@@ -959,12 +986,46 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
         NSNumber *freeFileSystemSizeInBytes = [dictionary objectForKey:NSFileSystemFreeSize];
         totalSpace = [fileSystemSizeInBytes unsignedLongLongValue];
         totalFreeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
-        NSLog(@"Memory Capacity of %llu MiB with %llu MiB Free memory available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
+        NSLog(@"Disk Capacity of %llu MiB with %llu MiB free disk available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
     } else {  
         NSLog(@"Error Obtaining System Memory Info: Domain = %@, Code = %@", [error domain], [error code]);  
     }  
 
     return totalFreeSpace;
+}
+
+- (freeMemory)freeMemory
+{
+	// http://stackoverflow.com/questions/5012886
+    mach_port_t host_port;
+    mach_msg_type_number_t host_size;
+    vm_size_t pagesize;
+	freeMemory fm = { 0, 0, 0 };
+
+    host_port = mach_host_self();
+    host_size = sizeof(vm_statistics_data_t) / sizeof(integer_t);
+    host_page_size(host_port, &pagesize);        
+
+    vm_statistics_data_t vm_stat;
+
+    if (host_statistics(host_port, HOST_VM_INFO, (host_info_t)&vm_stat, &host_size) != KERN_SUCCESS) {
+        NSLog(@"Failed to fetch vm statistics");
+	} else {
+		/* Stats in bytes */ 
+		natural_t mem_used = (vm_stat.active_count +
+							  vm_stat.inactive_count +
+							  vm_stat.wire_count) * pagesize;
+		natural_t mem_free = vm_stat.free_count * pagesize;
+		natural_t mem_total = mem_used + mem_free;
+		
+		freeMemory fm;
+		fm.freeMemory = (size_t)mem_free;
+		fm.usedMemory = (size_t)mem_used;
+		fm.totlMemory = (size_t)mem_total;
+		
+		NSLog(@"   Memory:  used: %u free: %u total: %u", (unsigned int)mem_used, (unsigned int)mem_free, (unsigned int)mem_total);
+	}
+	return fm;
 }
 
 @end

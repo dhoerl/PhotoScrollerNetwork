@@ -78,7 +78,8 @@
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
-    // Release any cached data, images, etc that aren't in use.
+
+	NSLog(@"Yikes! ViewController didReceiveMemoryWarning!");
 }
 
 #pragma mark - View lifecycle
