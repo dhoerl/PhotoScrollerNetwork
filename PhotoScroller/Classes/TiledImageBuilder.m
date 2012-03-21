@@ -697,12 +697,12 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	if(decoder == cgimageDecoder) {
 		[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
 
-#ifdef MEMORY_DEBUGGING
+#if MEMORY_DEBUGGING == 1
 		NSLog(@"Start[%p]: free disk space %llu", self, [self freeDiskspace]);
 		[self freeMemory];
 #endif
 		[self drawImage:image];
-#ifdef MEMORY_DEBUGGING
+#if MEMORY_DEBUGGING == 1
 		NSLog(@"End[%p]: free disk space %llu", self, [self freeDiskspace]);
 		[self freeMemory];
 #endif
@@ -852,7 +852,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
 		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
-#ifdef MEMORY_DEBUGGING
+#if MEMORY_DEBUGGING == 1
 		NSLog(@"Mid[%p]: free disk space %llu", self, [self freeDiskspace]);
 		[self freeMemory];
 #endif

@@ -104,6 +104,7 @@ static char *runnerContext = "runnerContext";
 #pragma mark -
 #pragma mark View loading and unloading
 
+#ifdef IMAGE_ZOOMING	
 - (IBAction)userDidTap:(id)sender
 {
 	NSLog(@"userDidTap");
@@ -171,6 +172,8 @@ static char *runnerContext = "runnerContext";
 		}
 	}
 }
+#endif // IMAGE_ZOOMING	
+
 - (void)viewDidLoad 
 {
 	[spinner startAnimating];
@@ -190,9 +193,10 @@ static char *runnerContext = "runnerContext";
 	} else {
 		[self constructStaticImages];
 	}
-	
+#ifdef IMAGE_ZOOMING	
 	UITapGestureRecognizer *tgr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(userDidTap:)];
 	[pagingScrollView addGestureRecognizer:tgr];
+#endif
 }
 
 - (void)viewDidUnload
