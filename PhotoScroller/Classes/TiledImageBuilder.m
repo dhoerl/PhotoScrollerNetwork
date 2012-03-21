@@ -1018,7 +1018,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		natural_t mem_free = vm_stat.free_count * pagesize;
 		natural_t mem_total = mem_used + mem_free;
 		
-		freeMemory fm;
 		fm.freeMemory = (size_t)mem_free;
 		fm.usedMemory = (size_t)mem_used;
 		fm.totlMemory = (size_t)mem_total;
