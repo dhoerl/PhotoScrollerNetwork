@@ -59,9 +59,6 @@
 @end
 
 @implementation ConcurrentOp
-{
-	void							*addr;
-}
 @synthesize index;
 @dynamic milliSeconds;
 @synthesize thread;
@@ -201,7 +198,7 @@
 #ifdef LIBJPEG
 	if(decoder == libjpegIncremental) {
 		// data may build up - the decoder consumes large chunks infrequently, we can then release the older not needed data
-		self.webData = [NSMutableData dataWithCapacity:100000];	// appears to be about right
+		self.webData = [NSMutableData dataWithCapacity:10000];	// appears to be about right
 	}
 #endif
 	

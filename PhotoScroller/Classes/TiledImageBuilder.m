@@ -55,12 +55,9 @@
 #endif
 
 #ifdef LIBJPEG	
-#include <jpeglib.h>
+#include "jpeglib.h"
+#include "turbojpeg.h"
 #include <setjmp.h>
-#endif
-
-#ifdef LIBJPEG_TURBO
-#include <turbojpeg.h>
 #endif
 
 #import <ImageIO/ImageIO.h>
@@ -671,7 +668,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 - (void)decodeImageURL:(NSURL *)url
 {
 	//NSLog(@"URL=%@", url);
-#ifdef LIBJPEG_TURBO
+#ifdef LIBJPEG
 	if(decoder == libjpegTurboDecoder) {
 		NSData *data = [NSData dataWithContentsOfURL:url];
 		[self decodeImageData:data];
@@ -713,14 +710,14 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (void)decodeImageData:(NSData *)data
 {
-#ifdef LIBJPEG_TURBO
+#ifdef LIBJPEG
 	if(decoder == libjpegTurboDecoder) {
 		tjhandle decompressor = tjInitDecompress();
 
 		unsigned char *jpegBuf = (unsigned char *)[data bytes];
 		unsigned long jpegSize = [data length];
 		int jwidth, jheight, jpegSubsamp;
-		failed = tjDecompressHeader2(decompressor,
+		failed = (BOOL)tjDecompressHeader2(decompressor,
 			jpegBuf,
 			jpegSize,
 			&jwidth,
@@ -730,7 +727,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		if(!failed) {
 			[self mapMemoryForIndex:0 width:jwidth height:jheight];
 
-			failed = tjDecompress2(decompressor,
+			failed = (BOOL)tjDecompress2(decompressor,
 				jpegBuf,
 				jpegSize,
 				ims[0].map.addr,
@@ -1161,7 +1158,7 @@ static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
 
 	if (num_bytes > 0) {
-		if(num_bytes <= src->pub.bytes_in_buffer) {
+		if(num_bytes <= (long)src->pub.bytes_in_buffer) {
 			//NSLog(@"SKIPPER1: %ld", num_bytes);
 			src->pub.next_input_byte += (size_t)num_bytes;
 			src->pub.bytes_in_buffer -= (size_t)num_bytes;

@@ -548,10 +548,7 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				HEADER_SEARCH_PATHS = libturbojpeg;
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				OTHER_CFLAGS = (
-					"-DLIBJPEG_TURBO",
-					"-DLIBJPEG",
-				);
+				OTHER_CFLAGS = "-DLIBJPEG";
 				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				WRAPPER_EXTENSION = app;
@@ -566,7 +563,6 @@
 				HEADER_SEARCH_PATHS = libturbojpeg;
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				OTHER_CFLAGS = (
-					"-DLIBJPEG_TURBO",
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-NDEBUG",
@@ -619,10 +615,7 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				HEADER_SEARCH_PATHS = libturbojpeg;
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				OTHER_CFLAGS = (
-					"-DLIBJPEG_TURBO",
-					"-DLIBJPEG",
-				);
+				OTHER_CFLAGS = "-DLIBJPEG";
 				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				WRAPPER_EXTENSION = app;

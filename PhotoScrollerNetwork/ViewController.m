@@ -88,19 +88,9 @@
 {
     [super viewDidLoad];
 
-#if defined(LIBJPEG) || defined(LIBJPEG_TURBO)
+#if defined(LIBJPEG)
 	technology.hidden = NO;
-	
-#if !defined(LIBJPEG_TURBO)
-	[technology setEnabled:NO forSegmentAtIndex:1];
-#endif
-
-#if !defined(LIBJPEG)
-	[technology setEnabled:NO forSegmentAtIndex:2];
-#endif
-
 #else
-
 	technology.hidden = YES;
 #endif
 }
