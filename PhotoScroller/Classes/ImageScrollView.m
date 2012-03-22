@@ -50,7 +50,7 @@
         self.showsHorizontalScrollIndicator = NO;
         self.bouncesZoom = YES;
         self.decelerationRate = UIScrollViewDecelerationRateNormal; // DFH UIScrollViewDecelerationRateFast;
-        self.delegate = self;        
+        self.delegate = self;
     }
     return self;
 }
@@ -111,34 +111,13 @@
     
     // make a new TilingView for the new image
     imageView = [[TilingView alloc] initWithImageBuilder:tiledImage];
-    [(TilingView *)imageView setAnnotates:YES]; // ** remove this line to remove the white tile grid **
+    ((TilingView *)imageView).annotates = ANNOTATE_TILES; // ** remove this line to remove the white tile grid **
     [self addSubview:imageView];
     
     self.contentSize = [tiledImage imageSize];
     [self setMaxMinZoomScalesForCurrentBounds];
     self.zoomScale = self.minimumZoomScale;
 }
-
-#if 0
-- (void)displayTiledImageNamed:(NSString *)imageName size:(CGSize)imageSize
-{
-    // clear the previous imageView
-    [imageView removeFromSuperview];
-    imageView = nil;
-    
-    // reset our zoomScale to 1.0 before doing any further calculations
-    self.zoomScale = 1.0;
-    
-    // make a new TilingView for the new image
-    imageView = [[TilingView alloc] initWithImageName:imageName size:imageSize];
-    [(TilingView *)imageView setAnnotates:YES]; // ** remove this line to remove the white tile grid **
-    [self addSubview:imageView];
-    
-    self.contentSize = imageSize;
-    [self setMaxMinZoomScalesForCurrentBounds];
-    self.zoomScale = self.minimumZoomScale;
-}
-#endif
 
 - (void)setMaxMinZoomScalesForCurrentBounds
 {
@@ -209,7 +188,6 @@
 {    
     // Step 1: restore zoom scale, first making sure it is within the allowable range.
     self.zoomScale = MIN(self.maximumZoomScale, MAX(self.minimumZoomScale, oldScale));
-    
     
     // Step 2: restore center point, first making sure it is within the allowable range.
     

@@ -47,10 +47,9 @@ translucent  property YES/NO
 #import "TiledImageBuilder.h"
 #import "ConcurrentOp.h"
 #import "AppDelegate.h"
+#import "PhotoScrollerCommon.h"
 
 static char *runnerContext = "runnerContext";
-
-#define ZOOM_LEVELS		4
 
 @interface PhotoViewController ()
 @property (nonatomic, strong) NSOperationQueue *queue;
@@ -252,7 +251,6 @@ static char *runnerContext = "runnerContext";
 
 - (void)operationDidFinish:(ConcurrentOp *)op
 {
-
 	// what you would want in real world situations below
 
 	// if you cancel the operation when its in the set, will hit this case
@@ -269,12 +267,16 @@ static char *runnerContext = "runnerContext";
 	// We either failed in setup or succeeded doing something.
 	// NSLog(@"Operation Succeeded: index=%d", op.index);
 	
+	// Note" probably a better strategy is to put the new images in their own array, then swap arrays when done
 	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
 
 	milliSeconds += op.milliSeconds;
 
 	if(![operations count]) {
 		[spinner stopAnimating];
+		
+		[visiblePages removeAllObjects];	// seems like a good idea
+		[recycledPages removeAllObjects];	// seems like a good idea
 		[self tilePages];
 	
 		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds/[self imageCount]];
@@ -444,10 +446,13 @@ static char *runnerContext = "runnerContext";
     for (ImageScrollView *page in visiblePages) {
         CGPoint restorePoint = [page pointToCenterAfterRotation];
         CGFloat restoreScale = [page scaleToRestoreAfterRotation];
+NSLog(@"ROTATE: 0 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
         page.frame = [self frameForPageAtIndex:page.tag];
+NSLog(@"ROTATE: 1 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
         [page setMaxMinZoomScalesForCurrentBounds];
+NSLog(@"ROTATE: 2 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
         [page restoreCenterPoint:restorePoint scale:restoreScale];
-        
+NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
     }
     
     // adjust contentOffset to preserve page location based on values collected prior to location

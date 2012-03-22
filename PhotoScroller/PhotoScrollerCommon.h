@@ -37,4 +37,6 @@
 
 typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
 
-#define TILE_SIZE	256		// could make larger or smaller, but power of 2
+#define ZOOM_LEVELS			 4
+#define TILE_SIZE			256		// could make larger or smaller, but power of 2
+#define ANNOTATE_TILES		YES

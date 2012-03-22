@@ -72,7 +72,6 @@
 
 /* Begin PBXFileReference section */
 		DE07428B14F0441500439550 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
-		DE33213714EC623500F92FE3 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		DE4AD92D14DC783D00D63E5A /* PhotoScrollerNetwork.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetwork.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE4AD93114DC783D00D63E5A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		DE4AD93314DC783D00D63E5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -116,6 +115,7 @@
 		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; };
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE588D8614E9433A00C7E151 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
+		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoScrollerCommon.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -211,6 +211,7 @@
 			children = (
 				DE4AD94F14DC788F00D63E5A /* Classes */,
 				DE4AD95B14DC788F00D63E5A /* MainWindow.xib */,
+				DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */,
 				DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */,
 				DE4AD95F14DC788F00D63E5A /* ImageData.plist */,
 				DE4AD96014DC788F00D63E5A /* Images */,
@@ -223,7 +224,6 @@
 			isa = PBXGroup;
 			children = (
 				DE4AD95614DC788F00D63E5A /* SaveMe.txt */,
-				DE33213714EC623500F92FE3 /* Common.h */,
 				DE4AD9C814DEE4DB00D63E5A /* ConcurrentOp.h */,
 				DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */,
 				DE4AD95214DC788F00D63E5A /* ImageScrollView.h */,

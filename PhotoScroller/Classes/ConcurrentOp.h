@@ -35,7 +35,7 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import "Common.h"
+#import "PhotoScrollerCommon.h"
 
 @class TiledImageBuilder;
 

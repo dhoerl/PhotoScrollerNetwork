@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-v 1.5 Feb 23, 2012
+Latest v 1.7 March 22, 2012
 
 This sample code:
 
@@ -20,6 +20,9 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v1.7:
+- renamed Common.h to PhotoScrollerCommon.h, moved it up one directory, makes it easier to just include the PhotoScroller Classes in other projects, in which case you create your own PhotoScrollerCommon.h with customized data
 
 v1.6:
 - set the blend mode on the context as Apple does in QA1708

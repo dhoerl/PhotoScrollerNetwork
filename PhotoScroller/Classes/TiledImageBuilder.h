@@ -36,7 +36,7 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import "Common.h"
+#import "PhotoScrollerCommon.h"
 
 @interface TiledImageBuilder : NSObject
 @property (nonatomic, assign) NSUInteger zoomLevels;			// explose the init setting
