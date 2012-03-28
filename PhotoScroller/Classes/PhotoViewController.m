@@ -42,6 +42,9 @@ barStyle  property UIBarStyleBlack
 translucent  property YES/NO
 */
 
+//#include <mach/mach.h>			// freeMemory
+#include <mach/mach_time.h>		// time metrics
+
 #import "PhotoViewController.h"
 #import "ImageScrollView.h"
 #import "TiledImageBuilder.h"
@@ -50,6 +53,9 @@ translucent  property YES/NO
 #import "PhotoScrollerCommon.h"
 
 static char *runnerContext = "runnerContext";
+
+// Compliments to Rainer Brockerhoff
+static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 @interface PhotoViewController ()
 @property (nonatomic, strong) NSOperationQueue *queue;
@@ -92,6 +98,7 @@ static char *runnerContext = "runnerContext";
 
 	NSMutableArray	*tileBuilders;
 	
+	uint64_t		startTime;
 	__block uint32_t milliSeconds;
 }
 @synthesize isWebTest;
@@ -279,7 +286,11 @@ static char *runnerContext = "runnerContext";
 		[recycledPages removeAllObjects];	// seems like a good idea
 		[self tilePages];
 	
-		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds/[self imageCount]];
+		uint64_t finishTime = mach_absolute_time();
+		uint32_t ms = (uint32_t)DeltaMAT(startTime, finishTime);
+		NSLog(@"ALL DONE: %u milliseconds", ms);
+
+		self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", ms];
 	}
 }
 
@@ -289,21 +300,25 @@ static char *runnerContext = "runnerContext";
 - (void)constructStaticImages
 {
 	dispatch_group_t group = dispatch_group_create();
-	dispatch_queue_t que = dispatch_queue_create("com.dfh.photoScroller", DISPATCH_QUEUE_SERIAL);
-	
+	dispatch_queue_t que = dispatch_queue_create("com.dfh.PhotoScroller", DISPATCH_QUEUE_SERIAL);
+
 	NSUInteger multiCore = [[NSProcessInfo processInfo] processorCount] - 1;
-	
 	for(NSUInteger idx=0; idx<[self imageCount]; ++idx) {
 		dispatch_async(que, ^{ [tileBuilders addObject:@""]; });
 		NSString *imageName = [self imageNameAtIndex:idx];
 		NSString *path = [[NSBundle mainBundle] pathForResource:imageName ofType:@"jpg"];
 
+#if 1 // Normal Case
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
 				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder levels:ZOOM_LEVELS];
 				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; milliSeconds += tb.milliSeconds; });
 			} );
+#else // You can now use temporary UIImageViews as placeholders while fetching or tiling the images
+		UIImageView *iv = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:path]];
+		dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:iv]; });
+#endif
 	}
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
 		{
@@ -321,6 +336,7 @@ static char *runnerContext = "runnerContext";
 
 - (void)fetchWebImages
 {
+	startTime = mach_absolute_time();
 	NSUInteger count = [self imageCount];
 	for(NSUInteger idx=0; idx<count; ++idx) {
 		[tileBuilders addObject:@""];
@@ -401,7 +417,7 @@ static char *runnerContext = "runnerContext";
     page.frame = [self frameForPageAtIndex:index];
     
     // Use tiled images
-    [page displayTiledImage:[tileBuilders objectAtIndex:index]];
+    [page displayObject:[tileBuilders objectAtIndex:index]];
 }
 
 
@@ -573,3 +589,19 @@ NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds
 
 
 @end
+
+static uint64_t DeltaMAT(uint64_t then, uint64_t now)
+{
+	uint64_t delta = now - then;
+
+	/* Get the timebase info */
+	mach_timebase_info_data_t info;
+	mach_timebase_info(&info);
+
+	/* Convert to nanoseconds */
+	delta *= info.numer;
+	delta /= info.denom;
+
+	return (uint64_t)((double)delta / 1e6); // ms
+}
+

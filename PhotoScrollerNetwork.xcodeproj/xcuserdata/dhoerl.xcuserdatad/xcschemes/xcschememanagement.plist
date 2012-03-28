@@ -4,10 +4,20 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>PhotoScrollerNetwork-iPad.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>PhotoScrollerNetwork.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
+		</dict>
+		<key>PhotoScrollerNetworkTurbo-iPad.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>3</integer>
 		</dict>
 		<key>PhotoScrollerNetworkTurbo.xcscheme</key>
 		<dict>
@@ -17,6 +27,16 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>DE3EC27F151CC50300921348</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>DE3EC2B0151CC50D00921348</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>DE4AD92C14DC783D00D63E5A</key>
 		<dict>
 			<key>primary</key>

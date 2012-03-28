@@ -35,11 +35,16 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#warning TODO: Saw CGSConvertXRGB8888toRGBA8888 in a stack trace, means we don't have the image properly defined for iOS
+
 #import "ImageScrollView.h"
 #import "TilingView.h"
 #import "TiledImageBuilder.h"
 
 @implementation ImageScrollView
+{
+	CGFloat scale;
+}
 @synthesize imageView;
 @synthesize aspectFill;
 
@@ -100,21 +105,38 @@
 #pragma mark -
 #pragma mark Configure scrollView to display new image (tiled or not)
 
-- (void)displayTiledImage:(TiledImageBuilder *)tiledImage
+- (void)displayObject:(id)obj
 {
+	CGSize size;
+
     // clear the previous imageView
-    [imageView removeFromSuperview];
-    imageView = nil;
+    [imageView removeFromSuperview], imageView = nil;
     
     // reset our zoomScale to 1.0 before doing any further calculations
     self.zoomScale = 1.0;
     
-    // make a new TilingView for the new image
-    imageView = [[TilingView alloc] initWithImageBuilder:tiledImage];
-    ((TilingView *)imageView).annotates = ANNOTATE_TILES; // ** remove this line to remove the white tile grid **
-    [self addSubview:imageView];
-    
-    self.contentSize = [tiledImage imageSize];
+	if([obj isKindOfClass:[TiledImageBuilder class]]) {
+		TiledImageBuilder *tiledImage = (TiledImageBuilder *)obj;
+		size = [tiledImage imageSize];
+
+		// make a new TilingView for the new image
+		TilingView *view = [[TilingView alloc] initWithImageBuilder:tiledImage];
+		view.annotates = ANNOTATE_TILES;
+		imageView =  view;
+		scale = [[UIScreen mainScreen] scale];
+	} else
+	if([obj isKindOfClass:[UIImageView class]]) {
+		UIImageView *iv = (UIImageView *)obj;
+		size = iv.image.size;
+		imageView = (UIView *)obj;
+		scale = 1;
+	} else {
+		assert(!"Not of the correct class");
+	}
+	
+	[self addSubview:imageView];
+	self.contentSize = size;
+	
     [self setMaxMinZoomScalesForCurrentBounds];
     self.zoomScale = self.minimumZoomScale;
 }
@@ -132,12 +154,12 @@
 	if(aspectFill) {
 		minScale = MAX(xScale, yScale);						// use max of these to allow the image to fill the screen
 	} else {
-		minScale = MIN(xScale, yScale);                 // use minimum of these to allow the image to become fully visible
+		minScale = MIN(xScale, yScale);						// use minimum of these to allow the image to become fully visible
 	}
     
     // on high resolution screens we have double the pixel density, so we will be seeing every pixel if we limit the
     // maximum zoom scale to 0.5.
-    CGFloat maxScale = 1.0f / [[UIScreen mainScreen] scale];
+    CGFloat maxScale = 1.0f / scale;
     
     // don't let minScale exceed maxScale. (If the image is smaller than the screen, we don't want to force it to be zoomed.) 
     if (minScale > maxScale) {

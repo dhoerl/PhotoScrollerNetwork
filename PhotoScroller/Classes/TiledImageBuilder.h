@@ -43,7 +43,10 @@
 @property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started decoding
 @property (nonatomic, assign) uint64_t finishTime;				// time stamp of when this operation finished  decoding
 @property (nonatomic, assign) uint32_t milliSeconds;			// elapsed time
+@property (nonatomic, assign) int32_t ubc_threshold;			// UBC threshold above which outstanding writes are flushed to the file system (dynamic default)
 @property (nonatomic, assign, readonly) BOOL failed;			// global Error flags
+
++ (void)setUbcThreshold:(float)val;								// default is 0.5 - that is, half of the available free memory pool
 
 - (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels;
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels;

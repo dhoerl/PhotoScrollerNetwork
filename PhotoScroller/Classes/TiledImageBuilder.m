@@ -35,12 +35,17 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#define MEMORY_DEBUGGING	0		// set to 1 if you want to see how memory changes when images are processed (non Turbo)
-#define USE_VIMAGE			0		// set to 1 if you want vImage to downsize images (slightly better quality, much much slower)
+#define TIMING_STATS			1		// set to 1 if you want to see how long things take
+#define MEMORY_DEBUGGING		0		// set to 1 if you want to see how memory changes when images are processed (non Turbo)
+#define MMAP_DEBUGGING			0		// set to 1 to see how mmap/munmap working
+#define USE_VIMAGE				0		// set to 1 if you want vImage to downsize images (slightly better quality, much much slower)
+
+#include <libkern/OSAtomic.h>
 
 #include <mach/mach.h>			// freeMemory
 #include <mach/mach_host.h>		// freeMemory
 #include <mach/mach_time.h>		// time metrics
+#include <mach/task_info.h>		// task metrics
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -48,6 +53,7 @@
 #include <sys/mman.h>
 #include <sys/mount.h>
 #include <sys/sysctl.h>
+#include <sys/stat.h>
 
 
 #if USE_VIMAGE == 1
@@ -87,20 +93,25 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 
 typedef struct {
 	int fd;
-	unsigned char *addr;
-	unsigned char *emptyAddr;
-	size_t mappedSize;
-	size_t height;
-	size_t width;
-	size_t bytesPerRow;
-	size_t emptyTileRowSize;
+	unsigned char *addr;		// address == emptyAddr + emptyTileRowSize
+	unsigned char *emptyAddr;	// first address of allocated space
+	size_t mappedSize;			// all space from emptyAddr to end of file
+	size_t height;				// image
+	size_t width;				// image
+	size_t bytesPerRow;			// image
+	size_t emptyTileRowSize;	// free space at the beginning of the file
 } mapper;
 
+// Internal struct to keep values of interest when probing the system
 typedef struct {
 	size_t freeMemory;
 	size_t usedMemory;
 	size_t totlMemory;
+	size_t resident_size;
+	size_t virtual_size;
 } freeMemory;
+
+static BOOL dump_memory_usage(struct task_basic_info *info);
 
 
 #ifndef NDEBUG
@@ -108,8 +119,8 @@ static void dumpMapper(const char *str, mapper *m)
 {
 	printf("MAP: %s\n", str);
 	printf(" fd = %d\n", m->fd);
-	printf(" addr = %p\n", m->addr);
 	printf(" emptyAddr = %p\n", m->emptyAddr);
+	printf(" addr = %p\n", m->addr);
 	printf(" mappedSize = %lu\n", m->mappedSize);
 	printf(" height = %lu\n", m->height);
 	printf(" width = %lu\n", m->width);
@@ -158,7 +169,7 @@ static void dumpIMS(const char *str, imageMemory *i)
 }
 #endif
 
-static BOOL tileBuilder(imageMemory *im, BOOL useMMAP);
+static BOOL tileBuilder(imageMemory *im, BOOL useMMAP, int32_t ubc_thresh);
 static void truncateEmptySpace(imageMemory *im);
 
 #ifdef LIBJPEG	
@@ -200,7 +211,22 @@ typedef struct {
 
 #endif
 
-static CGColorSpaceRef colorSpace;
+// Create one and use it everywhere
+static CGColorSpaceRef		colorSpace;
+
+/*
+ * We use a dispatch_grpoup so we can "block" on access to it, when memory pressure looks high.
+ * A heuritc is empployed: the max of some percentage of free memory or a lower percentage of all memory
+ * The queue is simply used as a place to attach the group to - you cannot suspend or resume a group
+ * The suspended flag sets and resets the current queue state.
+ * When a file is sync'd to disk, usage goes up by its size, and decremented when the sync is complete.
+ * The ratio is used to compute a threshold (see the code).
+ */
+static dispatch_queue_t		fileFlushQueue;
+static dispatch_group_t		fileFlushGroup;
+static volatile	int32_t		fileFlushGroupSuspended;
+static volatile int32_t		ubc_usage;					// rough idea of what our buffer cache usage is
+static float				ubc_threshold_ratio;
 
 // Compliments to Rainer Brockerhoff
 static uint64_t DeltaMAT(uint64_t then, uint64_t now)
@@ -217,15 +243,21 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 	return (uint64_t)((double)delta / 1e6); // ms
 }
-
+	 
 @interface TiledImageBuilder ()
 
-- (void)decodeImage:(CGImageRef)image;
-- (void)decodeImageURL:(NSURL *)url;
-- (void)decodeImageData:(NSData *)data;
+- (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
 
-- (int)createTempFile:(BOOL)unlinkFile;
-- (void)mapMemory:(mapper *)mapP; 
+#ifdef LIBJPEG
+- (void)decodeImageData:(NSData *)data;
+#endif
+
+- (void)decodeImageURL:(NSURL *)url;
+- (void)decodeImage:(CGImageRef)image;
+- (void)drawImage:(CGImageRef)image;
+
+- (BOOL)createImageFile;
+- (int)createTempFile:(BOOL)unlinkFile size:(size_t)size;
 - (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h;
 #ifdef LIBJPEG
 - (BOOL)partialTile:(BOOL)final;
@@ -240,9 +272,16 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (uint64_t)timeStamp;
 - (uint64_t)freeDiskspace;
-- (freeMemory)freeMemory;
+- (freeMemory)freeMemory:(NSString *)msg;
 
 @end
+
+#if 0
+static void foo(int sig)
+{
+	NSLog(@"YIKES: got signal %d", sig);
+}
+#endif
 
 @implementation TiledImageBuilder
 {
@@ -258,11 +297,11 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #ifdef LIBJPEG
 	// input
 	co_jpeg_source_mgr	src_mgr;
-
 	// output
 	unsigned char		*scanLines[SCAN_LINE_MAX];
 #endif
 }
+@synthesize ubc_threshold;
 @synthesize zoomLevels;
 @synthesize failed;
 @synthesize startTime;
@@ -273,27 +312,34 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 	if(self == [TiledImageBuilder class]) {
 		colorSpace = CGColorSpaceCreateDeviceRGB();
+
+		fileFlushQueue = dispatch_queue_create("com.dfh.TiledImageBuilder", DISPATCH_QUEUE_SERIAL);
+		fileFlushGroup = dispatch_group_create();
+		ubc_threshold_ratio = 0.5f;	// default ration - can override with class method below
+		//for(int i=0; i<=31; ++i) signal(i, foo);	// trying to find out why system was killing me - never did
 	}
+}
+
++ (void)setUbcThreshold:(float)val
+{
+	ubc_threshold_ratio = val;
 }
 
 - (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels
 {
-	if((self = [super init])) {
-		startTime = [self timeStamp];
-
-		zoomLevels = levels;
-		ims = calloc(zoomLevels, sizeof(imageMemory));
-		decoder = cgimageDecoder;
-		pageSize = getpagesize();
+	if((self = [self initWithDecoder:cgimageDecoder levels:levels])) {
 		{
 			mapWholeFile = YES;
 			[self decodeImage:image];
 		}
+
+#if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-
-#ifndef NDEBUG
 		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"FINISHED"];
 #endif
 	}
 	return self;
@@ -301,13 +347,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec levels:(NSUInteger)levels
 {
-	if((self = [super init])) {
-		startTime = [self timeStamp];
-
-		zoomLevels = levels;
-		ims = calloc(zoomLevels, sizeof(imageMemory));
-		decoder = dec;
-		pageSize = getpagesize();
+	if((self = [self initWithDecoder:dec levels:levels])) {
 #ifdef LIBJPEG
 		if(decoder == libjpegIncremental) {
 			[self jpegInitFile:path];
@@ -317,22 +357,21 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			mapWholeFile = YES;
 			[self decodeImageURL:[NSURL fileURLWithPath:path]];
 		}
+
+#if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-
-#ifndef NDEBUG
-		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+		NSLog(@"FINISH-I: %u milliseconds", milliSeconds);
+#endif
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"FINISHED"];
 #endif
 	}
 	return self;
 }
 - (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels
 {
-	if((self = [super init])) {
-		zoomLevels = levels;
-		ims = calloc(zoomLevels, sizeof(imageMemory));
-		decoder = dec;
-		pageSize = getpagesize();
+	if((self = [self initWithDecoder:dec levels:levels])) {
 #ifdef LIBJPEG
 		if(decoder == libjpegIncremental) {
 			[self jpegInitNetwork];
@@ -345,8 +384,31 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	}
 	return self;
 }
+- (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels
+{
+	if((self = [super init])) {
+#if TIMING_STATS == 1 && !defined(NDEBUG)
+		startTime = [self timeStamp];
+#endif		
+		zoomLevels = levels;
+		ims = calloc(zoomLevels, sizeof(imageMemory));
+		decoder = dec;
+		pageSize = getpagesize();
+
+		// Take a big chunk of either free memory or all memory
+		freeMemory fm		= [self freeMemory:@"Initialize"];
+		float freeThresh	= (float)fm.freeMemory*ubc_threshold_ratio;
+		float totalThresh	= (float)fm.totlMemory*ubc_threshold_ratio*ubc_threshold_ratio;
+		ubc_threshold = lrintf(MAX(freeThresh, totalThresh));
+NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];		
+	}
+	return self;
+}
 - (void)dealloc
 {
+	[[NSNotificationCenter defaultCenter] removeObserver:self];		
+
 	for(NSUInteger idx=0; idx<zoomLevels;++idx) {
 		int fd = ims[idx].map.fd;
 		if(fd>0) close(fd);
@@ -360,6 +422,14 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #endif
 }
 
+- (void)lowMemory:(NSNotification *)note
+{
+	//NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usage);
+	ubc_threshold = lrintf((float)ubc_threshold * ubc_threshold_ratio);
+	
+	[self freeMemory:@"Yikes!"];
+}		
+
 - (uint64_t)timeStamp
 {
 	return mach_absolute_time();
@@ -367,8 +437,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (void)appendToImageFile:(NSData *)data
 {
-	if(!failed) {
-		fwrite([data bytes], [data length], 1, imageFile);
+	size_t len = [data length];	// got a zero byte data object!
+	if(!failed && len) {
+		size_t ret = fwrite([data bytes], len, 1, imageFile);
+		assert(ret == 1);
 	}
 }
 
@@ -381,10 +453,13 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		[self decodeImageURL:[NSURL fileURLWithPath:imagePath]];
 		unlink([imagePath fileSystemRepresentation]), imagePath = NULL;
 		
+#if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-#ifndef NDEBUG
 		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"dataFinished"];
 #endif
 	}
 }
@@ -558,7 +633,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	if(failed) return YES;
 
 	while(src_mgr.cinfo.output_scanline <  src_mgr.cinfo.image_height) {
-	
 		unsigned char *scanPtr;
 		{
 			size_t tmpMapSize = ims[0].map.bytesPerRow;
@@ -568,7 +642,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			tmpMapSize += over;
 			
 			ims[0].map.mappedSize = tmpMapSize;
-			ims[0].map.addr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);
+			ims[0].map.addr = mmap(NULL, ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, ims[0].map.fd, offset);	//  | MAP_NOCACHE
 			if(ims[0].map.addr == MAP_FAILED) {
 				NSLog(@"errno1=%s", strerror(errno) );
 				failed = YES;
@@ -576,13 +650,22 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 				ims[0].map.mappedSize = 0;
 				return YES;
 			}
+#if MMAP_DEBUGGING == 1
+			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", ims[0].map.fd, ims[0].map.addr, (NSUInteger)ims[0].map.mappedSize);
+#endif
 			scanPtr = ims[0].map.addr + over;
 		}
 	
 		scanLines[0] = scanPtr;
 		int lines = jpeg_read_scanlines(&src_mgr.cinfo, scanLines, SCAN_LINE_MAX);
 		if(lines <= 0) {
-			munmap(ims[0].map.addr, ims[0].map.mappedSize);
+			//int mret = msync(ims[0].map.addr, ims[0].map.mappedSize, MS_ASYNC);
+			//assert(mret == 0);
+			int ret = munmap(ims[0].map.addr, ims[0].map.mappedSize);
+#if MMAP_DEBUGGING == 1
+			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", ims[0].map.fd, ims[0].map.addr, (NSUInteger)ims[0].map.mappedSize);
+#endif
+			assert(ret == 0);
 			break;
 		}
 		ims[0].outLine = src_mgr.writtenLines;
@@ -603,7 +686,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 				tmpMapSize += over;
 				
 				im->map.mappedSize = tmpMapSize;
-				im->map.addr = mmap(NULL, im->map.mappedSize, PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, offset); // write only 
+				im->map.addr = mmap(NULL, im->map.mappedSize, PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, offset);		// write only  | MAP_NOCACHE
 				if(im->map.addr == MAP_FAILED) {
 					NSLog(@"errno2=%s", strerror(errno) );
 					failed = YES;
@@ -611,6 +694,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 					im->map.mappedSize = 0;
 					return YES;
 				}
+#if MMAP_DEBUGGING == 1
+				NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
+#endif
 		
 				uint32_t *outPtr = (uint32_t *)(im->map.addr + over);
 				uint32_t *inPtr  = (uint32_t *)scanPtr;
@@ -619,10 +705,22 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 					*outPtr++ = *inPtr;
 					inPtr += scale;
 				}
-				munmap(im->map.addr, im->map.mappedSize);
+				//int mret = msync(im->map.addr, im->map.mappedSize, MS_ASYNC);
+				//assert(mret == 0);
+				int ret = munmap(im->map.addr, im->map.mappedSize);
+#if MMAP_DEBUGGING == 1
+				NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
+#endif
+				assert(ret == 0);
 			}
 		}
-		munmap(ims[0].map.addr, ims[0].map.mappedSize);
+		//int mret = msync(ims[0].map.addr, ims[0].map.mappedSize, MS_ASYNC);
+		//assert(mret == 0);
+		int ret = munmap(ims[0].map.addr, ims[0].map.mappedSize);
+#if MMAP_DEBUGGING == 1
+		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", ims[0].map.fd, ims[0].map.addr, (NSUInteger)ims[0].map.mappedSize);
+#endif
+		assert(ret == 0);
 
 		// tile all images as we get full rows of tiles
 		if(ims[0].outLine && !(ims[0].outLine % TILE_SIZE)) {
@@ -652,14 +750,40 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		if(final || (im->outLine && !(im->outLine % TILE_SIZE))) {
 			size_t rows = im->rows;		// cheat
 			if(!final) im->rows = im->row + 1;		// just do one tile row
-			failed = !tileBuilder(im, YES);
+			failed = !tileBuilder(im, YES, ubc_threshold);
 			if(failed) {
 				return NO;
 			}
 			++im->row;
 			im->rows = rows;
 		}
-		if(final) truncateEmptySpace(im);
+		if(final) {
+			truncateEmptySpace(im);
+			int fd = im->map.fd;
+			assert(fd != -1);
+			int32_t file_size = (int32_t)lseek(fd, 0, SEEK_END);
+			OSAtomicAdd32Barrier(file_size, &ubc_usage);
+
+			if(ubc_usage > ubc_threshold) {
+				if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
+					// NSLog(@"SUSPEND==============================================================================");
+					dispatch_suspend(fileFlushQueue);
+					dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ NSLog(@"unblocked!"); } );
+				}
+			}
+			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
+				{
+					// need to make sure file is kept open til we flush - who knows what will happen otherwise
+					int ret = fcntl(fd,  F_FULLFSYNC);
+					if(ret == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
+					OSAtomicAdd32Barrier(-file_size, &ubc_usage);
+					if(ubc_usage <= ubc_threshold) {
+						if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
+							dispatch_resume(fileFlushQueue);
+						}
+					}
+				} );
+		}
 	}
 	return YES;
 }
@@ -691,62 +815,48 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (void)decodeImage:(CGImageRef)image
 {
-	if(decoder == cgimageDecoder) {
-		[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
-
-#if MEMORY_DEBUGGING == 1
-		NSLog(@"Start[%p]: free disk space %llu", self, [self freeDiskspace]);
-		[self freeMemory];
-#endif
-		[self drawImage:image];
-#if MEMORY_DEBUGGING == 1
-		NSLog(@"End[%p]: free disk space %llu", self, [self freeDiskspace]);
-		[self freeMemory];
-#endif
-
-		if(!failed) [self run];
-	}
+	assert(decoder == cgimageDecoder);
+	[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
+	[self drawImage:image];
+	if(!failed) [self run];
 }
 
+#ifdef LIBJPEG
 - (void)decodeImageData:(NSData *)data
 {
-#ifdef LIBJPEG
-	if(decoder == libjpegTurboDecoder) {
-		tjhandle decompressor = tjInitDecompress();
+	assert(decoder == libjpegTurboDecoder);
+	
+	tjhandle decompressor = tjInitDecompress();
 
-		unsigned char *jpegBuf = (unsigned char *)[data bytes];
-		unsigned long jpegSize = [data length];
-		int jwidth, jheight, jpegSubsamp;
-		failed = (BOOL)tjDecompressHeader2(decompressor,
+	unsigned char *jpegBuf = (unsigned char *)[data bytes];
+	unsigned long jpegSize = [data length];
+	int jwidth, jheight, jpegSubsamp;
+	failed = (BOOL)tjDecompressHeader2(decompressor,
+		jpegBuf,
+		jpegSize,
+		&jwidth,
+		&jheight,
+		&jpegSubsamp 
+		);
+	if(!failed) {
+		[self mapMemoryForIndex:0 width:jwidth height:jheight];
+
+		failed = (BOOL)tjDecompress2(decompressor,
 			jpegBuf,
 			jpegSize,
-			&jwidth,
-			&jheight,
-			&jpegSubsamp 
+			ims[0].map.addr,
+			jwidth,
+			ims[0].map.bytesPerRow,
+			jheight,
+			TJPF_ABGR,
+			TJFLAG_NOREALLOC
 			);
-		if(!failed) {
-			[self mapMemoryForIndex:0 width:jwidth height:jheight];
-
-			failed = (BOOL)tjDecompress2(decompressor,
-				jpegBuf,
-				jpegSize,
-				ims[0].map.addr,
-				jwidth,
-				ims[0].map.bytesPerRow,
-				jheight,
-				TJPF_ABGR,
-				TJFLAG_NOREALLOC
-				);
-			tjDestroy(decompressor);
-		}
-	} else
-#endif
-	{
-		assert(0);
+		tjDestroy(decompressor);
 	}
 
 	if(!failed) [self run];
 }
+#endif
 
 - (CGSize)imageSize
 {
@@ -756,16 +866,11 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 - (BOOL)createImageFile
 {
 	BOOL success;
-	int fd = [self createTempFile:NO];
+	int fd = [self createTempFile:NO size:0];
 	if(fd == -1) {
 		failed = YES;
 		success = NO;
 	} else {
-
-		int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
-		if(ret == -1) {
-			NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
-		}
 		if ((imageFile = fdopen(fd, "r+")) == NULL) {
 			NSLog(@"Error: failed to fdopen image file \"%@\" for \"r+\" (%d).", imagePath, errno);
 			close(fd);
@@ -778,18 +883,46 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	return success;
 }
 
-- (int)createTempFile:(BOOL)unlinkFile
+- (int)createTempFile:(BOOL)unlinkFile size:(size_t)size
 {
 	char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"imXXXXXX"] fileSystemRepresentation]);
 	int fd = mkstemp(template);
+	//NSLog(@"CREATE TMP FILE: %s fd=%d", template, fd);
 	if(fd == -1) {
 		failed = YES;
 		NSLog(@"OPEN failed file %s %s", template, strerror(errno));
 	} else {
 		if(unlinkFile) {
 			unlink(template);	// so it goes away when the fd is closed or on a crash
+
+			int ret = fcntl(fd, F_RDAHEAD, 0);	// don't clog up the system's disk cache
+			if(ret == -1) {
+				NSLog(@"Warning: cannot turn off F_RDAHEAD for input file (errno %d).", errno);
+			}
+
+			fstore_t fst;
+			fst.fst_flags      = F_ALLOCATECONTIG;  // could add F_ALLOCATEALL?
+			fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
+			fst.fst_offset     = 0;                 // offset relative to the EOF
+			fst.fst_length     = size;
+			fst.fst_bytesalloc = 0;                 // why not but is not needed
+
+			ret = fcntl(fd, F_PREALLOCATE, &fst);
+			if(ret == -1) {
+				NSLog(@"Warning: cannot F_PREALLOCATE for input file (errno %d).", errno);
+			}
+	
+			ret = ftruncate(fd, size);				// Now the file is there for sure
+			if(ret == -1) {
+				NSLog(@"Warning: cannot ftruncate input file (errno %d).", errno);
+			}
 		} else {
 			imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
+			
+			int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
+			if(ret == -1) {
+				NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
+			}
 		}
 	}
 	free(template);
@@ -798,6 +931,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 }
 - (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h
 {
+	// Don't open another file til memory pressure has dropped
+	dispatch_group_wait(fileFlushGroup, DISPATCH_TIME_FOREVER);
 	imageMemory *imsP = &ims[idx];
 	
 	imsP->map.width = w;
@@ -806,29 +941,29 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 	imsP->index = idx;
 	imsP->rows = calcDimension(imsP->map.height)/tileDimension;
 	imsP->cols = calcDimension(imsP->map.width)/tileDimension;
-	
+#if 0	
+	mapper *mapP = &imsP->map;
+#else
 	[self mapMemory:&imsP->map];
 }
 
 - (void)mapMemory:(mapper *)mapP
 {
+#endif
 	mapP->bytesPerRow = calcBytesPerRow(mapP->width);
 	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
 	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;	// may need temp space
 
+//NSLog(@"mapP->fd = %d", mapP->fd);
 	if(mapP->fd <= 0) {
-		mapP->fd = [self createTempFile:YES];
+//NSLog(@"Was 0 so call create");
+		mapP->fd = [self createTempFile:YES  size:mapP->mappedSize];
 		if(mapP->fd == -1) return;
-
-		// have to expand the file to correct size first
-		lseek(mapP->fd, mapP->mappedSize - 1, SEEK_SET);
-		char tmp = 0;
-		write(mapP->fd, &tmp, 1);
 	}
 
 	// NSLog(@"imageSize=%ld", imageSize);
-	if(mapWholeFile && !mapP->emptyAddr) {
-		mapP->emptyAddr = mmap(NULL, mapP->mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, mapP->fd, 0); //  | MAP_NOCACHE
+	if(mapWholeFile && !mapP->emptyAddr) {	
+		mapP->emptyAddr = mmap(NULL, mapP->mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED | MAP_NOCACHE, mapP->fd, 0);	//  | MAP_NOCACHE
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
 		if(mapP->emptyAddr == MAP_FAILED) {
 			failed = YES;
@@ -837,6 +972,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 			mapP->addr = NULL;
 			mapP->mappedSize = 0;
 		}
+#if MMAP_DEBUGGING == 1
+		NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", mapP->fd, mapP->emptyAddr, (NSUInteger)mapP->mappedSize);
+#endif
 	}
 }
 
@@ -844,16 +982,25 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 {
 	if(image && !failed) {
 		assert(ims[0].map.addr);
+
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"drawImage start"];
+#endif
+
+		madvise(ims[0].map.addr, ims[0].map.mappedSize-ims[0].map.emptyTileRowSize, MADV_SEQUENTIAL);
+
 		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little);	// BRGA flipped (little Endian)
 		assert(context);
 		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
 		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
-#if MEMORY_DEBUGGING == 1
-		NSLog(@"Mid[%p]: free disk space %llu", self, [self freeDiskspace]);
-		[self freeMemory];
-#endif
 		CGContextRelease(context);
+
+		madvise(ims[0].map.addr, ims[0].map.mappedSize-ims[0].map.emptyTileRowSize, MADV_FREE); // MADV_DONTNEED
+
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"drawImage done"];
+#endif
 	}
 }
 
@@ -896,6 +1043,9 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #else	
 			// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
 			// Got a better idea? Submit a pull request.
+			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_SEQUENTIAL);
+			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_SEQUENTIAL);
+
 			uint32_t *inPtr = (uint32_t *)lastMap->addr;
 			uint32_t *outPtr = (uint32_t *)currMap->addr;
 			for(size_t row=0; row<currMap->height; ++row) {
@@ -908,14 +1058,17 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 				inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
 				outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
 			}
+
+			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_FREE);
+			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_FREE);
 #endif
 			// make tiles
-			BOOL ret = tileBuilder(&ims[idx-1], NO);
+			BOOL ret = tileBuilder(&ims[idx-1], NO, ubc_threshold);
 			if(!ret) goto eRR;
 		}
 	}
 	assert(zoomLevels);
-	failed = !tileBuilder(&ims[zoomLevels-1], NO);
+	failed = !tileBuilder(&ims[zoomLevels-1], NO, ubc_threshold);
 	return;
 	
   eRR:
@@ -991,13 +1144,13 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
     return totalFreeSpace;
 }
 
-- (freeMemory)freeMemory
+- (freeMemory)freeMemory:(NSString *)msg
 {
 	// http://stackoverflow.com/questions/5012886
     mach_port_t host_port;
     mach_msg_type_number_t host_size;
     vm_size_t pagesize;
-	freeMemory fm = { 0, 0, 0 };
+	freeMemory fm = { 0, 0, 0, 0, 0 };
 
     host_port = mach_host_self();
     host_size = sizeof(vm_statistics_data_t) / sizeof(integer_t);
@@ -1019,12 +1172,39 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 		fm.usedMemory = (size_t)mem_used;
 		fm.totlMemory = (size_t)mem_total;
 		
-		NSLog(@"   Memory:  used: %u free: %u total: %u", (unsigned int)mem_used, (unsigned int)mem_free, (unsigned int)mem_total);
+		struct task_basic_info info;
+		if(dump_memory_usage(&info)) {
+			fm.resident_size = (size_t)info.resident_size;
+			fm.virtual_size = (size_t)info.virtual_size;
+		}
+		
+#if MEMORY_DEBUGGING == 1
+		NSLog(@"%@:   "
+			"total: %u "
+			"used: %u "
+			"FREE: %u "
+			"  [resident=%u virtual=%u]", 
+			msg, 
+			(unsigned int)mem_total, 
+			(unsigned int)mem_used, 
+			(unsigned int)mem_free, 
+			(unsigned int)fm.resident_size, 
+			(unsigned int)fm.virtual_size
+		);
+#endif
 	}
 	return fm;
 }
 
+
+
 @end
+
+static BOOL dump_memory_usage(struct task_basic_info *info) {
+  mach_msg_type_number_t size = sizeof( struct task_basic_info );
+  kern_return_t kerr = task_info( mach_task_self(), TASK_BASIC_INFO, (task_info_t)info, &size );
+  return ( kerr == KERN_SUCCESS );
+}
 
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,
@@ -1054,8 +1234,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	free(info);
 }
 
-
-static BOOL tileBuilder(imageMemory *im, BOOL useMMAP)
+static BOOL tileBuilder(imageMemory *im, BOOL useMMAP, int32_t ubc_thresh)
 {
 	unsigned char *optr = im->map.emptyAddr;
 	unsigned char *iptr = im->map.addr;
@@ -1068,7 +1247,9 @@ static BOOL tileBuilder(imageMemory *im, BOOL useMMAP)
 			im->map.mappedSize = im->map.emptyTileRowSize*2;	// two tile rows
 			im->map.emptyAddr = mmap(NULL, im->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, row*im->map.emptyTileRowSize);  /*| MAP_NOCACHE */
 			if(im->map.emptyAddr == MAP_FAILED) return NO;
-	
+#if MMAP_DEBUGGING == 1
+			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+#endif	
 			im->map.addr = im->map.emptyAddr + im->map.emptyTileRowSize;
 			
 			iptr = im->map.addr;
@@ -1087,7 +1268,13 @@ static BOOL tileBuilder(imageMemory *im, BOOL useMMAP)
 			iptr = lastIptr + tileBytesPerRow;	// move to the next image
 		}
 		if(useMMAP) {
-			munmap(im->map.emptyAddr, im->map.mappedSize);
+			//int mret = msync(im->map.emptyAddr, im->map.mappedSize, MS_ASYNC);
+			//assert(mret == 0);
+			int ret = munmap(im->map.emptyAddr, im->map.mappedSize);
+#if MMAP_DEBUGGING == 1
+			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+#endif
+			assert(ret == 0);
 		} else {
 			iptr = tileIptr + im->map.emptyTileRowSize;
 		}
@@ -1096,11 +1283,48 @@ static BOOL tileBuilder(imageMemory *im, BOOL useMMAP)
 
 	if(!useMMAP) {
 		// OK we're done with this memory now
-		munmap(im->map.emptyAddr, im->map.mappedSize);
+		//int mret = msync(im->map.emptyAddr, im->map.mappedSize, MS_ASYNC);
+		//assert(mret == 0);
+		int ret = munmap(im->map.emptyAddr, im->map.mappedSize);
+#if MMAP_DEBUGGING == 1
+		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+#endif
+		assert(ret==0);
 
 		// don't need the scratch space now
 		truncateEmptySpace(im);
+	
+		/*
+		 * Best place I could find to flush dirty blocks to disk. Will flush whole file if doing full image decodes,
+		 * but only partial files for incremental loader
+		 */
+		int fd = im->map.fd;
+		assert(fd != -1);
+		int32_t file_size = (int32_t)im->map.mappedSize;
+		OSAtomicAdd32Barrier(file_size, &ubc_usage);
+		
+		if(ubc_usage > ubc_thresh) {
+			if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
+				// NSLog(@"SUSPEND==========================================================usage=%d thresh=%d", ubc_usage, ubc_thresh);
+				dispatch_suspend(fileFlushQueue);
+				dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ NSLog(@"unblocked!"); } );
+			}
+		}
+		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
+			{
+				// need to make sure file is kept open til we flush - who knows what will happen otherwise
+				int ret = fcntl(fd,  F_FULLFSYNC);
+				if(ret == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
+				OSAtomicAdd32Barrier(-file_size, &ubc_usage);				
+				if(ubc_usage <= ubc_thresh) {
+					if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
+						dispatch_resume(fileFlushQueue);
+					}
+				}
+			} );
+
 	}
+	
 	return YES;
 }
 
@@ -1108,8 +1332,11 @@ static void truncateEmptySpace(imageMemory *im)
 {
 	// don't need the scratch space now
 	off_t properLen = lseek(im->map.fd, 0, SEEK_END) - im->map.emptyTileRowSize;
-	ftruncate(im->map.fd, properLen);
-	im->map.mappedSize = 0;
+	int ret = ftruncate(im->map.fd, properLen);
+	if(ret) {
+		NSLog(@"Failed to truncate file!");
+	}
+	im->map.mappedSize = 0;	// force errors if someone tries to use mmap now
 }
 
 #ifdef LIBJPEG
