@@ -274,6 +274,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 - (uint64_t)freeDiskspace;
 - (freeMemory)freeMemory:(NSString *)msg;
 
+- (NSUInteger)zoomLevelsForSize:(CGSize)size;;
+
 @end
 
 #if 0
@@ -333,6 +335,8 @@ static void foo(int sig)
 			[self decodeImage:image];
 		}
 
+NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(480, 480)]);
+
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
@@ -357,6 +361,8 @@ static void foo(int sig)
 			mapWholeFile = YES;
 			[self decodeImageURL:[NSURL fileURLWithPath:path]];
 		}
+		
+NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
@@ -429,6 +435,25 @@ NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024)
 	
 	[self freeMemory:@"Yikes!"];
 }		
+
+- (NSUInteger)zoomLevelsForSize:(CGSize)size;
+{
+	CGFloat iWidth = ims[0].map.width;
+	CGFloat iHeight = ims[0].map.height;
+	
+	CGFloat width = size.width;
+	CGFloat height = size.height;
+	
+	int zLevels = 0;
+	while(YES) {
+		iWidth /= 2.0f;
+		iHeight /= 2.0f;
+	
+		if(iHeight < height && iWidth < width) break;
+		++zLevels;
+	}
+	return zLevels;
+}
 
 - (uint64_t)timeStamp
 {
@@ -1313,8 +1338,8 @@ static BOOL tileBuilder(imageMemory *im, BOOL useMMAP, int32_t ubc_thresh)
 		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
 			{
 				// need to make sure file is kept open til we flush - who knows what will happen otherwise
-				int ret = fcntl(fd,  F_FULLFSYNC);
-				if(ret == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
+				int ret2 = fcntl(fd,  F_FULLFSYNC);
+				if(ret2 == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
 				OSAtomicAdd32Barrier(-file_size, &ubc_usage);				
 				if(ubc_usage <= ubc_thresh) {
 					if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {

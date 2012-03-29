@@ -46,7 +46,7 @@
 @property (nonatomic, assign) int32_t ubc_threshold;			// UBC threshold above which outstanding writes are flushed to the file system (dynamic default)
 @property (nonatomic, assign, readonly) BOOL failed;			// global Error flags
 
-+ (void)setUbcThreshold:(float)val;								// default is 0.5 - that is, half of the available free memory pool
++ (void)setUbcThreshold:(float)val;								// default is 0.5 - Image disk cache can use half of the available free memory pool
 
 - (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels;
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels;
