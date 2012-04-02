@@ -42,6 +42,10 @@ barStyle  property UIBarStyleBlack
 translucent  property YES/NO
 */
 
+#if !__has_feature(objc_arc)
+#error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
+#endif
+
 //#include <mach/mach.h>			// freeMemory
 #include <mach/mach_time.h>		// time metrics
 
@@ -72,7 +76,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 - (CGSize)contentSizeForPagingScrollView;
 
 - (void)tilePages;
-- (ImageScrollView *)dequeueRecycledPage;
+//- (ImageScrollView *)dequeueRecycledPage;
 
 - (NSUInteger)imageCount;
 - (NSString *)imageNameAtIndex:(NSUInteger)index;
@@ -84,22 +88,22 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 @implementation PhotoViewController
 {
-	IBOutlet UIActivityIndicatorView *spinner;
-	IBOutlet UIToolbar *toolbar;
+	IBOutlet UIActivityIndicatorView	*spinner;
+	IBOutlet UIToolbar					*toolbar;
 
-    UIScrollView	*pagingScrollView;
+    UIScrollView						*pagingScrollView;
     
-    NSMutableSet	*recycledPages;
-    NSMutableSet	*visiblePages;
+    NSMutableSet						*recycledPages;
+    NSMutableSet						*visiblePages;
 
     // these values are stored off before we start rotation so we adjust our content offset appropriately during rotation
-    int				firstVisiblePageIndexBeforeRotation;
-    CGFloat			percentScrolledIntoFirstVisiblePage;
+    int									firstVisiblePageIndexBeforeRotation;
+    CGFloat								percentScrolledIntoFirstVisiblePage;
 
-	NSMutableArray	*tileBuilders;
+	NSMutableArray						*tileBuilders;
 	
-	uint64_t		startTime;
-	__block uint32_t milliSeconds;
+	uint64_t							startTime;
+	__block uint32_t					milliSeconds;
 }
 @synthesize isWebTest;
 @synthesize queue;
@@ -275,7 +279,13 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	// NSLog(@"Operation Succeeded: index=%d", op.index);
 	
 	// Note" probably a better strategy is to put the new images in their own array, then swap arrays when done
-	[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
+	if(op.imageBuilder) {
+		[tileBuilders replaceObjectAtIndex:op.index withObject:op.imageBuilder];
+	} else {
+		NSLog(@"Never will show images! Just kill the app now!");
+		// Real code should obviously deal with this! I had a network failure myself while testing.
+		exit(0);
+	}
 
 	milliSeconds += op.milliSeconds;
 
@@ -362,52 +372,51 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 {
     // Calculate which pages are visible
     CGRect visibleBounds = pagingScrollView.bounds;
-    int firstNeededPageIndex = floorf(CGRectGetMinX(visibleBounds) / CGRectGetWidth(visibleBounds));
-    int lastNeededPageIndex  = floorf((CGRectGetMaxX(visibleBounds)-1) / CGRectGetWidth(visibleBounds));
+    NSInteger firstNeededPageIndex = lrintf( floorf(CGRectGetMinX(visibleBounds) / CGRectGetWidth(visibleBounds)) );
+    NSInteger lastNeededPageIndex  = lrintf( floorf((CGRectGetMaxX(visibleBounds)-1) / CGRectGetWidth(visibleBounds)) );
     firstNeededPageIndex = MAX(firstNeededPageIndex, 0);
     lastNeededPageIndex  = MIN(lastNeededPageIndex, [self imageCount] - 1);
-    
+
     // Recycle no-longer-visible pages 
-    for (ImageScrollView *page in visiblePages) {
-        if (page.tag < firstNeededPageIndex || page.tag > lastNeededPageIndex) {
-            [recycledPages addObject:page];
-            [page removeFromSuperview];
-        }
-    }
+	[visiblePages enumerateObjectsUsingBlock:^(ImageScrollView *page, BOOL *stop)
+		{
+			if (page.tag < firstNeededPageIndex || page.tag > lastNeededPageIndex) {
+				[recycledPages addObject:page];
+				[page removeFromSuperview];
+			}
+		} ];
     [visiblePages minusSet:recycledPages];
+	[recycledPages makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
     // add missing pages
     for (int index = firstNeededPageIndex; index <= lastNeededPageIndex; index++) {
         if (![self isDisplayingPageForIndex:index]) {
-            ImageScrollView *page = [self dequeueRecycledPage];
-            if (page == nil) {
-                page = [[ImageScrollView alloc] init];
+			ImageScrollView *page = [recycledPages anyObject];
+			if (page) {
+				[recycledPages removeObject:page];
+			} else {
+                page = [ImageScrollView new];
+				// If you want the image to FILL the view, not FIT into the view
+				//((ImageScrollView *)page).aspectFill = YES;
             }
             [self configurePage:page forIndex:index];
-            [pagingScrollView addSubview:page];
             [visiblePages addObject:page];
+            [pagingScrollView addSubview:page];
         }
-    }    
-}
-
-- (ImageScrollView *)dequeueRecycledPage
-{
-    ImageScrollView *page = [recycledPages anyObject];
-    if (page) {
-        [recycledPages removeObject:page];
     }
-    return page;
 }
 
 - (BOOL)isDisplayingPageForIndex:(NSUInteger)index
 {
-    BOOL foundPage = NO;
-    for (ImageScrollView *page in visiblePages) {
-        if (page.tag == index) {
-            foundPage = YES;
-            break;
-        }
-    }
+	__block BOOL foundPage = NO;
+	
+	[visiblePages enumerateObjectsUsingBlock:^(ImageScrollView *page, BOOL *stop)
+		{
+			if(page.tag == index) {
+				*stop = YES;
+				foundPage = YES;
+			}
+		} ];
     return foundPage;
 }
 
@@ -426,7 +435,11 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    [self tilePages];
+	if(scrollView == pagingScrollView) {
+		// dispatch fixes some recursive call to scrollViewDidScroll in tilePages (related to removeFromSuperView)
+		// The reason can be found here: http://stackoverflow.com/questions/3854739
+		dispatch_async(dispatch_get_main_queue(), ^{ [self tilePages]; });
+	}
 }
 
 #pragma mark -
@@ -445,7 +458,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
     CGFloat pageWidth = pagingScrollView.bounds.size.width;
     
     if (offset >= 0) {
-        firstVisiblePageIndexBeforeRotation = floorf(offset / pageWidth);
+        firstVisiblePageIndexBeforeRotation = lrintf( floorf(offset / pageWidth) );
         percentScrolledIntoFirstVisiblePage = (offset - (firstVisiblePageIndexBeforeRotation * pageWidth)) / pageWidth;
     } else {
         firstVisiblePageIndexBeforeRotation = 0;
@@ -459,17 +472,18 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
     pagingScrollView.contentSize = [self contentSizeForPagingScrollView];
     
     // adjust frames and configuration of each visible page
-    for (ImageScrollView *page in visiblePages) {
-        CGPoint restorePoint = [page pointToCenterAfterRotation];
-        CGFloat restoreScale = [page scaleToRestoreAfterRotation];
-NSLog(@"ROTATE: 0 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
-        page.frame = [self frameForPageAtIndex:page.tag];
-NSLog(@"ROTATE: 1 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
-        [page setMaxMinZoomScalesForCurrentBounds];
-NSLog(@"ROTATE: 2 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
-        [page restoreCenterPoint:restorePoint scale:restoreScale];
-NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
-    }
+	[visiblePages enumerateObjectsUsingBlock:^(ImageScrollView *page, BOOL *stop)
+		{
+			CGPoint restorePoint = [page pointToCenterAfterRotation];
+			CGFloat restoreScale = [page scaleToRestoreAfterRotation];
+//NSLog(@"ROTATE: 0 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
+			page.frame = [self frameForPageAtIndex:page.tag];
+//NSLog(@"ROTATE: 1 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
+			[page setMaxMinZoomScalesForCurrentBounds];
+//NSLog(@"ROTATE: 2 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
+			[page restoreCenterPoint:restorePoint scale:restoreScale];
+//NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds) , NSStringFromCGRect([[page.subviews lastObject] bounds]) );
+		} ];
     
     // adjust contentOffset to preserve page location based on values collected prior to location
     CGFloat pageWidth = pagingScrollView.bounds.size.width;
@@ -480,15 +494,6 @@ NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds
 #pragma mark -
 #pragma mark  Frame calculations
 
-#if 0
-#define PADDING  10
-- (CGRect)frameForPagingScrollView
-{
-    CGRect frame = [[UIScreen mainScreen] bounds];
-    frame.origin.x -= PADDING;
-    frame.size.width += (2 * PADDING);
-    return frame;
-}
 - (CGRect)frameForPageAtIndex:(NSUInteger)index
 {
     // We have to use our paging scroll view's bounds, not frame, to calculate the page placement. When the device is in
@@ -497,23 +502,7 @@ NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds
     // because it has a rotation transform applied.
     CGRect bounds = pagingScrollView.bounds;
     CGRect pageFrame = bounds;
-    pageFrame.size.width -= (2 * PADDING);
-    pageFrame.origin.x = (bounds.size.width * index) + PADDING;
-    return pageFrame;
-}
-#endif
-
-#define PADDING  0
-- (CGRect)frameForPageAtIndex:(NSUInteger)index
-{
-    // We have to use our paging scroll view's bounds, not frame, to calculate the page placement. When the device is in
-    // landscape orientation, the frame will still be in portrait because the pagingScrollView is the root view controller's
-    // view, so its frame is in window coordinate space, which is never rotated. Its bounds, however, will be in landscape
-    // because it has a rotation transform applied.
-    CGRect bounds = pagingScrollView.bounds;
-    CGRect pageFrame = bounds;
-    pageFrame.size.width -= (2 * PADDING);
-    pageFrame.origin.x = (bounds.size.width * index) + PADDING;
+    pageFrame.origin.x = (bounds.size.width * index);
     return pageFrame;
 }
 
@@ -546,15 +535,6 @@ NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds
     return __imageData;
 }
 
-/*
-- (UIImage *)imageAtIndex:(NSUInteger)index {
-    // use "imageWithContentsOfFile:" instead of "imageNamed:" here to avoid caching our images
-    NSString *imageName = [self imageNameAtIndex:index];
-    NSString *path = [[NSBundle mainBundle] pathForResource:imageName ofType:@"jp2"];
-    return [UIImage imageWithContentsOfFile:path];    
-}
-*/
-
 - (NSString *)imageNameAtIndex:(NSUInteger)index
 {
     NSString *name = nil;
@@ -565,28 +545,10 @@ NSLog(@"ROTATE: 3 page bounds %@ view bounds %@", NSStringFromCGRect(page.bounds
     return name;
 }
 
-#if 0
-- (CGSize)imageSizeAtIndex:(NSUInteger)index
-{
-    CGSize size = CGSizeZero;
-    if (index < [self imageCount]) {
-        NSDictionary *data = [[self imageData] objectAtIndex:index];
-        size.width = [[data valueForKey:@"width"] floatValue];
-        size.height = [[data valueForKey:@"height"] floatValue];
-    }
-    return size;
-}
-#endif
-
 - (NSUInteger)imageCount
 {
-    static NSUInteger __count = NSNotFound;  // only count the images once
-    if (__count == NSNotFound) {
-        __count = justDoOneImage ? 1 : [[self imageData] count];
-    }
-    return __count;
+    return justDoOneImage ? 1 : [[self imageData] count];
 }
-
 
 @end
 
