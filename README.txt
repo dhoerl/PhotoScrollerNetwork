@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-Latest v 1.7 March 22, 2012
+Latest v2.0 April 2, 2012
 
 This sample code:
 
@@ -20,6 +20,15 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v2.0:
+- iPad1 and iPhone3GS (with only 256M of memory) were getting killed with no OS warning. So, created an upper limit on cdisk cache usage, and flush files (to free up memory) when the threshold is hit. Crashes went away.
+- tweaked the way images are created and then drawn (in TiledImageView) to cut down on un-necessary Quartz conversions.
+- fixed a nasty bug in scrolling. "-scrollViewDidScroll" was calling tilePages, which changed the scrollview bounds, which infrequently caused a new "-scrollViewDidScroll" messaage [Apple's code, not mine!]
+- more files now test for ARC
+- now using libjpeg-turbo library installed by the library downloader: https://sourceforge.net/projects/libjpeg-turbo/. Had to do this since Xcode 4.3.1 broke my libjpegturbo-builder project.
+- new flag lets you try the image creation used by TileView using "pread" or "mmap/memcpy". While I suspect the former is quicker I really don't know. The default not is pread.
+- added iPad targets
 
 v1.7:
 - renamed Common.h to PhotoScrollerCommon.h, moved it up one directory, makes it easier to just include the PhotoScroller Classes in other projects, in which case you create your own PhotoScrollerCommon.h with customized data

@@ -185,7 +185,7 @@
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE588D8614E9433A00C7E151 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
 		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoScrollerCommon.h; sourceTree = "<group>"; };
-		DED0140F1524F92900B9335E /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libturbojpeg.a; path = ../../../../usr/lib/libturbojpeg.a; sourceTree = "<group>"; };
+		DED0140F1524F92900B9335E /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libturbojpeg.a; path = /usr/lib/libturbojpeg.a; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,9 +256,8 @@
 		DE4AD92214DC783D00D63E5A = {
 			isa = PBXGroup;
 			children = (
-				DED0140F1524F92900B9335E /* libturbojpeg.a */,
-				DE3EC2A7151CC50300921348 /* Resources-iPad */,
 				DE588D8614E9433A00C7E151 /* README.txt */,
+				DE3EC2A7151CC50300921348 /* Resources-iPad */,
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
 				DE4AD99E14DC78ED00D63E5A /* Images */,
@@ -289,6 +288,7 @@
 				DE4AD93114DC783D00D63E5A /* UIKit.framework */,
 				DE4AD93314DC783D00D63E5A /* Foundation.framework */,
 				DE4AD93514DC783D00D63E5A /* CoreGraphics.framework */,
+				DED0140F1524F92900B9335E /* libturbojpeg.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -746,11 +746,8 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
-				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-NDEBUG",
-				);
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
+				STRIP_INSTALLED_PRODUCT = YES;
 				TARGETED_DEVICE_FAMILY = 2;
 				WRAPPER_EXTENSION = app;
 			};
@@ -763,7 +760,6 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
-				OTHER_CFLAGS = "";
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
 				WRAPPER_EXTENSION = app;
@@ -798,10 +794,11 @@
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
-					"-NDEBUG",
+					"-DNDEBUG",
 				);
 				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
+				STRIP_INSTALLED_PRODUCT = YES;
 				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				WRAPPER_EXTENSION = app;
@@ -831,6 +828,8 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
@@ -841,11 +840,18 @@
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				SDKROOT = iphoneos;
+				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
 		};
@@ -855,14 +861,25 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				OTHER_CFLAGS = "";
+				OTHER_CFLAGS = (
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-DNDEBUG",
+				);
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -887,11 +904,8 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
-				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-NDEBUG",
-				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -922,9 +936,10 @@
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
-					"-NDEBUG",
+					"-DNDEBUG",
 				);
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
+				STRIP_INSTALLED_PRODUCT = YES;
 				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				WRAPPER_EXTENSION = app;
 			};
@@ -936,18 +951,24 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = YES;
+				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
-				);
+				OTHER_CFLAGS = "";
 				SDKROOT = iphoneos;
+				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = ReleaseWithAsserts;
@@ -959,7 +980,6 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
-				OTHER_CFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -968,6 +988,7 @@
 		DE588D6014E81ABA00C7E151 /* ReleaseWithAsserts */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Hoerl (A9Y94TLV83)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
@@ -975,6 +996,7 @@
 				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
 				OTHER_CFLAGS = "-DLIBJPEG";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "D7CAF0BA-A3BB-45E1-B36F-7BAC00A12FB3";
 				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				WRAPPER_EXTENSION = app;
 			};

@@ -35,9 +35,14 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#if !__has_feature(objc_arc)
+#error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
+#endif
+
 #define TIMING_STATS			1		// set to 1 if you want to see how long things take
 #define MEMORY_DEBUGGING		0		// set to 1 if you want to see how memory changes when images are processed (non Turbo)
 #define MMAP_DEBUGGING			0		// set to 1 to see how mmap/munmap working
+#define MAPPING_IMAGES			0		// set to 1 to use MMAP for image tile retrieval - if 0 use pread
 #define USE_VIMAGE				0		// set to 1 if you want vImage to downsize images (slightly better quality, much much slower)
 
 #include <libkern/OSAtomic.h>
@@ -404,9 +409,10 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		// Take a big chunk of either free memory or all memory
 		freeMemory fm		= [self freeMemory:@"Initialize"];
 		float freeThresh	= (float)fm.freeMemory*ubc_threshold_ratio;
-		float totalThresh	= (float)fm.totlMemory*ubc_threshold_ratio*ubc_threshold_ratio;
-		ubc_threshold = lrintf(MAX(freeThresh, totalThresh));
-NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+		float totalThresh	= (float)fm.totlMemory*ubc_threshold_ratio;
+		ubc_threshold		= lrintf(MAX(freeThresh, totalThresh));
+		//NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+
 		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];		
 	}
 	return self;
@@ -532,8 +538,9 @@ NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024)
 		/* Step 3: read file parameters with jpeg_read_header() */
 		(void) jpeg_read_header(&src_mgr.cinfo, TRUE);
 
-		src_mgr.cinfo.out_color_space =  JCS_EXT_ABGR;
-	
+		src_mgr.cinfo.out_color_space = JCS_EXT_BGRA; // (using JCS_EXT_ABGR below)
+		// Tried: JCS_EXT_ABGR JCS_EXT_ARGB JCS_EXT_RGBA JCS_EXT_BGRA
+		
 		assert(src_mgr.cinfo.num_components == 3);
 		assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
 		//NSLog(@"WID=%d HEIGHT=%d", src_mgr.cinfo.image_width, src_mgr.cinfo.image_height);
@@ -618,7 +625,7 @@ NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024)
 			//NSLog(@"GOT header");
 			src_mgr.got_header = YES;
 			src_mgr.start_of_stream = NO;
-			src_mgr.cinfo.out_color_space =  JCS_EXT_ABGR;
+			src_mgr.cinfo.out_color_space = JCS_EXT_BGRA;
 
 			assert(src_mgr.cinfo.num_components == 3);
 			assert(src_mgr.cinfo.image_width > 0 && src_mgr.cinfo.image_height > 0);
@@ -873,7 +880,7 @@ NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024)
 			jwidth,
 			ims[0].map.bytesPerRow,
 			jheight,
-			TJPF_ABGR,
+			TJPF_BGRA,
 			TJFLAG_NOREALLOC
 			);
 		tjDestroy(decompressor);
@@ -1014,7 +1021,8 @@ NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024)
 
 		madvise(ims[0].map.addr, ims[0].map.mappedSize-ims[0].map.emptyTileRowSize, MADV_SEQUENTIAL);
 
-		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little);	// BRGA flipped (little Endian)
+		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, 
+			kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little); 	// kCGImageAlphaNoneSkipFirst kCGImageAlphaNoneSkipLast   kCGBitmapByteOrder32Big kCGBitmapByteOrder32Little
 		assert(context);
 		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
 		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
@@ -1135,7 +1143,7 @@ NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024)
 	   4*bitsPerComponent,
 	   tileBytesPerRow,
 	   colorSpace,
-	   kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Little,
+	   kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little,	// kCGImageAlphaPremultipliedFirst kCGImageAlphaPremultipliedLast        kCGBitmapByteOrder32Big kCGBitmapByteOrder32Little
 	   dataProvider,
 	   NULL,
 	   false,
@@ -1240,16 +1248,26 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	imageMemory *im = (imageMemory *)info;
 
 	size_t mapSize = tileDimension*tileBytesPerRow;
-	// Don't think caching here would help but didn't test myself.
+
+#if MAPPING_IMAGES == 1	
+	// Turning the NOCACHE flag off might up performance, but really clog the system
+	// Note that the OS calls this on multiple threads. Thus, we cannot read directly from the file - we'd have to single thread those reads.
+	// mmap lets us map as many areas as we need.
 	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->map.fd, (im->row*im->cols + im->col) * mapSize);  /*| MAP_NOCACHE */
 	if(startPtr == MAP_FAILED) {
 		NSLog(@"errno4=%s", strerror(errno) );
 		return 0;
 	}
 
-	memcpy(buffer, startPtr+position, origCount);	// blit the image, then quit. How nice is that!
+	memcpy(buffer, startPtr+position, origCount);	// blit the image, then return. How nice is that!
 	munmap(startPtr, mapSize);
-
+#else
+	ssize_t readSize = pread(im->map.fd, buffer, origCount, ((im->row*im->cols + im->col) * mapSize) + position);
+	if((size_t)readSize != origCount) {
+		NSLog(@"errno4=%s", strerror(errno) );
+		return 0;
+	}
+#endif
 	return origCount;
 }
 
