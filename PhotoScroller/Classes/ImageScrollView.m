@@ -35,7 +35,9 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#warning TODO: Saw CGSConvertXRGB8888toRGBA8888 in a stack trace, means we don't have the image properly defined for iOS
+#if !__has_feature(objc_arc)
+#error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
+#endif
 
 #import "ImageScrollView.h"
 #import "TilingView.h"
