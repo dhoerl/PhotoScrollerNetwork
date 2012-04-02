@@ -40,6 +40,10 @@
 #import "TilingView.h"
 #import "TiledImageBuilder.h"
 
+#if !__has_feature(objc_arc)
+#error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
+#endif
+
 @interface FastCATiledLayer : CATiledLayer
 @end
 
@@ -84,7 +88,7 @@
 - (void)drawLayer:(CALayer*)layer inContext:(CGContextRef)context
 {
 	if(tb.failed) return;
-	
+
     CGFloat scale = CGContextGetCTM(context).a;
 
 	// Fetch clip box in *view* space; context's CTM is preconfigured for view space->tile space transform
@@ -100,6 +104,8 @@
 
 	CGImageRef image = [tb newImageForScale:scale row:lrintf(row) col:lrintf(col)];
 	box.origin.y = 0;
+	
+	CGContextSetBlendMode(context, kCGBlendModeCopy);	// no blending! from QA 1708
 	CGContextDrawImage(context, box, image);
 	CFRelease(image);
 
