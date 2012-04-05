@@ -64,5 +64,8 @@
 - (void)appendToImageFile:(NSData *)data;
 - (void)dataFinished;
 
+- (CGSize)translateSize:(NSUInteger)orientation size:(CGSize)size;
+- (CGPoint)translateTile:(NSUInteger)orientation scale:(CGFloat)scale location:(CGPoint)origPt;
+
 @end
 

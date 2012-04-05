@@ -101,10 +101,16 @@
 	CGSize tileSize = [(CATiledLayer*)layer tileSize];
 	CGFloat col = box.origin.x * scale / tileSize.width;
 	CGFloat row = box.origin.y * scale / tileSize.height;
-
+NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
 	CGImageRef image = [tb newImageForScale:scale row:lrintf(row) col:lrintf(col)];
 	box.origin.y = 0;
-	
+#if 0
+CGFloat x = box.origin.x + box.size.width/2;
+CGFloat y = box.origin.y + box.size.height/2;
+CGContextTranslateCTM(context, +x, +y);
+CGContextRotateCTM(context, (CGFloat)(45*M_PI)/180 );
+CGContextTranslateCTM(context, -x, -y);
+#endif	
 	CGContextSetBlendMode(context, kCGBlendModeCopy);	// no blending! from QA 1708
 	CGContextDrawImage(context, box, image);
 	CFRelease(image);

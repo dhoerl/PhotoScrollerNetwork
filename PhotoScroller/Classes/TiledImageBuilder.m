@@ -1229,6 +1229,57 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	return fm;
 }
 
+#if 0
+Value	0th Row	0th Column
+1	top	left side
+2	top	right side
+3	bottom	right side
+4	bottom	left side
+5	left side	top
+6	right side	top
+7	right side	bottom
+8	left side	bottom
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif
+
+
+- (CGSize)translateSize:(NSUInteger)orientation size:(CGSize)size
+{
+	switch(orientation) {
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+		return CGSizeMake(size.height, size.width);
+	
+	default:
+		return size;
+	}
+}
+
+- (CGPoint)translateTile:(NSUInteger)orientation scale:(CGFloat)scale location:(CGPoint)origPt
+{
+	NSUInteger idx = 0;
+	NSUInteger tmp = 1;
+	NSUInteger power = lrintf(1/scale);
+	while(tmp != power) {
+		++idx;
+		tmp *= 2;
+	}
+	
+//	NSUInteger rows = ims[idx].rows;
+//	NSUInteger cols = ims[idx].cols;
+
+
+
+	return origPt;
+}
 
 
 @end
