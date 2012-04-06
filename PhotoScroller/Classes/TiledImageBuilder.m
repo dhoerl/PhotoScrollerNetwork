@@ -34,6 +34,24 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+#if 0
+Value	0th Row	0th Column
+1	top	left side
+2	top	right side
+3	bottom	right side
+4	bottom	left side
+5	left side	top
+6	right side	top
+7	right side	bottom
+8	left side	bottom
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif
 
 #if !__has_feature(objc_arc)
 #error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
@@ -60,6 +78,7 @@
 #include <sys/sysctl.h>
 #include <sys/stat.h>
 
+//#import "UTCoreTypes.h"
 
 #if USE_VIMAGE == 1
 #import <Accelerate/Accelerate.h>
@@ -250,6 +269,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 }
 	 
 @interface TiledImageBuilder ()
+@property (nonatomic, strong, readwrite) NSDictionary *properties;
 
 - (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
 
@@ -281,6 +301,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 
 - (NSUInteger)zoomLevelsForSize:(CGSize)size;;
 
+- (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt;
+
 @end
 
 #if 0
@@ -308,6 +330,8 @@ static void foo(int sig)
 	unsigned char		*scanLines[SCAN_LINE_MAX];
 #endif
 }
+@synthesize properties;
+@synthesize orientation;
 @synthesize ubc_threshold;
 @synthesize zoomLevels;
 @synthesize failed;
@@ -538,6 +562,26 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		/* Step 3: read file parameters with jpeg_read_header() */
 		(void) jpeg_read_header(&src_mgr.cinfo, TRUE);
 
+		{
+			long foo = ftell(imageFile);
+			rewind(imageFile);
+			NSMutableData *t = [NSMutableData dataWithLength:(NSUInteger)foo];
+
+			size_t len = fread([t mutableBytes], foo, 1, imageFile);
+			assert(len == 1);
+
+			//CGImageSourceRef imageSourcRef = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
+			CGImageSourceRef imageSourcRef = CGImageSourceCreateIncremental(NULL);
+			CGImageSourceUpdateData(imageSourcRef, CFBridgingRetain(t), NO);
+
+			CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
+			if(dict) {
+				CFShow(dict);
+				properties = CFBridgingRelease(dict);
+			}
+			CFRelease(imageSourcRef);			
+		}
+
 		src_mgr.cinfo.out_color_space = JCS_EXT_BGRA; // (using JCS_EXT_ABGR below)
 		// Tried: JCS_EXT_ABGR JCS_EXT_ARGB JCS_EXT_RGBA JCS_EXT_BGRA
 		
@@ -622,6 +666,19 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 			/* Step 3: read file parameters with jpeg_read_header() */
 			int jret = jpeg_read_header(&src_mgr.cinfo, FALSE);
 			if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return;
+
+			{
+				CGImageSourceRef imageSourcRef = CGImageSourceCreateIncremental(NULL);
+				CGImageSourceUpdateData(imageSourcRef, CFBridgingRetain(webData), NO);
+
+				CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
+				if(dict) {
+					CFShow(dict);
+					properties = CFBridgingRelease(dict);
+				}
+				CFRelease(imageSourcRef);			
+			}
+
 			//NSLog(@"GOT header");
 			src_mgr.got_header = YES;
 			src_mgr.start_of_stream = NO;
@@ -834,6 +891,13 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		failed = YES;
 		CGImageSourceRef imageSourcRef = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
 		if(imageSourcRef) {
+			CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
+			if(dict) {
+				//CFShow(dict);
+				properties = CFBridgingRelease(dict);
+//orientation = 8;
+
+			}
 			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
 			CFRelease(imageSourcRef), imageSourcRef = NULL;
 			if(image) {
@@ -871,6 +935,18 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		&jpegSubsamp 
 		);
 	if(!failed) {
+		{
+			CGImageSourceRef imageSourcRef = CGImageSourceCreateIncremental(NULL);
+			CGImageSourceUpdateData(imageSourcRef, CFBridgingRetain(data), NO);
+
+			CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
+			if(dict) {
+				CFShow(dict);
+				properties = CFBridgingRelease(dict);
+			}
+			CFRelease(imageSourcRef);			
+		}
+	
 		[self mapMemoryForIndex:0 width:jwidth height:jheight];
 
 		failed = (BOOL)tjDecompress2(decompressor,
@@ -889,11 +965,6 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	if(!failed) [self run];
 }
 #endif
-
-- (CGSize)imageSize
-{
-	return CGSizeMake(ims[0].map.width, ims[0].map.height);
-}
 
 - (BOOL)createImageFile
 {
@@ -1109,16 +1180,20 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	return;
 }
 
-- (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col
+- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt
 {
-	CGImageRef image = [self newImageForScale:scale row:row col:col];
+	CGImageRef image = [self newImageForScale:scale location:pt];
 	UIImage *img = [UIImage imageWithCGImage:image];
 	CGImageRelease(image);
 	return img;
 }
-- (CGImageRef)newImageForScale:(CGFloat)scale row:(int)row col:(int)col
+- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)origPt
 {
 	if(failed) return nil;
+
+	CGPoint pt = [self translateTileForScale:scale location:origPt];
+	int col = lrintf(pt.x);
+	int row = lrintf(pt.y);
 
 	long idx = offsetFromScale(scale);
 	imageMemory *im = (imageMemory *)malloc(sizeof(imageMemory));
@@ -1229,6 +1304,19 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	return fm;
 }
 
+- (CGSize)imageSize
+{
+	switch(orientation) {
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+		return CGSizeMake(ims[0].map.height, ims[0].map.width);
+	default:
+		return CGSizeMake(ims[0].map.width, ims[0].map.height);
+	}
+}
+
 #if 0
 Value	0th Row	0th Column
 1	top	left side
@@ -1249,21 +1337,7 @@ Value	0th Row	0th Column
 #endif
 
 
-- (CGSize)translateSize:(NSUInteger)orientation size:(CGSize)size
-{
-	switch(orientation) {
-	case 5:
-	case 6:
-	case 7:
-	case 8:
-		return CGSizeMake(size.height, size.width);
-	
-	default:
-		return size;
-	}
-}
-
-- (CGPoint)translateTile:(NSUInteger)orientation scale:(CGFloat)scale location:(CGPoint)origPt
+- (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt
 {
 	NSUInteger idx = 0;
 	NSUInteger tmp = 1;
@@ -1272,13 +1346,75 @@ Value	0th Row	0th Column
 		++idx;
 		tmp *= 2;
 	}
+	imageMemory *imP = &ims[idx];
 	
-//	NSUInteger rows = ims[idx].rows;
-//	NSUInteger cols = ims[idx].cols;
+	CGPoint newPt;
+	switch(orientation) {
+	default:
+	case 1:
+		newPt = origPt;
+		break;
+	case 2:
+		newPt = CGPointMake(imP->cols - origPt.x - 1, origPt.y);
+		break;
+	case 3:
+		newPt = CGPointMake(imP->cols - origPt.x - 1, imP->rows - origPt.y - 1);
+		break;
+	case 4:
+		newPt = CGPointMake(origPt.x, imP->rows - origPt.y - 1);
+		break;
+	case 5:
+		newPt = CGPointMake(origPt.y, origPt.x);
+		break;
+	case 6:
+		newPt = CGPointMake(origPt.y, imP->cols - origPt.x - 1);
+		break;
+	case 7:
+		newPt = CGPointMake(imP->rows - origPt.y - 1, imP->cols - origPt.x - 1);
+		break;
+	case 8:
+		newPt = CGPointMake(imP->rows - origPt.y - 1, origPt.x);
+		break;
+	}
 
+	return newPt;
+}
 
+- (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale
+{
+	CGAffineTransform transform = CGAffineTransformIdentity;
 
-	return origPt;
+	//CGContextTranslateCTM(context, 0, box.origin.y + box.size.height);
+	//CGContextScaleCTM(context, 1.0, -1.0);
+	switch(orientation) {
+	default:
+	case 1:
+		//transform = CGAffineTransformMake(1, 0, 0, -1, 0, box.origin.y + box.size.height);
+		break;
+	case 2:
+		break;
+	case 3:
+		break;
+	case 4:
+		break;
+	case 5:
+		break;
+	case 6:
+		break;
+	case 7:
+		break;
+	case 8:
+	{
+		CGFloat x = box.origin.x + (TILE_SIZE/scale)/2;
+		CGFloat y = box.origin.y + (TILE_SIZE/scale)/2;
+
+		transform = CGAffineTransformIdentity;
+		transform = CGAffineTransformTranslate(transform, +x, +y);
+		transform = CGAffineTransformRotate(transform, (CGFloat)(90*M_PI)/180 );
+		transform = CGAffineTransformTranslate(transform, -x, -y);
+	}	break;
+	}
+	return transform;
 }
 
 

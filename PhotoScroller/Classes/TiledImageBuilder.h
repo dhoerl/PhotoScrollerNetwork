@@ -39,14 +39,16 @@
 #import "PhotoScrollerCommon.h"
 
 @interface TiledImageBuilder : NSObject
-@property (nonatomic, assign) NSUInteger zoomLevels;			// explose the init setting
-@property (nonatomic, assign) uint64_t startTime;				// time stamp of when this operation started decoding
-@property (nonatomic, assign) uint64_t finishTime;				// time stamp of when this operation finished  decoding
-@property (nonatomic, assign) uint32_t milliSeconds;			// elapsed time
-@property (nonatomic, assign) int32_t ubc_threshold;			// UBC threshold above which outstanding writes are flushed to the file system (dynamic default)
-@property (nonatomic, assign, readonly) BOOL failed;			// global Error flags
+@property (nonatomic, strong, readonly) NSDictionary *properties;	// image properties from CGImageSourceCopyPropertiesAtIndex()
+@property (nonatomic, assign) NSInteger orientation;				// 0 == automatically set using EXIF orientation from image
+@property (nonatomic, assign) NSUInteger zoomLevels;				// explose the init setting
+@property (nonatomic, assign) uint64_t startTime;					// time stamp of when this operation started decoding
+@property (nonatomic, assign) uint64_t finishTime;					// time stamp of when this operation finished  decoding
+@property (nonatomic, assign) uint32_t milliSeconds;				// elapsed time
+@property (nonatomic, assign) int32_t ubc_threshold;				// UBC threshold above which outstanding writes are flushed to the file system (dynamic default)
+@property (nonatomic, assign, readonly) BOOL failed;				// global Error flags
 
-+ (void)setUbcThreshold:(float)val;								// default is 0.5 - Image disk cache can use half of the available free memory pool
++ (void)setUbcThreshold:(float)val;									// default is 0.5 - Image disk cache can use half of the available free memory pool
 
 - (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels;
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels;
@@ -54,8 +56,9 @@
 
 - (CGSize)imageSize;
 
-- (CGImageRef)newImageForScale:(CGFloat)scale row:(int)row col:(int)col;
-- (UIImage *)tileForScale:(CGFloat)scale row:(int)row col:(int)col;
+- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)pt;
+- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt;
+- (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale;
 
 #ifdef LIBJPEG
 - (void)jpegAdvance:(NSMutableData *)data;
@@ -63,9 +66,6 @@
 
 - (void)appendToImageFile:(NSData *)data;
 - (void)dataFinished;
-
-- (CGSize)translateSize:(NSUInteger)orientation size:(CGSize)size;
-- (CGPoint)translateTile:(NSUInteger)orientation scale:(CGFloat)scale location:(CGPoint)origPt;
 
 @end
 
