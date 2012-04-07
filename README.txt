@@ -21,6 +21,12 @@ Note: originally I tried to do as Apple does - receive a single jpeg file then c
 
 RECENT CHANGES:
 
+v2.1B:
+- grab and expose the CGImageSource "properties" dictionary for ALL images regardless of decoder (a property on TiledImageBuilder)
+- above in preparation for added "orientation" correction
+- refactor TiledImageBuilder.m into a bunch of TiledImageBuilder+ categores - the single .m was becoming unwieldy
+- except for properties, not much of interest here. Lots of effort just to refactor (no class extension ivars, so had to use properties) 
+
 v2.0:
 - iPad1 and iPhone3GS (with only 256M of memory) were getting killed with no OS warning. So, created an upper limit on cdisk cache usage, and flush files (to free up memory) when the threshold is hit. Crashes went away.
 - tweaked the way images are created and then drawn (in TiledImageView) to cut down on un-necessary Quartz conversions.

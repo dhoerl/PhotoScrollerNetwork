@@ -1,0 +1,147 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *
+ * This file is part of PhotoScrollerNetwork -- An iOS project that smoothly and efficiently
+ * renders large images in progressively smaller ones for display in a CATiledLayer backed view.
+ * Images can either be local, or more interestingly, downloaded from the internet.
+ * Images can be rendered by an iOS CGImageSource, libjpeg-turbo, or incrmentally by
+ * libjpeg (the turbo version) - the latter gives the best speed.
+ *
+ * Parts taken with minor changes from Apple's PhotoScroller sample code, the
+ * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
+ * was completely original source code developed by me.
+ *
+ * Copyright 2012 David Hoerl All Rights Reserved.
+ *
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are
+ * permitted provided that the following conditions are met:
+ *
+ *    1. Redistributions of source code must retain the above copyright notice, this list of
+ *       conditions and the following disclaimer.
+ *
+ *    2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *       of conditions and the following disclaimer in the documentation and/or other materials
+ *       provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY David Hoerl ''AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL David Hoerl OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#import "TiledImageBuilder-Private.h"
+
+@implementation TiledImageBuilder (Tile)
+
+- (BOOL)tileBuilder:(imageMemory *)im useMMAP:(BOOL )useMMAP
+{
+	unsigned char *optr = im->map.emptyAddr;
+	unsigned char *iptr = im->map.addr;
+	
+	// NSLog(@"tile...");
+	// Now, we are going to pre-tile the image in 256x256 tiles, so we can map in contigous chunks of memory
+	for(size_t row=im->row; row<im->rows; ++row) {
+		unsigned char *tileIptr;
+		if(useMMAP) {
+			im->map.mappedSize = im->map.emptyTileRowSize*2;	// two tile rows
+			im->map.emptyAddr = mmap(NULL, im->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, row*im->map.emptyTileRowSize);  /*| MAP_NOCACHE */
+			if(im->map.emptyAddr == MAP_FAILED) return NO;
+#if MMAP_DEBUGGING == 1
+			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+#endif	
+			im->map.addr = im->map.emptyAddr + im->map.emptyTileRowSize;
+			
+			iptr = im->map.addr;
+			optr = im->map.emptyAddr;
+			tileIptr = im->map.emptyAddr;
+		} else {
+			tileIptr = iptr;
+		}
+		for(size_t col=0; col<im->cols; ++col) {
+			unsigned char *lastIptr = iptr;
+			for(size_t i=0; i<tileDimension; ++i) {
+				memcpy(optr, iptr, tileBytesPerRow);
+				iptr += im->map.bytesPerRow;
+				optr += tileBytesPerRow;
+			}
+			iptr = lastIptr + tileBytesPerRow;	// move to the next image
+		}
+		if(useMMAP) {
+			//int mret = msync(im->map.emptyAddr, im->map.mappedSize, MS_ASYNC);
+			//assert(mret == 0);
+			int ret = munmap(im->map.emptyAddr, im->map.mappedSize);
+#if MMAP_DEBUGGING == 1
+			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+#endif
+			assert(ret == 0);
+		} else {
+			iptr = tileIptr + im->map.emptyTileRowSize;
+		}
+	}
+	//NSLog(@"...tile");
+
+	if(!useMMAP) {
+		// OK we're done with this memory now
+		//int mret = msync(im->map.emptyAddr, im->map.mappedSize, MS_ASYNC);
+		//assert(mret == 0);
+		int ret = munmap(im->map.emptyAddr, im->map.mappedSize);
+#if MMAP_DEBUGGING == 1
+		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+#endif
+		assert(ret==0);
+
+		// don't need the scratch space now
+		[self truncateEmptySpace:im];
+	
+		/*
+		 * Best place I could find to flush dirty blocks to disk. Will flush whole file if doing full image decodes,
+		 * but only partial files for incremental loader
+		 */
+		int fd = im->map.fd;
+		assert(fd != -1);
+		int32_t file_size = (int32_t)im->map.mappedSize;
+		OSAtomicAdd32Barrier(file_size, &ubc_usage);
+		
+		if(ubc_usage > self.ubc_threshold) {
+			if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
+				// NSLog(@"SUSPEND==========================================================usage=%d thresh=%d", ubc_usage, ubc_thresh);
+				dispatch_suspend(fileFlushQueue);
+				dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ NSLog(@"unblocked!"); } );
+			}
+		}
+		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
+			{
+				// need to make sure file is kept open til we flush - who knows what will happen otherwise
+				int ret2 = fcntl(fd,  F_FULLFSYNC);
+				if(ret2 == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
+				OSAtomicAdd32Barrier(-file_size, &ubc_usage);				
+				if(ubc_usage <= self.ubc_threshold) {
+					if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
+						dispatch_resume(fileFlushQueue);
+					}
+				}
+			} );
+
+	}
+	
+	return YES;
+}
+
+- (void )truncateEmptySpace:(imageMemory *)im
+{
+	// don't need the scratch space now
+	off_t properLen = lseek(im->map.fd, 0, SEEK_END) - im->map.emptyTileRowSize;
+	int ret = ftruncate(im->map.fd, properLen);
+	if(ret) {
+		NSLog(@"Failed to truncate file!");
+	}
+	im->map.mappedSize = 0;	// force errors if someone tries to use mmap now
+}
+
+@end

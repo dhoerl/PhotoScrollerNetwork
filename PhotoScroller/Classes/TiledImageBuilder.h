@@ -1,4 +1,3 @@
-
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *
  * This file is part of PhotoScrollerNetwork -- An iOS project that smoothly and efficiently
@@ -54,18 +53,25 @@
 - (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels;
 - (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
 
-- (CGSize)imageSize;
-
-- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)pt;
-- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt;
-- (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale;
-
-#ifdef LIBJPEG
-- (void)jpegAdvance:(NSMutableData *)data;
-#endif
-
 - (void)appendToImageFile:(NSData *)data;
 - (void)dataFinished;
 
 @end
 
+@interface TiledImageBuilder (Draw)
+
+- (CGSize)imageSize;	// orientation modifies over what is downloaded
+- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)pt;
+- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt;
+- (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale;
+- (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt;
+
+@end
+
+#ifdef LIBJPEG
+@interface TiledImageBuilder (JPEG_PUB)
+
+- (void)jpegAdvance:(NSMutableData *)data;
+
+@end
+#endif

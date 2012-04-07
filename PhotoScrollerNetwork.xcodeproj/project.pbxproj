@@ -129,6 +129,16 @@
 		DE4ADA3D14E1A56500D63E5A /* iTunesArtwork in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97114DC788F00D63E5A /* iTunesArtwork */; };
 		DE4ADA3E14E1A56500D63E5A /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97914DC788F00D63E5A /* ReadMe.txt */; };
 		DE4ADA3F14E1A56500D63E5A /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */; };
+		DE7AB8F915309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8F815309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m */; };
+		DE7AB8FA15309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8F815309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m */; };
+		DE7AB8FD15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */; };
+		DE7AB8FE15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */; };
+		DE7AB8FF15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */; };
+		DE7AB90015309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */; };
+		DE7AB90115309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
+		DE7AB90215309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
+		DE7AB90315309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
+		DE7AB90415309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DED014101524F92900B9335E /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
 		DED014111524F94000B9335E /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
 /* End PBXBuildFile section */
@@ -184,6 +194,10 @@
 		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; };
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE588D8614E9433A00C7E151 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
+		DE7AB8F615309AA300C4CFE7 /* TiledImageBuilder-Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TiledImageBuilder-Private.h"; sourceTree = "<group>"; };
+		DE7AB8F815309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+JPEG.m"; sourceTree = "<group>"; };
+		DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+Draw.m"; sourceTree = "<group>"; };
+		DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+Tile.m"; sourceTree = "<group>"; };
 		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoScrollerCommon.h; sourceTree = "<group>"; };
 		DED0140F1524F92900B9335E /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libturbojpeg.a; path = /usr/lib/libturbojpeg.a; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
@@ -342,8 +356,12 @@
 				DE4AD95314DC788F00D63E5A /* ImageScrollView.m */,
 				DE4AD95414DC788F00D63E5A /* PhotoViewController.h */,
 				DE4AD95514DC788F00D63E5A /* PhotoViewController.m */,
+				DE7AB8F615309AA300C4CFE7 /* TiledImageBuilder-Private.h */,
 				DE4AD95714DC788F00D63E5A /* TiledImageBuilder.h */,
 				DE4AD95814DC788F00D63E5A /* TiledImageBuilder.m */,
+				DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */,
+				DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */,
+				DE7AB8F815309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m */,
 				DE4AD95914DC788F00D63E5A /* TilingView.h */,
 				DE4AD95A14DC788F00D63E5A /* TilingView.m */,
 			);
@@ -624,6 +642,8 @@
 				DE3EC286151CC50300921348 /* TiledImageBuilder.m in Sources */,
 				DE3EC287151CC50300921348 /* TilingView.m in Sources */,
 				DE3EC288151CC50300921348 /* ConcurrentOp.m in Sources */,
+				DE7AB8FF15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
+				DE7AB90315309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -639,6 +659,9 @@
 				DE3EC2B7151CC50D00921348 /* TiledImageBuilder.m in Sources */,
 				DE3EC2B8151CC50D00921348 /* TilingView.m in Sources */,
 				DE3EC2B9151CC50D00921348 /* ConcurrentOp.m in Sources */,
+				DE7AB8FA15309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m in Sources */,
+				DE7AB90015309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
+				DE7AB90415309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -654,6 +677,8 @@
 				DE4AD98214DC788F00D63E5A /* TiledImageBuilder.m in Sources */,
 				DE4AD98314DC788F00D63E5A /* TilingView.m in Sources */,
 				DE4AD9CA14DEE4DB00D63E5A /* ConcurrentOp.m in Sources */,
+				DE7AB8FD15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
+				DE7AB90115309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -669,6 +694,9 @@
 				DE4ADA2514E1A56500D63E5A /* TiledImageBuilder.m in Sources */,
 				DE4ADA2614E1A56500D63E5A /* TilingView.m in Sources */,
 				DE4ADA2714E1A56500D63E5A /* ConcurrentOp.m in Sources */,
+				DE7AB8F915309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m in Sources */,
+				DE7AB8FE15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
+				DE7AB90215309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
