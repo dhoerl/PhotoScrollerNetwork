@@ -35,15 +35,6 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 #if 0
-Value	0th Row	0th Column
-1	top	left side
-2	top	right side
-3	bottom	right side
-4	bottom	left side
-5	left side	top
-6	right side	top
-7	right side	bottom
-8	left side	bottom
   1        2       3      4         5            6           7          8
 
 888888  888888      88  88      8888888888  88                  88  8888888888
@@ -139,7 +130,21 @@ dispatch_queue_t		fileFlushQueue;
 dispatch_group_t		fileFlushGroup;
 volatile	int32_t		fileFlushGroupSuspended;
 volatile int32_t		ubc_usage;					// rough idea of what our buffer cache usage is
-float				ubc_threshold_ratio;
+float					ubc_threshold_ratio;
+
+@interface TiledImageBuilder ()
+
+- (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
+
+- (void)decodeImageURL:(NSURL *)url;
+- (void)decodeImage:(CGImageRef)image;
+
+- (BOOL)createImageFile;
+- (int)createTempFile:(BOOL)unlinkFile size:(size_t)size;
+
+- (NSUInteger)zoomLevelsForSize:(CGSize)size;
+
+@end
 
 @implementation TiledImageBuilder
 {
@@ -267,7 +272,10 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 #endif
 		//NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
 
-		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];		
+		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];
+
+//#warning TESTING		
+//		orientation = 3; // TESTING
 	}
 	return self;
 }
@@ -291,7 +299,7 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 
 - (void)lowMemory:(NSNotification *)note
 {
-	//NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usage);
+NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usage);
 	ubc_threshold = lrintf((float)ubc_threshold * ubc_threshold_ratio);
 	
 	[self freeMemory:@"Yikes!"];
@@ -314,11 +322,6 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		++zLevels;
 	}
 	return zLevels;
-}
-
-- (uint64_t)timeStamp
-{
-	return mach_absolute_time();
 }
 
 - (void)appendToImageFile:(NSData *)data
@@ -367,8 +370,6 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 			if(dict) {
 				//CFShow(dict);
 				properties = CFBridgingRelease(dict);
-//orientation = 8;
-
 			}
 			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
 			CFRelease(imageSourcRef), imageSourcRef = NULL;
@@ -469,8 +470,51 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	imsP->cols = calcDimension(imsP->map.width)/tileDimension;
 #if 0	
 	mapper *mapP = &imsP->map;
+	imsP->col0offset = see below;
+	imsP->row0offset = see below
 #else
 	[self mapMemory:&imsP->map];
+#if 0
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif
+	
+	{
+		BOOL colOffset = NO;
+		BOOL rowOffset = NO; 
+		switch(orientation) {
+		case 0:
+		case 1:
+		case 5:
+			break;
+		case 2:
+		case 8:
+			colOffset = YES;
+			break;
+		case 3:
+		case 7:
+			colOffset = YES;
+			rowOffset = YES;
+			break;
+		case 4:
+		case 6:
+			rowOffset = YES;
+			break;
+		}
+		if(colOffset) {
+			imsP->map.col0offset = imsP->map.bytesPerRow - imsP->map.width*bytesPerPixel;
+		}
+		if(rowOffset) {
+			imsP->map.row0offset = imsP->rows * tileDimension - imsP->map.height;
+			// NSLog(@"ROW OFFSET = %ld", imsP->map.row0offset);
+		}
+		if(orientation >= 5 && orientation <= 8) imsP->rotated = YES;
+	}
 }
 
 - (void)mapMemory:(mapper *)mapP
@@ -478,7 +522,7 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 #endif
 	mapP->bytesPerRow = calcBytesPerRow(mapP->width);
 	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
-	mapP->mappedSize = mapP->bytesPerRow * (calcDimension(mapP->height) + 1) + mapP->emptyTileRowSize;	// plus one for additional row possibly needed for orientation remaps
+	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;
 
 //NSLog(@"mapP->fd = %d", mapP->fd);
 	if(mapP->fd <= 0) {
@@ -504,78 +548,6 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	}
 }
 
-- (void)run
-{
-	mapper *lastMap = NULL;
-	mapper *currMap = NULL;
-
-	for(NSUInteger idx=0; idx < zoomLevels; ++idx) {
-		lastMap = currMap;	// unused first loop
-		currMap = &ims[idx].map;
-		if(idx) {
-			[self mapMemoryForIndex:idx width:lastMap->width/2 height:lastMap->height/2];
-			if(failed) return;
-
-//dumpIMS("RUN", &ims[idx]);
-
-#if USE_VIMAGE == 1
-		   vImage_Buffer src = {
-				.data = lastMap->addr,
-				.height = lastMap->height,
-				.width = lastMap->width,
-				.rowBytes = lastMap->bytesPerRow
-			};
-			
-		   vImage_Buffer dest = {
-				.data = currMap->addr,
-				.height = currMap->height,
-				.width = currMap->width,
-				.rowBytes = currMap->bytesPerRow
-			};
-
-			vImage_Error err = vImageScale_ARGB8888 (
-			   &src,
-			   &dest,
-			   NULL,
-			   0 // kvImageHighQualityResampling 
-			);
-			assert(err == kvImageNoError);
-#else	
-			// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
-			// Got a better idea? Submit a pull request.
-			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_SEQUENTIAL);
-			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_SEQUENTIAL);
-
-			uint32_t *inPtr = (uint32_t *)lastMap->addr;
-			uint32_t *outPtr = (uint32_t *)currMap->addr;
-			for(size_t row=0; row<currMap->height; ++row) {
-				char *lastInPtr = (char *)inPtr;
-				char *lastOutPtr = (char *)outPtr;
-				for(size_t col = 0; col < currMap->width; ++col) {
-					*outPtr++ = *inPtr;
-					inPtr += 2;
-				}
-				inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
-				outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
-			}
-
-			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_FREE);
-			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_FREE);
-#endif
-			// make tiles
-			BOOL ret = [self tileBuilder:&ims[idx-1] useMMAP:NO];
-			if(!ret) goto eRR;
-		}
-	}
-	assert(zoomLevels);
-	failed = ![self tileBuilder:&ims[zoomLevels-1] useMMAP:NO];
-	return;
-	
-  eRR:
-	failed = YES;
-	return;
-}
-
 - (void)drawImage:(CGImageRef)image
 {
 	if(image && !failed) {
@@ -584,10 +556,10 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"drawImage start"];
 #endif
-
 		madvise(ims[0].map.addr, ims[0].map.mappedSize-ims[0].map.emptyTileRowSize, MADV_SEQUENTIAL);
 
-		CGContextRef context = CGBitmapContextCreate(ims[0].map.addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, 
+		unsigned char *addr = ims[0].map.addr + ims[0].map.col0offset + ims[0].map.row0offset*ims[0].map.bytesPerRow;
+		CGContextRef context = CGBitmapContextCreate(addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, 
 			kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little); 	// kCGImageAlphaNoneSkipFirst kCGImageAlphaNoneSkipLast   kCGBitmapByteOrder32Big kCGBitmapByteOrder32Little
 		assert(context);
 		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
@@ -601,6 +573,13 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		[self freeMemory:@"drawImage done"];
 #endif
 	}
+}
+
+#pragma mark Utilities
+
+- (uint64_t)timeStamp
+{
+	return mach_absolute_time();
 }
 
 - (uint64_t)freeDiskspace

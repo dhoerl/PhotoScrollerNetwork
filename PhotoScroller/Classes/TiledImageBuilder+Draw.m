@@ -48,7 +48,7 @@
 
 #endif
 
-static inline long		offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
+static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
 
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,
@@ -84,9 +84,46 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	im->col = col;
 	im->row = row;
 
-	size_t x = col * tileDimension;
-	size_t y = row * tileDimension;
+	BOOL newCol = NO;
+	BOOL newRow = NO;
 	
+	switch(self.orientation) {
+	default:
+	case 0:
+	case 1:
+	case 5:
+		break;
+	case 2:
+	case 8:
+		newCol = YES;
+		break;
+	case 3:
+	case 7:
+		newCol = YES;
+		newRow = YES;
+		break;
+	case 4:
+	case 6:
+		newRow = YES;
+		break;
+	}
+	int ncol = newCol ? (self.ims[idx].cols - col - 1) : col;
+	int nrow = newRow ? (self.ims[idx].rows - row - 1) : row;
+	
+
+#if 0
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif
+		
+	size_t x = ncol * tileDimension;
+	size_t y = nrow * tileDimension;
+
 	im->tileWidth = MIN(im->map.width-x, tileDimension);
 	im->tileHeight = MIN(im->map.height-y, tileDimension);
 
@@ -94,7 +131,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	struct CGDataProviderDirectCallbacks callBacks = { 0, 0, 0, PhotoScrollerProviderGetBytesAtPosition, PhotoScrollerProviderReleaseInfoCallback};
 	CGDataProviderRef dataProvider = CGDataProviderCreateDirect(im, imgSize, &callBacks);
 	
-	CGImageRef image = CGImageCreate (
+	CGImageRef image = CGImageCreate(
 	   im->tileWidth,
 	   im->tileHeight,
 	   bitsPerComponent,
@@ -111,6 +148,16 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	return image;
 }
 
+#if 0
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif
+
 - (CGSize)imageSize
 {
 	switch(self.orientation) {
@@ -125,15 +172,6 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 }
 
 #if 0
-Value	0th Row	0th Column
-1	top	left side
-2	top	right side
-3	bottom	right side
-4	bottom	left side
-5	left side	top
-6	right side	top
-7	right side	bottom
-8	left side	bottom
   1        2       3      4         5            6           7          8
 
 888888  888888      88  88      8888888888  88                  88  8888888888
@@ -142,7 +180,6 @@ Value	0th Row	0th Column
 88          88      88  88
 88          88  888888  888888
 #endif
-
 
 - (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt
 {
@@ -183,44 +220,83 @@ Value	0th Row	0th Column
 		newPt = CGPointMake(imP->rows - origPt.y - 1, origPt.x);
 		break;
 	}
-
+	//NSLog(@"OLDPT=%@ NEWPT=%@", NSStringFromCGPoint(origPt), NSStringFromCGPoint(newPt) );
 	return newPt;
 }
 
+#if 0
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif
+
 - (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale
 {
+	// origin is a 0, 0
 	CGAffineTransform transform = CGAffineTransformIdentity;
+	
+	BOOL flipH = NO;
+	BOOL flipV = NO;
+	CGFloat rotate = 0;
 
-	//CGContextTranslateCTM(context, 0, box.origin.y + box.size.height);
-	//CGContextScaleCTM(context, 1.0, -1.0);
 	switch(self.orientation) {
 	default:
 	case 1:
-		//transform = CGAffineTransformMake(1, 0, 0, -1, 0, box.origin.y + box.size.height);
 		break;
 	case 2:
+		flipH = YES;
 		break;
 	case 3:
+		flipH = YES;
+		flipV = YES;
 		break;
 	case 4:
+		flipV = YES;
 		break;
 	case 5:
+		flipH = YES;
+		rotate = (CGFloat)(90*M_PI)/180;
 		break;
 	case 6:
+		flipH = YES;
+		rotate = (CGFloat)(90*M_PI)/180;
 		break;
 	case 7:
+		flipH = YES;
+		rotate = -(CGFloat)(90*M_PI)/180;
 		break;
 	case 8:
-	{
-		CGFloat x = box.origin.x + (TILE_SIZE/scale)/2;
-		CGFloat y = box.origin.y + (TILE_SIZE/scale)/2;
-
-		transform = CGAffineTransformIdentity;
-		transform = CGAffineTransformTranslate(transform, +x, +y);
-		transform = CGAffineTransformRotate(transform, (CGFloat)(90*M_PI)/180 );
-		transform = CGAffineTransformTranslate(transform, -x, -y);
-	}	break;
+		flipH = YES;
+		rotate = -(CGFloat)(90*M_PI)/180;
+		break;
 	}
+	
+	if(flipH) {
+		CGFloat xOffset = box.size.width/2;
+		transform = CGAffineTransformTranslate(transform, +xOffset, 0);
+		transform = CGAffineTransformScale(transform, -1, 1);
+		transform = CGAffineTransformTranslate(transform, -xOffset, 0);
+	}
+	if(flipV) {
+		CGFloat yOffset = box.size.height/2;
+		transform = CGAffineTransformTranslate(transform, 0, +yOffset);
+		transform = CGAffineTransformScale(transform, 1, -1);
+		transform = CGAffineTransformTranslate(transform, 0, -yOffset);
+	}
+	if(isnormal(rotate)) {
+		// must rotate from box center, not image bits
+		CGFloat x = box.origin.x + rintf(TILE_SIZE/scale)/2;
+		CGFloat y = box.origin.y + rintf(TILE_SIZE/scale)/2;
+
+		transform = CGAffineTransformTranslate(transform, +x, +y);
+		transform = CGAffineTransformRotate(transform, rotate);
+		transform = CGAffineTransformTranslate(transform, -x, -y);
+	}
+
 	return transform;
 }
 
@@ -235,12 +311,38 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	imageMemory *im = (imageMemory *)info;
 
 	size_t mapSize = tileDimension*tileBytesPerRow;
+	size_t offset = (im->row*im->cols + im->col) * mapSize;
+
+	BOOL applyColOffset = NO;
+	BOOL applyRowOffset = NO;
+	if(im->rotated) {
+		if(!im->row) {
+			applyColOffset = YES;
+		}
+		if(!im->col) {
+			applyRowOffset = YES;
+		}
+	} else {
+		if(!im->col) {
+			applyColOffset = YES;
+		}
+		if(!im->row) {
+			applyRowOffset = YES;
+		}
+	}
+	if(applyRowOffset) {
+		offset += im->map.row0offset * tileBytesPerRow;
+	}
+	if(applyColOffset) {
+		offset += im->map.col0offset;
+	}
+
 
 #if MAPPING_IMAGES == 1	
 	// Turning the NOCACHE flag off might up performance, but really clog the system
 	// Note that the OS calls this on multiple threads. Thus, we cannot read directly from the file - we'd have to single thread those reads.
 	// mmap lets us map as many areas as we need.
-	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->map.fd, (im->row*im->cols + im->col) * mapSize);  /*| MAP_NOCACHE */
+	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->map.fd, offset);  /*| MAP_NOCACHE */
 	if(startPtr == MAP_FAILED) {
 		NSLog(@"errno4=%s", strerror(errno) );
 		return 0;
@@ -249,7 +351,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	memcpy(buffer, startPtr+position, origCount);	// blit the image, then return. How nice is that!
 	munmap(startPtr, mapSize);
 #else
-	ssize_t readSize = pread(im->map.fd, buffer, origCount, ((im->row*im->cols + im->col) * mapSize) + position);
+	ssize_t readSize = pread(im->map.fd, buffer, origCount, offset + position);
 	if((size_t)readSize != origCount) {
 		NSLog(@"errno4=%s", strerror(errno) );
 		return 0;

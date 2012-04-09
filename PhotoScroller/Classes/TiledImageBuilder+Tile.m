@@ -144,4 +144,119 @@
 	im->map.mappedSize = 0;	// force errors if someone tries to use mmap now
 }
 
+- (void)run
+{
+	mapper *lastMap = NULL;
+	mapper *currMap = NULL;
+
+	for(NSUInteger idx=0; idx < self.zoomLevels; ++idx) {
+		lastMap = currMap;	// unused first loop
+		currMap = &self.ims[idx].map;
+		if(idx) {
+			[self mapMemoryForIndex:idx width:lastMap->width/2 height:lastMap->height/2];
+			if(self.failed) return;
+
+//dumpIMS("RUN", &ims[idx]);
+
+#if USE_VIMAGE == 1
+		   vImage_Buffer src = {
+				.data = lastMap->addr,
+				.height = lastMap->height,
+				.width = lastMap->width,
+				.rowBytes = lastMap->bytesPerRow
+			};
+			
+		   vImage_Buffer dest = {
+				.data = currMap->addr,
+				.height = currMap->height,
+				.width = currMap->width,
+				.rowBytes = currMap->bytesPerRow
+			};
+
+			vImage_Error err = vImageScale_ARGB8888 (
+			   &src,
+			   &dest,
+			   NULL,
+			   0 // kvImageHighQualityResampling 
+			);
+			assert(err == kvImageNoError);
+#else	
+			// Take every other pixel, every other row, to "down sample" the image. This is fast but has known problems.
+			// Got a better idea? Submit a pull request.
+			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_SEQUENTIAL);
+			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_SEQUENTIAL);
+
+#if 0
+			switch(self.orient ation) {
+			case 0:
+			case 1:
+			{
+				uint32_t *inPtr = (uint32_t *)lastMap->addr;
+				uint32_t *outPtr = (uint32_t *)currMap->addr;
+				for(size_t row=0; row<currMap->height; ++row) {
+					char *lastInPtr = (char *)inPtr;
+					for(size_t col = 0; col < currMap->bytesPerRow/sizeof(uint32_t); ++col) {
+						*outPtr++ = *inPtr;
+						inPtr += 2;
+					}
+					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
+				}
+			}	break;
+
+			case 2:
+			{
+				uint32_t *inPtr = (uint32_t *)(lastMap->addr + lastMap->bytesPerRow);
+				uint32_t *outPtr = (uint32_t *)(currMap->addr + currMap->bytesPerRow);
+				for(size_t row=0; row<currMap->height; ++row) {
+					char *lastInPtr = (char *)inPtr;
+					char *lastoutPtr = (char *)outPtr;
+					for(size_t col = 0; col < currMap->bytesPerRow/sizeof(uint32_t); ++col) {
+						*--outPtr = *--inPtr;
+						--inPtr;
+					}
+					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
+					outPtr = (uint32_t *)(lastoutPtr + currMap->bytesPerRow);
+				}
+			}	break;
+			
+			}
+#else
+			{
+				size_t oddColOffset = 0;
+				size_t oddRowOffset = 0;
+				if(lastMap->col0offset && (lastMap->width & 1)) oddColOffset = bytesPerPixel;			// so rightmost pixels the same
+				if(lastMap->row0offset && (lastMap->height & 1)) oddRowOffset = lastMap->bytesPerRow;	// so we use the bottom row
+				
+				uint32_t *inPtr = (uint32_t *)(lastMap->addr + lastMap->col0offset + oddColOffset + lastMap->row0offset*lastMap->bytesPerRow + oddRowOffset);
+				uint32_t *outPtr = (uint32_t *)(currMap->addr + currMap-> col0offset + currMap->row0offset*currMap->bytesPerRow);
+				for(size_t row=0; row<currMap->height; ++row) {
+					unsigned char *lastInPtr = (unsigned char *)inPtr;
+					unsigned char *lastOutPtr = (unsigned char *)outPtr;
+					for(size_t col = 0; col < currMap->width; ++col) {
+						*outPtr++ = *inPtr;
+						inPtr += 2;
+					}
+					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
+					outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
+				}
+			}
+#endif
+
+			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_FREE);
+			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_FREE);
+#endif
+			// make tiles
+			BOOL ret = [self tileBuilder:&self.ims[idx-1] useMMAP:NO];
+			if(!ret) goto eRR;
+		}
+	}
+	assert(self.zoomLevels);
+	self.failed = ![self tileBuilder:&self.ims[self.zoomLevels-1] useMMAP:NO];
+	return;
+	
+  eRR:
+	self.failed = YES;
+	return;
+}
+
 @end

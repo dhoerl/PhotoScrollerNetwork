@@ -94,19 +94,33 @@
 	// Fetch clip box in *view* space; context's CTM is preconfigured for view space->tile space transform
 	CGRect box = CGContextGetClipBoundingBox(context);
 
-	CGContextTranslateCTM(context, 0, box.origin.y + box.size.height);
-	CGContextScaleCTM(context, 1.0, -1.0);
-	
 	// Calculate tile index
 	CGSize tileSize = [(CATiledLayer*)layer tileSize];
 	CGFloat col = box.origin.x * scale / tileSize.width;
 	CGFloat row = box.origin.y * scale / tileSize.height;
-//NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
 	CGImageRef image = [tb newImageForScale:scale location:CGPointMake(col, row)];
 
+	CGContextTranslateCTM(context, box.origin.x, box.origin.y + box.size.height);
+	CGContextScaleCTM(context, 1.0, -1.0);
+	box.origin.x = 0;
 	box.origin.y = 0;
-	CGAffineTransform transform = [tb transformForRect:box scale:scale];
-	CGContextConcatCTM(context, transform);
+	
+//NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
+
+
+#if 1
+
+CGAffineTransform transform = [tb transformForRect:box scale:scale];
+CGContextConcatCTM(context, transform);
+
+#else
+CGFloat width = CGImageGetWidth(image)/scale;
+NSLog(@"TILE=%@ WIDTH=%f boxwidth=%f", NSStringFromCGPoint(CGPointMake(col, row)), width, box.size.width);
+
+CGContextTranslateCTM(context, box.origin.x + (width/2), 0); // box.origin.x + 
+CGContextScaleCTM(context, -1.0f, 1.0f);
+CGContextTranslateCTM(context, -(box.origin.x + (width/2)), 0); // box.origin.x + 
+#endif
 	
 #if 0
 CGFloat x = box.origin.x + box.size.width/2;

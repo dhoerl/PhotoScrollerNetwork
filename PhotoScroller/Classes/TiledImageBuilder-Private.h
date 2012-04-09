@@ -85,8 +85,12 @@ typedef struct {
 	size_t mappedSize;			// all space from emptyAddr to end of file
 	size_t height;				// image
 	size_t width;				// image
-	size_t bytesPerRow;			// image
+	size_t bytesPerRow;			// mapped space, rounded to next full tile
 	size_t emptyTileRowSize;	// free space at the beginning of the file
+
+	// used for orientations other than "1"
+	size_t col0offset;
+	size_t row0offset;
 } mapper;
 
 // Internal struct to keep values of interest when probing the system
@@ -115,9 +119,12 @@ typedef struct {
 	size_t row;
 	
 	// tiling only
+	size_t col;
 	size_t tileHeight;		
 	size_t tileWidth;
-	size_t col;
+	
+	// drawing
+	BOOL rotated;
 
 } imageMemory;
 
@@ -170,27 +177,20 @@ extern float				ubc_threshold_ratio;
 
 + (CGColorSpaceRef)colorSpace;
 
-- (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
-
-- (void)decodeImageURL:(NSURL *)url;
-- (void)decodeImage:(CGImageRef)image;
-
-- (BOOL)createImageFile;
-- (int)createTempFile:(BOOL)unlinkFile size:(size_t)size;
 - (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h;
-- (void)run;
 
 - (uint64_t)timeStamp;
 - (uint64_t)freeDiskspace;
 - (freeMemory)freeMemory:(NSString *)msg;
 
-- (NSUInteger)zoomLevelsForSize:(CGSize)size;;
-
 @end
 
 @interface TiledImageBuilder (Tile)
+
 - (BOOL)tileBuilder:(imageMemory *)im useMMAP:(BOOL )useMMAP;
 - (void )truncateEmptySpace:(imageMemory *)im;
+- (void)run;
+
 @end
 
 #ifdef LIBJPEG
