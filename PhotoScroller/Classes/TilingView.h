@@ -42,5 +42,6 @@
 
 - (id)initWithImageBuilder:(TiledImageBuilder *)imageBuilder;
 - (CGSize)imageSize;
+//- (UIImage *)image;
 
 @end

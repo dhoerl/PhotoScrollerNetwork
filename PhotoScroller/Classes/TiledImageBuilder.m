@@ -563,21 +563,13 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 	imsP->index = idx;
 	imsP->rows = calcDimension(imsP->map.height)/tileDimension;
 	imsP->cols = calcDimension(imsP->map.width)/tileDimension;
-#if 0	
+#if 0
+#error This exposed a compiler bug
 	mapper *mapP = &imsP->map;
 	imsP->col0offset = see below;
 	imsP->row0offset = see below
 #else
 	[self mapMemory:&imsP->map];
-#if 0
-  1        2       3      4         5            6           7          8
-
-888888  888888      88  88      8888888888  88                  88  8888888888
-88          88      88  88      88  88      88  88          88  88      88  88
-8888      8888    8888  8888    88          8888888888  8888888888          88
-88          88      88  88
-88          88  888888  888888
-#endif
 	
 	{
 		BOOL colOffset = NO;

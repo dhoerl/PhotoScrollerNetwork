@@ -186,4 +186,19 @@
 	return [tb imageSize];
 }
 
+#if 0 // Does not work (yet)
+- (UIImage *)image
+{
+    UIGraphicsBeginImageContextWithOptions(self.bounds.size, YES, 0);
+	
+    [self.layer renderInContext:UIGraphicsGetCurrentContext()];
+
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+
+    UIGraphicsEndImageContext();
+
+    return img;
+}
+#endif
+
 @end

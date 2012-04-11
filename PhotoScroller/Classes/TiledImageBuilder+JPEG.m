@@ -467,16 +467,8 @@ static void term_source(j_decompress_ptr cinfo);
 			assert(src_mgr->cinfo.image_width > 0 && src_mgr->cinfo.image_height > 0);
 			//NSLog(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
 
-			[self mapMemoryForIndex:0 width:src_mgr->cinfo.image_width height:src_mgr->cinfo.image_height];
-#if 0
-unsigned char *scratch = self.ims[0].map.emptyAddr;
-//NSLog(@"Scratch=%p rowBytes=%ld", scratch, rowBytes);
-for(int i=0; i<SCAN_LINE_MAX; ++i) {
-	self.scanLines[i] = scratch;
-	scratch += self.ims[0].map.bytesPerRow;
-}
-#endif
-			(void)jpeg_start_decompress(&src_mgr->cinfo);
+			self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(src_mgr->cinfo.image_width, src_mgr->cinfo.image_height)];
+			self.ims = calloc(self.zoomLevels, sizeof(imageMemory));
 
 			// Create files
 			size_t scale = 1;
@@ -484,6 +476,8 @@ for(int i=0; i<SCAN_LINE_MAX; ++i) {
 				[self mapMemoryForIndex:idx width:src_mgr->cinfo.image_width/scale height:src_mgr->cinfo.image_height/scale];
 				scale *= 2;
 			}
+
+			(void)jpeg_start_decompress(&src_mgr->cinfo);
 			if(src_mgr->jpegFailed) self.failed = YES;
 		}
 		if(src_mgr->got_header && !self.failed) {

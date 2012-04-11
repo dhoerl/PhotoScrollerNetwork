@@ -38,11 +38,14 @@
 #import "ViewController.h"
 #import "PhotoViewController.h"
 #import "ConcurrentOp.h"
+#import "TiledImageBuilder.h"
+#import "TilingView.h"
 
 @interface ViewController ()
 
 - (IBAction)segmentChanged:(id)sender;
 - (IBAction)stepperStepped:(id)sender;
+- (IBAction)makeImage:(id)sender;
 
 @end
 
@@ -53,6 +56,7 @@
 	IBOutlet UISwitch *useInternet;
 	IBOutlet UISwitch *justOneImage;
 	IBOutlet UILabel *orientationValue;
+	IBOutlet UIImageView *imageView;
 }
 
 - (IBAction)segmentChanged:(id)sender
@@ -74,6 +78,26 @@
 	orientationValue.text = [NSString stringWithFormat:@"%ld", lrint(stepper.value)];
 }
 
+#if 0 // does not work
+- (IBAction)makeImage:(id)sender
+{
+	NSString *path = [[NSBundle mainBundle] pathForResource:@"Shed" ofType:@"jpg"];
+	assert(path);
+	
+	// 320 just shows we don't need to size it to what our desired size is
+	TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:cgimageDecoder size:CGSizeMake(320, 320) orientation:1];
+	assert(tb);
+	TilingView *tv = [[TilingView alloc] initWithImageBuilder:tb];
+	assert(tv);
+	tv.frame = CGRectMake(0, 0, imageView.bounds.size.width, imageView.bounds.size.height);
+	
+	UIImage *image = [tv image];
+	assert(image);
+	
+	imageView.image = image;
+}
+#endif
+
 - (IBAction)button:(id)sender
 {
 	PhotoViewController *pvc = [[PhotoViewController alloc] initWithNibName:@"PhotoViewController" bundle:nil];
@@ -81,6 +105,10 @@
 	pvc.decoder = technology.selectedSegmentIndex;
 	pvc.justDoOneImage = justOneImage.on;
 	pvc.orientation = [orientationValue.text integerValue];
+
+	UIBarButtonItem *temporaryBarButtonItem = [UIBarButtonItem new];
+	[temporaryBarButtonItem setTitle:@"Back"];
+	self.navigationItem.backBarButtonItem = temporaryBarButtonItem;
 
 	[self.navigationController pushViewController:pvc animated:YES];
 }
@@ -109,12 +137,15 @@
 - (void)viewDidUnload
 {
 	orientationValue = nil;
+	imageView = nil;
     [super viewDidUnload];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+	
+	self.navigationItem.backBarButtonItem = nil;
 }
 
 - (void)viewDidAppear:(BOOL)animated
