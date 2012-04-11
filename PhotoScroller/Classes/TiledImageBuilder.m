@@ -34,15 +34,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#if 0
-  1        2       3      4         5            6           7          8
-
-888888  888888      88  88      8888888888  88                  88  8888888888
-88          88      88  88      88  88      88  88          88  88      88  88
-8888      8888    8888  8888    88          8888888888  8888888888          88
-88          88      88  88
-88          88  888888  888888
-#endif
 
 #if !__has_feature(objc_arc)
 #error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
@@ -134,7 +125,11 @@ float					ubc_threshold_ratio;
 
 @interface TiledImageBuilder ()
 
+#if LEVELS_INIT == 1
 - (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
+#else
+- (id)initWithDecoder:(imageDecoder)dec size:(CGSize)size;
+#endif
 
 - (void)decodeImageURL:(NSURL *)url;
 - (void)decodeImage:(CGImageRef)image;
@@ -142,15 +137,14 @@ float					ubc_threshold_ratio;
 - (BOOL)createImageFile;
 - (int)createTempFile:(BOOL)unlinkFile size:(size_t)size;
 
-- (NSUInteger)zoomLevelsForSize:(CGSize)size;
-
 @end
 
 @implementation TiledImageBuilder
 {
-	NSString *imagePath;
-	BOOL mapWholeFile;
-	BOOL deleteImageFile;
+	NSString	*imagePath;
+	BOOL		mapWholeFile;
+	BOOL		deleteImageFile;
+	CGSize		size;
 }
 @synthesize decoder;
 @synthesize properties;
@@ -164,7 +158,9 @@ float					ubc_threshold_ratio;
 @synthesize startTime;
 @synthesize finishTime;
 @synthesize milliSeconds;
+#ifdef LIBJPEG
 @synthesize src_mgr;
+#endif
 
 + (void)initialize
 {
@@ -187,15 +183,15 @@ float					ubc_threshold_ratio;
 	ubc_threshold_ratio = val;
 }
 
-- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels
+#if LEVELS_INIT == 0
+- (id)initWithImage:(CGImageRef)image size:(CGSize)sz orientation:(int)orient
 {
-	if((self = [self initWithDecoder:cgimageDecoder levels:levels])) {
+	if((self = [self initWithDecoder:cgimageDecoder size:sz])) {
+		orientation = orient;
 		{
 			mapWholeFile = YES;
 			[self decodeImage:image];
 		}
-
-NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(480, 480)]);
 
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
@@ -209,9 +205,10 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(480, 480)]);
 	return self;
 }
 
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec levels:(NSUInteger)levels
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec size:(CGSize)sz  orientation:(int)orient
 {
-	if((self = [self initWithDecoder:dec levels:levels])) {
+	if((self = [self initWithDecoder:dec size:sz])) {
+		orientation = orient;
 #ifdef LIBJPEG
 		if(decoder == libjpegIncremental) {
 			[self jpegInitFile:path];
@@ -221,8 +218,6 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(480, 480)]);
 			mapWholeFile = YES;
 			[self decodeImageURL:[NSURL fileURLWithPath:path]];
 		}
-		
-NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
@@ -235,9 +230,100 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 	}
 	return self;
 }
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec size:(CGSize)sz orientation:(int)orient
+{
+	if((self = [self initWithDecoder:dec size:sz])) {
+		orientation = orient;
+#ifdef LIBJPEG
+		if(decoder == libjpegIncremental) {
+			[self jpegInitNetwork];
+		} else 
+#endif
+		{
+			mapWholeFile = YES;
+			[self createImageFile];
+		}
+	}
+	return self;
+}
+- (id)initWithDecoder:(imageDecoder)dec size:(CGSize)sz 
+{
+	if((self = [super init])) {
+#if TIMING_STATS == 1 && !defined(NDEBUG)
+		startTime = [self timeStamp];
+#endif		
+		decoder		= dec;
+		pageSize	= getpagesize();
+		size		= sz;
+
+		// Take a big chunk of either free memory or all memory
+		freeMemory fm		= [self freeMemory:@"Initialize"];
+		float freeThresh	= (float)fm.freeMemory*ubc_threshold_ratio;
+		float totalThresh	= (float)fm.totlMemory*ubc_threshold_ratio;
+		ubc_threshold		= lrintf(MAX(freeThresh, totalThresh));
+
+#ifdef LIBJPEG
+		src_mgr				= calloc(1, sizeof(co_jpeg_source_mgr));
+#endif
+		//NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+
+		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];
+	}
+	return self;
+}
+
+#else
+
+- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(int)orient
+{
+	if((self = [self initWithDecoder:cgimageDecoder levels:levels])) {
+		orientation = orient;
+		{
+			mapWholeFile = YES;
+			[self decodeImage:image];
+		}
+
+#if TIMING_STATS == 1 && !defined(NDEBUG)
+		finishTime = [self timeStamp];
+		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
+		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+#endif
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"FINISHED"];
+#endif
+	}
+	return self;
+}
+
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec levels:(NSUInteger)levels orientation:(int)orient
 {
 	if((self = [self initWithDecoder:dec levels:levels])) {
+		orientation = orient;
+#ifdef LIBJPEG
+		if(decoder == libjpegIncremental) {
+			[self jpegInitFile:path];
+		} else
+#endif		
+		{
+			mapWholeFile = YES;
+			[self decodeImageURL:[NSURL fileURLWithPath:path]];
+		}
+
+#if TIMING_STATS == 1 && !defined(NDEBUG)
+		finishTime = [self timeStamp];
+		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
+		NSLog(@"FINISH-I: %u milliseconds", milliSeconds);
+#endif
+#if MEMORY_DEBUGGING == 1
+		[self freeMemory:@"FINISHED"];
+#endif
+	}
+	return self;
+}
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels orientation:(int)orient
+{
+	if((self = [self initWithDecoder:dec levels:levels])) {
+		orientation = orient;
 #ifdef LIBJPEG
 		if(decoder == libjpegIncremental) {
 			[self jpegInitNetwork];
@@ -273,12 +359,11 @@ NSLog(@"Correct ZLEVELS %u", [self zoomLevelsForSize:CGSizeMake(320, 320)]);
 		//NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
 
 		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];
-
-//#warning TESTING		
-//		orientation = 3; // TESTING
 	}
 	return self;
 }
+#endif
+
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];		
@@ -305,22 +390,19 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 	[self freeMemory:@"Yikes!"];
 }		
 
-- (NSUInteger)zoomLevelsForSize:(CGSize)size;
+- (NSUInteger)zoomLevelsForSize:(CGSize)imageSize;
 {
-	CGFloat iWidth = ims[0].map.width;
-	CGFloat iHeight = ims[0].map.height;
-	
-	CGFloat width = size.width;
-	CGFloat height = size.height;
-	
-	int zLevels = 0;
+	int zLevels = 1;	// Must always have "1"
 	while(YES) {
-		iWidth /= 2.0f;
-		iHeight /= 2.0f;
-	
-		if(iHeight < height && iWidth < width) break;
+		imageSize.width /= 2.0f;
+		imageSize.height /= 2.0f;
+		//NSLog(@"zoomLevelsForSize: TEST IF reducedHeight=%f <= height=%f || reductedWidth=%f < width=%f zLevels=%d", imageSize.height, size.height, imageSize.width, size.width, zLevels);
+		
+		// We don't want to define levels that could only be magnified when viewed, not reduced.
+		if(imageSize.height < size.height || imageSize.width < size.width) break;
 		++zLevels;
 	}
+	// NSLog(@"ZLEVELS=%d", zLevels);
 	return zLevels;
 }
 
@@ -330,6 +412,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 	if(!failed && len) {
 		size_t ret = fwrite([data bytes], len, 1, imageFile);
 		assert(ret == 1);
+		if(ret != 1) failed = YES;
 	}
 }
 
@@ -370,6 +453,9 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 			if(dict) {
 				//CFShow(dict);
 				properties = CFBridgingRelease(dict);
+				if(!orientation) {
+					orientation = [[properties objectForKey:@"Orientation"] integerValue];
+				}
 			}
 			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
 			CFRelease(imageSourcRef), imageSourcRef = NULL;
@@ -385,9 +471,18 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 - (void)decodeImage:(CGImageRef)image
 {
 	assert(decoder == cgimageDecoder);
-	[self mapMemoryForIndex:0 width:CGImageGetWidth(image) height:CGImageGetHeight(image)];
+	
+	size_t width	= CGImageGetWidth(image);
+	size_t height	= CGImageGetHeight(image);
+	
+#if LEVELS_INIT == 0
+	zoomLevels = [self zoomLevelsForSize:CGSizeMake(width, height)];
+	ims = calloc(zoomLevels, sizeof(imageMemory));
+#endif
+
+	[self mapMemoryForIndex:0 width:width height:height];
 	[self drawImage:image];
-	if(!failed) [self run];
+	if(!failed) [self createLevelsAndTile];
 }
 
 - (BOOL)createImageFile
@@ -410,7 +505,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 	return success;
 }
 
-- (int)createTempFile:(BOOL)unlinkFile size:(size_t)size
+- (int)createTempFile:(BOOL)unlinkFile size:(size_t)sz
 {
 	char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"imXXXXXX"] fileSystemRepresentation]);
 	int fd = mkstemp(template);
@@ -431,7 +526,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 			fst.fst_flags      = F_ALLOCATECONTIG;  // could add F_ALLOCATEALL?
 			fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
 			fst.fst_offset     = 0;                 // offset relative to the EOF
-			fst.fst_length     = size;
+			fst.fst_length     = sz;
 			fst.fst_bytesalloc = 0;                 // why not but is not needed
 
 			ret = fcntl(fd, F_PREALLOCATE, &fst);
@@ -439,7 +534,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 				NSLog(@"Warning: cannot F_PREALLOCATE for input file (errno %d).", errno);
 			}
 	
-			ret = ftruncate(fd, size);				// Now the file is there for sure
+			ret = ftruncate(fd, sz);				// Now the file is there for sure
 			if(ret == -1) {
 				NSLog(@"Warning: cannot ftruncate input file (errno %d).", errno);
 			}
@@ -493,7 +588,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 		case 5:
 			break;
 		case 2:
-		case 8:
+		case 6:
 			colOffset = YES;
 			break;
 		case 3:
@@ -502,7 +597,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 			rowOffset = YES;
 			break;
 		case 4:
-		case 6:
+		case 8:
 			rowOffset = YES;
 			break;
 		}
@@ -531,7 +626,6 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 		if(mapP->fd == -1) return;
 	}
 
-	// NSLog(@"imageSize=%ld", imageSize);
 	if(mapWholeFile && !mapP->emptyAddr) {	
 		mapP->emptyAddr = mmap(NULL, mapP->mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED | MAP_NOCACHE, mapP->fd, 0);	//  | MAP_NOCACHE
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;

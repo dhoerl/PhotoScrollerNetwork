@@ -37,17 +37,6 @@
 
 #import "TiledImageBuilder-Private.h"
 
-#if 0
-@interface TiledImageBuilder (Draw)
-
-- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)pt;
-- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt;
-- (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale;
-
-@end
-
-#endif
-
 static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
 
 static size_t PhotoScrollerProviderGetBytesAtPosition (
@@ -62,15 +51,17 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 
 @implementation TiledImageBuilder (Draw)
 
+#if 0 // only used if doing drawRect not drawLayer
 - (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt
 {
-	CGImageRef image = [self newImageForScale:scale location:pt];
+	CGImageRef image = [self newImageForScale:scale location:pt box:CGRectMake(0, 0, 0, 0)];
 	UIImage *img = [UIImage imageWithCGImage:image];
 	CGImageRelease(image);
 	return img;
 }
+#endif
 
-- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)origPt
+- (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)origPt box:(CGRect)box
 {
 	if(self.failed) return nil;
 
@@ -94,7 +85,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	case 5:
 		break;
 	case 2:
-	case 8:
+	case 6:
 		newCol = YES;
 		break;
 	case 3:
@@ -103,29 +94,20 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		newRow = YES;
 		break;
 	case 4:
-	case 6:
+	case 8:
 		newRow = YES;
 		break;
 	}
-	int ncol = newCol ? (self.ims[idx].cols - col - 1) : col;
-	int nrow = newRow ? (self.ims[idx].rows - row - 1) : row;
-	
-
-#if 0
-  1        2       3      4         5            6           7          8
-
-888888  888888      88  88      8888888888  88                  88  8888888888
-88          88      88  88      88  88      88  88          88  88      88  88
-8888      8888    8888  8888    88          8888888888  8888888888          88
-88          88      88  88
-88          88  888888  888888
-#endif
-		
+	int ncol = newCol ? (im->cols - col - 1) : col;
+	int nrow = newRow ? (im->rows - row - 1) : row;
+			
 	size_t x = ncol * tileDimension;
 	size_t y = nrow * tileDimension;
 
 	im->tileWidth = MIN(im->map.width-x, tileDimension);
 	im->tileHeight = MIN(im->map.height-y, tileDimension);
+
+	// NSLog(@"PT:%@->%@ box:%@ h=%ld w=%ld", NSStringFromCGPoint(origPt), NSStringFromCGPoint(pt), NSStringFromCGSize(box.size), im->tileHeight, im->tileWidth);
 
 	size_t imgSize = tileBytesPerRow*im->tileHeight;
 	struct CGDataProviderDirectCallbacks callBacks = { 0, 0, 0, PhotoScrollerProviderGetBytesAtPosition, PhotoScrollerProviderReleaseInfoCallback};
@@ -148,16 +130,6 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	return image;
 }
 
-#if 0
-  1        2       3      4         5            6           7          8
-
-888888  888888      88  88      8888888888  88                  88  8888888888
-88          88      88  88      88  88      88  88          88  88      88  88
-8888      8888    8888  8888    88          8888888888  8888888888          88
-88          88      88  88
-88          88  888888  888888
-#endif
-
 - (CGSize)imageSize
 {
 	switch(self.orientation) {
@@ -171,25 +143,9 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	}
 }
 
-#if 0
-  1        2       3      4         5            6           7          8
-
-888888  888888      88  88      8888888888  88                  88  8888888888
-88          88      88  88      88  88      88  88          88  88      88  88
-8888      8888    8888  8888    88          8888888888  8888888888          88
-88          88      88  88
-88          88  888888  888888
-#endif
-
 - (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt
 {
-	NSUInteger idx = 0;
-	NSUInteger tmp = 1;
-	NSUInteger power = lrintf(1/scale);
-	while(tmp != power) {
-		++idx;
-		tmp *= 2;
-	}
+	NSUInteger idx = offsetFromScale(scale);
 	imageMemory *imP = &self.ims[idx];
 	
 	CGPoint newPt;
@@ -211,28 +167,18 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		newPt = CGPointMake(origPt.y, origPt.x);
 		break;
 	case 6:
-		newPt = CGPointMake(origPt.y, imP->cols - origPt.x - 1);
+		newPt = CGPointMake(imP->cols - origPt.y - 1, origPt.x);
 		break;
 	case 7:
-		newPt = CGPointMake(imP->rows - origPt.y - 1, imP->cols - origPt.x - 1);
+		newPt = CGPointMake(imP->cols - origPt.y - 1, imP->rows - origPt.x - 1);
 		break;
 	case 8:
-		newPt = CGPointMake(imP->rows - origPt.y - 1, origPt.x);
+		newPt = CGPointMake(origPt.y, imP->rows - origPt.x - 1);
 		break;
 	}
-	//NSLog(@"OLDPT=%@ NEWPT=%@", NSStringFromCGPoint(origPt), NSStringFromCGPoint(newPt) );
+	// NSLog(@"OLDPT=%@ NEWPT=%@", NSStringFromCGPoint(origPt), NSStringFromCGPoint(newPt) );
 	return newPt;
 }
-
-#if 0
-  1        2       3      4         5            6           7          8
-
-888888  888888      88  88      8888888888  88                  88  8888888888
-88          88      88  88      88  88      88  88          88  88      88  88
-8888      8888    8888  8888    88          8888888888  8888888888          88
-88          88      88  88
-88          88  888888  888888
-#endif
 
 - (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale
 {
@@ -242,6 +188,9 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	BOOL flipH = NO;
 	BOOL flipV = NO;
 	CGFloat rotate = 0;
+
+	CGFloat xOffset = box.size.width/2;
+	CGFloat yOffset = box.size.height/2;
 
 	switch(self.orientation) {
 	default:
@@ -259,44 +208,39 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		break;
 	case 5:
 		flipH = YES;
-		rotate = (CGFloat)(90*M_PI)/180;
+		rotate = -(CGFloat)(90*M_PI)/180;
 		break;
 	case 6:
 		flipH = YES;
-		rotate = (CGFloat)(90*M_PI)/180;
+		flipV = YES;
+		rotate = -(CGFloat)(90*M_PI)/180;
 		break;
 	case 7:
-		flipH = YES;
+		flipV = YES;
 		rotate = -(CGFloat)(90*M_PI)/180;
 		break;
 	case 8:
 		flipH = YES;
-		rotate = -(CGFloat)(90*M_PI)/180;
+		flipV = YES;
+		rotate = +(CGFloat)(90*M_PI)/180;
 		break;
 	}
-	
+
 	if(flipH) {
-		CGFloat xOffset = box.size.width/2;
 		transform = CGAffineTransformTranslate(transform, +xOffset, 0);
 		transform = CGAffineTransformScale(transform, -1, 1);
 		transform = CGAffineTransformTranslate(transform, -xOffset, 0);
 	}
 	if(flipV) {
-		CGFloat yOffset = box.size.height/2;
 		transform = CGAffineTransformTranslate(transform, 0, +yOffset);
 		transform = CGAffineTransformScale(transform, 1, -1);
 		transform = CGAffineTransformTranslate(transform, 0, -yOffset);
 	}
 	if(isnormal(rotate)) {
-		// must rotate from box center, not image bits
-		CGFloat x = box.origin.x + rintf(TILE_SIZE/scale)/2;
-		CGFloat y = box.origin.y + rintf(TILE_SIZE/scale)/2;
-
-		transform = CGAffineTransformTranslate(transform, +x, +y);
+		transform = CGAffineTransformTranslate(transform, +xOffset, +yOffset);
 		transform = CGAffineTransformRotate(transform, rotate);
-		transform = CGAffineTransformTranslate(transform, -x, -y);
+		transform = CGAffineTransformTranslate(transform, -yOffset, -xOffset);
 	}
-
 	return transform;
 }
 
@@ -313,30 +257,14 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	size_t mapSize = tileDimension*tileBytesPerRow;
 	size_t offset = (im->row*im->cols + im->col) * mapSize;
 
-	BOOL applyColOffset = NO;
-	BOOL applyRowOffset = NO;
-	if(im->rotated) {
-		if(!im->row) {
-			applyColOffset = YES;
-		}
-		if(!im->col) {
-			applyRowOffset = YES;
-		}
-	} else {
-		if(!im->col) {
-			applyColOffset = YES;
-		}
-		if(!im->row) {
-			applyRowOffset = YES;
-		}
-	}
-	if(applyRowOffset) {
-		offset += im->map.row0offset * tileBytesPerRow;
-	}
-	if(applyColOffset) {
+	// orientation - to find this code below
+	if(!im->col) {
 		offset += im->map.col0offset;
 	}
-
+	if(!im->row) {
+		offset += im->map.row0offset * tileBytesPerRow;
+	}
+	//NSLog(@"Draw col=%ld rowl%ld", im->col, im->row);
 
 #if MAPPING_IMAGES == 1	
 	// Turning the NOCACHE flag off might up performance, but really clog the system
@@ -365,3 +293,13 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 ) {
 	free(info);
 }
+
+#if 0
+  1        2       3      4         5            6           7          8
+
+888888  888888      88  88      8888888888  88                  88  8888888888
+88          88      88  88      88  88      88  88          88  88      88  88
+8888      8888    8888  8888    88          8888888888  8888888888          88
+88          88      88  88
+88          88  888888  888888
+#endif

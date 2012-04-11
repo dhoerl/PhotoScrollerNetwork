@@ -109,6 +109,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 @synthesize queue;
 @synthesize operations;
 @synthesize decoder;
+@synthesize orientation;
 @synthesize justDoOneImage;
 
 #pragma mark -
@@ -194,7 +195,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	pagingScrollView = (UIScrollView *)self.view;
     pagingScrollView.contentSize = [self contentSizeForPagingScrollView];
 
-    // Step 2: prepare to tile content
+    // Step 2: prepare to createLevelsAndTile content
     recycledPages = [[NSMutableSet alloc] init];
     visiblePages  = [[NSMutableSet alloc] init];
 	tileBuilders  = [[NSMutableArray alloc] init];
@@ -322,10 +323,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
-				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder levels:ZOOM_LEVELS];
+				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder size:CGSizeMake(320, 320) orientation:orientation];
 				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; milliSeconds += tb.milliSeconds; });
 			} );
-#else // You can now use temporary UIImageViews as placeholders while fetching or tiling the images
+#else // You can now use temporary UIImageViews as placeholders while fetching or tiling the images. Test it below.
 		UIImageView *iv = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:path]];
 		dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:iv]; });
 #endif

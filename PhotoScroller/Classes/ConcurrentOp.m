@@ -68,6 +68,7 @@
 @synthesize url;
 @synthesize imageBuilder;
 @synthesize decoder;
+@synthesize orientation;
 @synthesize zoomLevels;
 
 - (BOOL)isConcurrent { return YES; }
@@ -101,8 +102,9 @@
 		if(allOK) {
 			while(![self isFinished]) {
 				assert([NSThread currentThread] == thread);
-				BOOL ret = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
-				assert(ret && "first assert"); // could remove this - its here to convince myself all is well
+				//BOOL ret = 
+				[[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+				//assert(ret && "first assert"); // could remove this - its here to convince myself all is well
 			}
 			//NSLog(@"OP: finished - %@", [self isCancelled] ? @"was canceled" : @"normal completion");
 		} else {
@@ -201,7 +203,7 @@
 	}
 #endif
 	
-	imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:decoder levels:zoomLevels];
+	imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:decoder size:CGSizeMake(320, 320) orientation:orientation];
 }
 
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data

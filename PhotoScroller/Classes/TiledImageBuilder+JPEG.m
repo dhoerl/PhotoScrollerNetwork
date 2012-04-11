@@ -89,8 +89,11 @@ static void term_source(j_decompress_ptr cinfo);
 
 			CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
 			if(dict) {
-				CFShow(dict);
+				//CFShow(dict);
 				self.properties = CFBridgingRelease(dict);
+				if(!self.orientation) {
+					self.orientation = [[self.properties objectForKey:@"Orientation"] integerValue];
+				}
 			}
 			CFRelease(imageSourcRef);			
 		}
@@ -110,7 +113,7 @@ static void term_source(j_decompress_ptr cinfo);
 		tjDestroy(decompressor);
 	}
 
-	if(!self.failed) [self run];
+	if(!self.failed) [self createLevelsAndTile];
 }
 
 - (BOOL)partialTile:(BOOL)final
@@ -161,6 +164,8 @@ static void term_source(j_decompress_ptr cinfo);
 
 - (void)jpegInitFile:(NSString *)path
 {
+	co_jpeg_source_mgr *src_mgr = self.src_mgr;
+
 	const char *file = [path fileSystemRepresentation];
 	int jfd = open(file, O_RDONLY, 0);
 	if(jfd <= 0) {
@@ -174,7 +179,7 @@ static void term_source(j_decompress_ptr cinfo);
 	}
 	if ((self.imageFile = fdopen(jfd, "r")) == NULL) {
 		NSLog(@"Error: failed to fdopen input image file \"%s\" for reading (%d).", file, errno);
-		jpeg_destroy_decompress(&self.src_mgr->cinfo);
+		jpeg_destroy_decompress(&src_mgr->cinfo);
 		close(jfd);
 		self.failed = YES;
 		return;
@@ -183,23 +188,23 @@ static void term_source(j_decompress_ptr cinfo);
 	/* Step 1: allocate and initialize JPEG decompression object */
 
 	/* We set up the normal JPEG error routines, then override error_exit. */
-	self.src_mgr->cinfo.err = jpeg_std_error(&self.src_mgr->jerr.pub);
-	self.src_mgr->jerr.pub.error_exit = my_error_exit;
+	src_mgr->cinfo.err = jpeg_std_error(&src_mgr->jerr.pub);
+	src_mgr->jerr.pub.error_exit = my_error_exit;
 	/* Establish the setjmp return context for my_error_exit to use. */
-	if (setjmp(self.src_mgr->jerr.setjmp_buffer)) {
-	/* If we get here, the JPEG code has signaled an error.
-	 * We need to clean up the JPEG object, close the input file, and return.
-	 */
+	if (setjmp(src_mgr->jerr.setjmp_buffer)) {
+		/* If we get here, the JPEG code has signaled an error.
+		 * We need to clean up the JPEG object, close the input file, and return.
+		 */
 		self.failed = YES;
 	} else {
 		/* Now we can initialize the JPEG decompression object. */
-		jpeg_create_decompress(&self.src_mgr->cinfo);
+		jpeg_create_decompress(&src_mgr->cinfo);
 
 		/* Step 2: specify data source (eg, a file) */
-		jpeg_stdio_src(&self.src_mgr->cinfo, self.imageFile);
+		jpeg_stdio_src(&src_mgr->cinfo, self.imageFile);
 
 		/* Step 3: read file parameters with jpeg_read_header() */
-		(void) jpeg_read_header(&self.src_mgr->cinfo, TRUE);
+		(void) jpeg_read_header(&src_mgr->cinfo, TRUE);
 
 		{
 			long foo = ftell(self.imageFile);
@@ -215,56 +220,65 @@ static void term_source(j_decompress_ptr cinfo);
 
 			CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
 			if(dict) {
-				CFShow(dict);
+				//CFShow(dict);
 				self.properties = CFBridgingRelease(dict);
+				if(!self.orientation) {
+					self.orientation = [[self.properties objectForKey:@"Orientation"] integerValue];
+				}
 			}
 			CFRelease(imageSourcRef);			
 		}
 
-		self.src_mgr->cinfo.out_color_space = JCS_EXT_BGRA; // (using JCS_EXT_ABGR below)
+		src_mgr->cinfo.out_color_space = JCS_EXT_BGRA; // (using JCS_EXT_ABGR below)
 		// Tried: JCS_EXT_ABGR JCS_EXT_ARGB JCS_EXT_RGBA JCS_EXT_BGRA
 		
-		assert(self.src_mgr->cinfo.num_components == 3);
-		assert(self.src_mgr->cinfo.image_width > 0 && self.src_mgr->cinfo.image_height > 0);
-		//NSLog(@"WID=%d HEIGHT=%d", self.src_mgr->cinfo.image_width, self.src_mgr->cinfo.image_height);
-		
+		assert(src_mgr->cinfo.num_components == 3);
+		assert(src_mgr->cinfo.image_width > 0 && src_mgr->cinfo.image_height > 0);
+		//NSLog(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
+
+#if LEVELS_INIT == 0
+		self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(src_mgr->cinfo.image_width, src_mgr->cinfo.image_height)];
+		self.ims = calloc(self.zoomLevels, sizeof(imageMemory));
+#endif
 		// Create files
 		size_t scale = 1;
 		for(size_t idx=0; idx<self.zoomLevels; ++idx) {
-			[self mapMemoryForIndex:idx width:self.src_mgr->cinfo.image_width/scale height:self.src_mgr->cinfo.image_height/scale];
+			[self mapMemoryForIndex:idx width:src_mgr->cinfo.image_width/scale height:src_mgr->cinfo.image_height/scale];
 			if(self.failed) break;
 			scale *= 2;
 		}
 		if(!self.failed) {
-			(void)jpeg_start_decompress(&self.src_mgr->cinfo);
+			(void)jpeg_start_decompress(&src_mgr->cinfo);
 			
 			while(![self jpegOutputScanLines]) ;
 		}
 	}
-	jpeg_destroy_decompress(&self.src_mgr->cinfo);
-	self.src_mgr->cinfo.src = NULL;	// dealloc tests
+	jpeg_destroy_decompress(&src_mgr->cinfo);
+	src_mgr->cinfo.src = NULL;	// dealloc tests
 
 	fclose(self.imageFile), self.imageFile = NULL;
 }
 
 - (void)jpegInitNetwork
 {
-	self.src_mgr->pub.next_input_byte		= NULL;
-	self.src_mgr->pub.bytes_in_buffer		= 0;
-	self.src_mgr->pub.init_source			= init_source;
-	self.src_mgr->pub.fill_input_buffer	= fill_input_buffer;
-	self.src_mgr->pub.skip_input_data		= skip_input_data;
-	self.src_mgr->pub.resync_to_restart	= resync_to_restart;
-	self.src_mgr->pub.term_source			= term_source;
+	co_jpeg_source_mgr *src_mgr = self.src_mgr;
+
+	src_mgr->pub.next_input_byte	= NULL;
+	src_mgr->pub.bytes_in_buffer	= 0;
+	src_mgr->pub.init_source		= init_source;
+	src_mgr->pub.fill_input_buffer	= fill_input_buffer;
+	src_mgr->pub.skip_input_data	= skip_input_data;
+	src_mgr->pub.resync_to_restart	= resync_to_restart;
+	src_mgr->pub.term_source		= term_source;
 	
-	self.src_mgr->consumed_data			= 0;
-	self.src_mgr->start_of_stream			= TRUE;
+	src_mgr->consumed_data			= 0;
+	src_mgr->start_of_stream		= TRUE;
 
 	/* We set up the normal JPEG error routines, then override error_exit. */
-	self.src_mgr->cinfo.err = jpeg_std_error(&self.src_mgr->jerr.pub);
-	self.src_mgr->jerr.pub.error_exit = my_error_exit;
+	src_mgr->cinfo.err = jpeg_std_error(&src_mgr->jerr.pub);
+	src_mgr->jerr.pub.error_exit = my_error_exit;
 	/* Establish the setjmp return context for my_error_exit to use. */
-	if (setjmp(self.src_mgr->jerr.setjmp_buffer)) {
+	if (setjmp(src_mgr->jerr.setjmp_buffer)) {
 		/* If we get here, the JPEG code has signaled an error.
 		 * We need to clean up the JPEG object, close the input file, and return.
 		 */
@@ -273,10 +287,10 @@ static void term_source(j_decompress_ptr cinfo);
 		//[self cancel];
 	} else {
 		/* Now we can initialize the JPEG decompression object. */
-		jpeg_create_decompress(&self.src_mgr->cinfo);
-		self.src_mgr->cinfo.src = &self.src_mgr->pub; // MUST be after the jpeg_create_decompress - ask me how I know this :-)
-		//self.src_mgr->pub.bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
-		//self.src_mgr->pub.next_input_byte = NULL; /* until buffer loaded */
+		jpeg_create_decompress(&src_mgr->cinfo);
+		src_mgr->cinfo.src = &src_mgr->pub; // MUST be after the jpeg_create_decompress - ask me how I know this :-)
+		//src_mgr->pub.bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
+		//src_mgr->pub.next_input_byte = NULL; /* until buffer loaded */
 	}
 }
 
@@ -284,11 +298,13 @@ static void term_source(j_decompress_ptr cinfo);
 {
 	if(self.failed) return YES;
 
-	while(self.src_mgr->cinfo.output_scanline <  self.src_mgr->cinfo.image_height) {
+	co_jpeg_source_mgr *src_mgr = self.src_mgr;
+
+	while(src_mgr->cinfo.output_scanline <  src_mgr->cinfo.image_height) {
 		unsigned char *scanPtr;
 		{
 			size_t tmpMapSize = self.ims[0].map.bytesPerRow;
-			size_t offset = self.src_mgr->writtenLines*self.ims[0].map.bytesPerRow+self.ims[0].map.emptyTileRowSize;
+			size_t offset = src_mgr->writtenLines*self.ims[0].map.bytesPerRow+self.ims[0].map.emptyTileRowSize;
 			size_t over = offset % self.pageSize;
 			offset -= over;
 			tmpMapSize += over;
@@ -310,7 +326,7 @@ static void term_source(j_decompress_ptr cinfo);
 	
 		unsigned char *scanLines[SCAN_LINE_MAX];
 		scanLines[0] = scanPtr;
-		int lines = jpeg_read_scanlines(&self.src_mgr->cinfo, scanLines, SCAN_LINE_MAX);
+		int lines = jpeg_read_scanlines(&src_mgr->cinfo, scanLines, SCAN_LINE_MAX);
 		if(lines <= 0) {
 			//int mret = msync(self.ims[0].map.addr, self.ims[0].map.mappedSize, MS_ASYNC);
 			//assert(mret == 0);
@@ -321,16 +337,16 @@ static void term_source(j_decompress_ptr cinfo);
 			assert(ret == 0);
 			break;
 		}
-		self.ims[0].outLine = self.src_mgr->writtenLines;
+		self.ims[0].outLine = src_mgr->writtenLines;
 
 		// on even numbers try to update the lower resolution scans
-		if(!(self.src_mgr->writtenLines & 1)) {
+		if(!(src_mgr->writtenLines & 1)) {
 			size_t scale = 2;
 			imageMemory *im = &self.ims[1];
 			for(size_t idx=1; idx<self.zoomLevels; ++idx, scale *= 2, ++im) {
-				if(self.src_mgr->writtenLines & (scale-1)) break;
+				if(src_mgr->writtenLines & (scale-1)) break;
 
-				im->outLine = self.src_mgr->writtenLines/scale;
+				im->outLine = src_mgr->writtenLines/scale;
 				
 				size_t tmpMapSize = im->map.bytesPerRow;
 				size_t offset = im->outLine*tmpMapSize+im->map.emptyTileRowSize;
@@ -380,15 +396,15 @@ static void term_source(j_decompress_ptr cinfo);
 			self.failed = ![self partialTile:NO];
 			if(self.failed) break;
 		}
-		self.src_mgr->writtenLines += lines;
+		src_mgr->writtenLines += lines;
 	}
-	//NSLog(@"END LINES: me=%ld jpeg=%ld", self.src_mgr->writtenLines, self.src_mgr->cinfo.output_scanline);
-	BOOL ret = (self.src_mgr->cinfo.output_scanline == self.src_mgr->cinfo.image_height) || self.failed;
+	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr->writtenLines, src_mgr->cinfo.output_scanline);
+	BOOL ret = (src_mgr->cinfo.output_scanline == src_mgr->cinfo.image_height) || self.failed;
 	
 	if(ret) {
-		jpeg_finish_decompress(&self.src_mgr->cinfo);
+		jpeg_finish_decompress(&src_mgr->cinfo);
 		if(!self.failed) {
-			assert(jpeg_input_complete(&self.src_mgr->cinfo));
+			assert(jpeg_input_complete(&src_mgr->cinfo));
 			ret = [self partialTile:YES];
 		}
 	}
@@ -401,16 +417,17 @@ static void term_source(j_decompress_ptr cinfo);
 
 - (void)jpegAdvance:(NSMutableData *)webData
 {
-	unsigned char *dataPtr = (unsigned char *)[webData mutableBytes];
+	unsigned char *dataPtr			= (unsigned char *)[webData mutableBytes];
+	co_jpeg_source_mgr *src_mgr		= self.src_mgr;
 
 	// mutable data bytes pointer can change invocation to invocation
-	size_t diff					= self.src_mgr->pub.next_input_byte - self.src_mgr->data;
-	self.src_mgr->pub.next_input_byte	= dataPtr + diff;
-	self.src_mgr->data				= dataPtr;
-	self.src_mgr->data_length			= [webData length];
+	size_t diff					= src_mgr->pub.next_input_byte - src_mgr->data;
+	src_mgr->pub.next_input_byte	= dataPtr + diff;
+	src_mgr->data				= dataPtr;
+	src_mgr->data_length			= [webData length];
 
-	//NSLog(@"s1=%ld s2=%d", self.src_mgr->data_length, highWaterMark);
-	if (setjmp(self.src_mgr->jerr.setjmp_buffer)) {
+	//NSLog(@"s1=%ld s2=%d", src_mgr->data_length, highWaterMark);
+	if (setjmp(src_mgr->jerr.setjmp_buffer)) {
 		/* If we get here, the JPEG code has signaled an error.
 		 * We need to clean up the JPEG object, close the input file, and return.
 		 */
@@ -418,12 +435,12 @@ static void term_source(j_decompress_ptr cinfo);
 		self.failed = YES;
 		return;
 	}
-	if(self.src_mgr->jpegFailed) self.failed = YES;
+	if(src_mgr->jpegFailed) self.failed = YES;
 
 	if(!self.failed) {
-		if(!self.src_mgr->got_header) {
+		if(!src_mgr->got_header) {
 			/* Step 3: read file parameters with jpeg_read_header() */
-			int jret = jpeg_read_header(&self.src_mgr->cinfo, FALSE);
+			int jret = jpeg_read_header(&src_mgr->cinfo, FALSE);
 			if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return;
 
 			{
@@ -432,22 +449,25 @@ static void term_source(j_decompress_ptr cinfo);
 
 				CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
 				if(dict) {
-					CFShow(dict);
+					//CFShow(dict);
 					self.properties = CFBridgingRelease(dict);
+					if(!self.orientation) {
+						self.orientation = [[self.properties objectForKey:@"Orientation"] integerValue];
+					}
 				}
 				CFRelease(imageSourcRef);			
 			}
 
 			//NSLog(@"GOT header");
-			self.src_mgr->got_header = YES;
-			self.src_mgr->start_of_stream = NO;
-			self.src_mgr->cinfo.out_color_space = JCS_EXT_BGRA;
+			src_mgr->got_header				= YES;
+			src_mgr->start_of_stream		= NO;
+			src_mgr->cinfo.out_color_space	= JCS_EXT_BGRA;
 
-			assert(self.src_mgr->cinfo.num_components == 3);
-			assert(self.src_mgr->cinfo.image_width > 0 && self.src_mgr->cinfo.image_height > 0);
-			//NSLog(@"WID=%d HEIGHT=%d", self.src_mgr->cinfo.image_width, self.src_mgr->cinfo.image_height);
+			assert(src_mgr->cinfo.num_components == 3);
+			assert(src_mgr->cinfo.image_width > 0 && src_mgr->cinfo.image_height > 0);
+			//NSLog(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
 
-			[self mapMemoryForIndex:0 width:self.src_mgr->cinfo.image_width height:self.src_mgr->cinfo.image_height];
+			[self mapMemoryForIndex:0 width:src_mgr->cinfo.image_width height:src_mgr->cinfo.image_height];
 #if 0
 unsigned char *scratch = self.ims[0].map.emptyAddr;
 //NSLog(@"Scratch=%p rowBytes=%ld", scratch, rowBytes);
@@ -456,22 +476,22 @@ for(int i=0; i<SCAN_LINE_MAX; ++i) {
 	scratch += self.ims[0].map.bytesPerRow;
 }
 #endif
-			(void)jpeg_start_decompress(&self.src_mgr->cinfo);
+			(void)jpeg_start_decompress(&src_mgr->cinfo);
 
 			// Create files
 			size_t scale = 1;
 			for(size_t idx=0; idx<self.zoomLevels; ++idx) {
-				[self mapMemoryForIndex:idx width:self.src_mgr->cinfo.image_width/scale height:self.src_mgr->cinfo.image_height/scale];
+				[self mapMemoryForIndex:idx width:src_mgr->cinfo.image_width/scale height:src_mgr->cinfo.image_height/scale];
 				scale *= 2;
 			}
-			if(self.src_mgr->jpegFailed) self.failed = YES;
+			if(src_mgr->jpegFailed) self.failed = YES;
 		}
-		if(self.src_mgr->got_header && !self.failed) {
+		if(src_mgr->got_header && !self.failed) {
 			[self jpegOutputScanLines];
 			
 			// When we consume all the data in the web buffer, safe to free it up for the system to resuse
-			if(self.src_mgr->pub.bytes_in_buffer == 0) {
-				self.src_mgr->deleted_data += [webData length];
+			if(src_mgr->pub.bytes_in_buffer == 0) {
+				src_mgr->deleted_data += [webData length];
 				[webData setLength:0];
 			}
 		}

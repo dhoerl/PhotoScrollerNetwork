@@ -42,6 +42,7 @@
 @interface ViewController ()
 
 - (IBAction)segmentChanged:(id)sender;
+- (IBAction)stepperStepped:(id)sender;
 
 @end
 
@@ -51,6 +52,7 @@
 	IBOutlet UISegmentedControl *technology;
 	IBOutlet UISwitch *useInternet;
 	IBOutlet UISwitch *justOneImage;
+	IBOutlet UILabel *orientationValue;
 }
 
 - (IBAction)segmentChanged:(id)sender
@@ -65,12 +67,20 @@
 #endif
 }
 
+- (IBAction)stepperStepped:(id)sender
+{
+	UIStepper *stepper = (UIStepper *)sender;
+	
+	orientationValue.text = [NSString stringWithFormat:@"%ld", lrint(stepper.value)];
+}
+
 - (IBAction)button:(id)sender
 {
 	PhotoViewController *pvc = [[PhotoViewController alloc] initWithNibName:@"PhotoViewController" bundle:nil];
 	pvc.isWebTest = useInternet.on;
 	pvc.decoder = technology.selectedSegmentIndex;
 	pvc.justDoOneImage = justOneImage.on;
+	pvc.orientation = [orientationValue.text integerValue];
 
 	[self.navigationController pushViewController:pvc animated:YES];
 }
@@ -93,10 +103,12 @@
 #else
 	technology.hidden = YES;
 #endif
+	self.navigationItem.title = @"PhotoScrollerNetwork";
 }
 
 - (void)viewDidUnload
 {
+	orientationValue = nil;
     [super viewDidUnload];
 }
 

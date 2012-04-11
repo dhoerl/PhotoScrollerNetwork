@@ -80,6 +80,7 @@
 			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
 #endif
 			assert(ret == 0);
+			if(ret) self.failed = YES;
 		} else {
 			iptr = tileIptr + im->map.emptyTileRowSize;
 		}
@@ -95,6 +96,7 @@
 		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
 #endif
 		assert(ret==0);
+		if(ret) self.failed = YES;
 
 		// don't need the scratch space now
 		[self truncateEmptySpace:im];
@@ -140,11 +142,12 @@
 	int ret = ftruncate(im->map.fd, properLen);
 	if(ret) {
 		NSLog(@"Failed to truncate file!");
+		self.failed = YES;
 	}
 	im->map.mappedSize = 0;	// force errors if someone tries to use mmap now
 }
 
-- (void)run
+- (void)createLevelsAndTile
 {
 	mapper *lastMap = NULL;
 	mapper *currMap = NULL;
@@ -159,6 +162,7 @@
 //dumpIMS("RUN", &ims[idx]);
 
 #if USE_VIMAGE == 1
+#error This code must be reconciled with that below due to orientation changes
 		   vImage_Buffer src = {
 				.data = lastMap->addr,
 				.height = lastMap->height,
@@ -186,41 +190,6 @@
 			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_SEQUENTIAL);
 			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_SEQUENTIAL);
 
-#if 0
-			switch(self.orient ation) {
-			case 0:
-			case 1:
-			{
-				uint32_t *inPtr = (uint32_t *)lastMap->addr;
-				uint32_t *outPtr = (uint32_t *)currMap->addr;
-				for(size_t row=0; row<currMap->height; ++row) {
-					char *lastInPtr = (char *)inPtr;
-					for(size_t col = 0; col < currMap->bytesPerRow/sizeof(uint32_t); ++col) {
-						*outPtr++ = *inPtr;
-						inPtr += 2;
-					}
-					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
-				}
-			}	break;
-
-			case 2:
-			{
-				uint32_t *inPtr = (uint32_t *)(lastMap->addr + lastMap->bytesPerRow);
-				uint32_t *outPtr = (uint32_t *)(currMap->addr + currMap->bytesPerRow);
-				for(size_t row=0; row<currMap->height; ++row) {
-					char *lastInPtr = (char *)inPtr;
-					char *lastoutPtr = (char *)outPtr;
-					for(size_t col = 0; col < currMap->bytesPerRow/sizeof(uint32_t); ++col) {
-						*--outPtr = *--inPtr;
-						--inPtr;
-					}
-					inPtr = (uint32_t *)(lastInPtr + lastMap->bytesPerRow*2);
-					outPtr = (uint32_t *)(lastoutPtr + currMap->bytesPerRow);
-				}
-			}	break;
-			
-			}
-#else
 			{
 				size_t oddColOffset = 0;
 				size_t oddRowOffset = 0;
@@ -240,7 +209,6 @@
 					outPtr = (uint32_t *)(lastOutPtr + currMap->bytesPerRow);
 				}
 			}
-#endif
 
 			madvise(lastMap->addr, lastMap->mappedSize-lastMap->emptyTileRowSize, MADV_FREE);
 			madvise(currMap->addr, currMap->mappedSize-currMap->emptyTileRowSize, MADV_FREE);

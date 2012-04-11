@@ -51,7 +51,7 @@
 
 + (CFTimeInterval)fadeDuration
 {
-  return 0.0;
+  return 0;
 }
 
 @end
@@ -83,8 +83,6 @@
     return self;
 }
 
-#if 1 // user drawLayer if possible for better performance
-
 - (void)drawLayer:(CALayer*)layer inContext:(CGContextRef)context
 {
 	if(tb.failed) return;
@@ -98,41 +96,27 @@
 	CGSize tileSize = [(CATiledLayer*)layer tileSize];
 	CGFloat col = box.origin.x * scale / tileSize.width;
 	CGFloat row = box.origin.y * scale / tileSize.height;
-	CGImageRef image = [tb newImageForScale:scale location:CGPointMake(col, row)];
+	CGImageRef image = [tb newImageForScale:scale location:CGPointMake(col, row) box:box];
 
 	CGContextTranslateCTM(context, box.origin.x, box.origin.y + box.size.height);
 	CGContextScaleCTM(context, 1.0, -1.0);
 	box.origin.x = 0;
 	box.origin.y = 0;
-	
-//NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
+	//NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
 
+	CGAffineTransform transform = [tb transformForRect:box scale:scale];
+	CGContextConcatCTM(context, transform);
 
-#if 1
-
-CGAffineTransform transform = [tb transformForRect:box scale:scale];
-CGContextConcatCTM(context, transform);
-
-#else
-CGFloat width = CGImageGetWidth(image)/scale;
-NSLog(@"TILE=%@ WIDTH=%f boxwidth=%f", NSStringFromCGPoint(CGPointMake(col, row)), width, box.size.width);
-
-CGContextTranslateCTM(context, box.origin.x + (width/2), 0); // box.origin.x + 
-CGContextScaleCTM(context, -1.0f, 1.0f);
-CGContextTranslateCTM(context, -(box.origin.x + (width/2)), 0); // box.origin.x + 
-#endif
-	
-#if 0
-CGFloat x = box.origin.x + box.size.width/2;
-CGFloat y = box.origin.y + box.size.height/2;
-CGContextTranslateCTM(context, +x, +y);
-CGContextRotateCTM(context, (CGFloat)(45*M_PI)/180 );
-CGContextTranslateCTM(context, -x, -y);
-#endif	
+	// Detect Rotation
+	if(isnormal(transform.b) && isnormal(transform.c)) {
+		CGSize s = box.size;
+		box.size = CGSizeMake(s.height, s.width);
+	}
 
 	// NSLog(@"BOX: %@", NSStringFromCGRect(box));
 
 	CGContextSetBlendMode(context, kCGBlendModeCopy);	// no blending! from QA 1708
+//if(row==0 && col==0)	
 	CGContextDrawImage(context, box, image);
 	CFRelease(image);
 
@@ -143,8 +127,8 @@ CGContextTranslateCTM(context, -x, -y);
 	}
 }
 
-#else
 
+#if 0 // Out of date - will not handle rotations - you could try to apply the affine transform used above
 - (void)drawRect:(CGRect)rect
 {
 	if(tb.failed) return;
@@ -195,7 +179,6 @@ CGContextTranslateCTM(context, -x, -y);
         }
     }
 }
-
 #endif
 
 - (CGSize)imageSize

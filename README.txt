@@ -21,6 +21,11 @@ Note: originally I tried to do as Apple does - receive a single jpeg file then c
 
 RECENT CHANGES:
 
+v2.2B:
+- Insure your PhotoViewController's scrollViewDidScroll: method delays sending tilePages, or you will get infrequent crashes!
+- Changed TiledImageBuilder's initialization methods to use the targetted view size, not the number of levels (you can revert back if you want via an ifdef). See the notes in the interface file on how this works, and why this was an improvement for users of this class.
+- Static images now properly deal with JPEG image file orientation (incremental in process).
+
 v2.1B:
 - grab and expose the CGImageSource "properties" dictionary for ALL images regardless of decoder (a property on TiledImageBuilder)
 - above in preparation for added "orientation" correction

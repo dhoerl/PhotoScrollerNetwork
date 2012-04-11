@@ -1,4 +1,24 @@
 		
+
+
+
+
+
+#if 1
+
+CGAffineTransform transform = [tb transformForRect:box scale:scale];
+CGContextConcatCTM(context, transform);
+
+#else
+CGFloat width = CGImageGetWidth(image)/scale;
+NSLog(@"TILE=%@ WIDTH=%f boxwidth=%f", NSStringFromCGPoint(CGPointMake(col, row)), width, box.size.width);
+
+CGContextTranslateCTM(context, box.origin.x + (width/2), 0); // box.origin.x + 
+CGContextScaleCTM(context, -1.0f, 1.0f);
+CGContextTranslateCTM(context, -(box.origin.x + (width/2)), 0); // box.origin.x + 
+#endif
+
+
 #if 0		
 		
 XXX *flipView = [[XXX alloc] initWithFrame:CGRectMake(0, 0, view.imageSize.width, view.imageSize.height)];

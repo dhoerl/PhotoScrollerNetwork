@@ -41,6 +41,7 @@
 
 @interface ConcurrentOp : NSOperation
 @property (nonatomic, assign) imageDecoder decoder;					// type of operation to perform
+@property (nonatomic, assign) NSUInteger orientation;				// 0 == automatic, or force one using 1-8
 @property (nonatomic, assign) NSUInteger zoomLevels;				// type of operation to perform
 @property (nonatomic, assign) NSUInteger index;						// if multiple operations, what index am i
 @property (nonatomic, assign, readonly) NSUInteger milliSeconds;	// time it takes to decode the image

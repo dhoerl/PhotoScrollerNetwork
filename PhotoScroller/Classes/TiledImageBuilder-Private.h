@@ -40,6 +40,7 @@
 #define MMAP_DEBUGGING			0		// set to 1 to see how mmap/munmap working
 #define MAPPING_IMAGES			0		// set to 1 to use MMAP for image tile retrieval - if 0 use pread
 #define USE_VIMAGE				0		// set to 1 if you want vImage to downsize images (slightly better quality, much much slower)
+#define LEVELS_INIT				0		// set to 1 if you want to specify the levels in the init method instead of using the target view size
 
 #include <libkern/OSAtomic.h>
 
@@ -183,13 +184,15 @@ extern float				ubc_threshold_ratio;
 - (uint64_t)freeDiskspace;
 - (freeMemory)freeMemory:(NSString *)msg;
 
+- (NSUInteger)zoomLevelsForSize:(CGSize)imageSize;
+
 @end
 
 @interface TiledImageBuilder (Tile)
 
 - (BOOL)tileBuilder:(imageMemory *)im useMMAP:(BOOL )useMMAP;
 - (void )truncateEmptySpace:(imageMemory *)im;
-- (void)run;
+- (void)createLevelsAndTile;
 
 @end
 
