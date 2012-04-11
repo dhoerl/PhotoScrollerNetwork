@@ -359,7 +359,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		op.url = [NSURL URLWithString:path];
 		op.decoder = decoder;
 		op.index = idx;
-		op.zoomLevels = ZOOM_LEVELS;
+		//op.zoomLevels = ZOOM_LEVELS;
+		op.orientation = orientation;
 
 		// Order is important here
 		[op addObserver:self forKeyPath:@"isFinished" options:0 context:runnerContext];	// First, observe isFinished
