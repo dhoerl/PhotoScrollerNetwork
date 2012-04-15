@@ -45,7 +45,7 @@
 
 - (IBAction)segmentChanged:(id)sender;
 - (IBAction)stepperStepped:(id)sender;
-- (IBAction)makeImage:(id)sender;
+//- (IBAction)makeImage:(id)sender; // in progress
 
 @end
 

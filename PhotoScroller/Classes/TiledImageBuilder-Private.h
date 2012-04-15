@@ -94,15 +94,6 @@ typedef struct {
 	size_t row0offset;
 } mapper;
 
-// Internal struct to keep values of interest when probing the system
-typedef struct {
-	size_t freeMemory;
-	size_t usedMemory;
-	size_t totlMemory;
-	size_t resident_size;
-	size_t virtual_size;
-} freeMemory;
-
 typedef struct {
 	mapper map;
 
@@ -128,6 +119,15 @@ typedef struct {
 	BOOL rotated;
 
 } imageMemory;
+
+// Internal struct to keep values of interest when probing the system
+typedef struct {
+	size_t freeMemory;
+	size_t usedMemory;
+	size_t totlMemory;
+	size_t resident_size;
+	size_t virtual_size;
+} freeMemory;
 
 #import "TiledImageBuilder.h"
 

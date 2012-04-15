@@ -47,22 +47,6 @@ static void term_source(j_decompress_ptr cinfo);
 
 #define SCAN_LINE_MAX			1			// libjpeg docs imply you could get 4 but all I see is 1 at a time, and now the logic wants just one
 
-/*
- * Here's the routine that will replace the standard error_exit method:
- */
-
-#if 0
-@interface TiledImageBuilder (JPEG)
-
-- (void)decodeImageData:(NSData *)data;
-- (BOOL)partialTile:(BOOL)final;
-
-- (void)jpegInitFile:(NSString *)path;
-- (void)jpegInitNetwork;
-- (BOOL)jpegOutputScanLines;	// return YES when done
-
-@end
-#endif
 
 @implementation TiledImageBuilder (JPEG)
 
@@ -98,14 +82,20 @@ static void term_source(j_decompress_ptr cinfo);
 			CFRelease(imageSourcRef);			
 		}
 	
+#if LEVELS_INIT == 0
+		self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(jwidth, jheight)];
+		self.ims = calloc(self.zoomLevels, sizeof(imageMemory));
+#endif
 		[self mapMemoryForIndex:0 width:jwidth height:jheight];
 
+		imageMemory *imP = self.ims;	// 0th offset
+	
 		self.failed = (BOOL)tjDecompress2(decompressor,
 			jpegBuf,
 			jpegSize,
-			self.ims[0].map.addr,
+			imP->map.addr + imP->map.col0offset + imP->map.row0offset*imP->map.bytesPerRow,
 			jwidth,
-			self.ims[0].map.bytesPerRow,
+			imP->map.bytesPerRow,
 			jheight,
 			TJPF_BGRA,
 			TJFLAG_NOREALLOC
@@ -122,14 +112,14 @@ static void term_source(j_decompress_ptr cinfo);
 	for(size_t idx=0; idx<self.zoomLevels; ++idx, ++im) {
 		// got enought to tile one row now?
 		if(final || (im->outLine && !(im->outLine % TILE_SIZE))) {
-			size_t rows = im->rows;		// cheat
+			size_t rows = im->rows;		// fool tilebuilder into doing just one row
 			if(!final) im->rows = im->row + 1;		// just do one tile row
 			self.failed = ![self tileBuilder:im useMMAP:YES];
 			if(self.failed) {
 				return NO;
 			}
 			++im->row;
-			im->rows = rows;
+			im->rows = rows; // restore real number!
 		}
 		if(final) {
 			[self truncateEmptySpace:im];
@@ -232,18 +222,21 @@ static void term_source(j_decompress_ptr cinfo);
 		src_mgr->cinfo.out_color_space = JCS_EXT_BGRA; // (using JCS_EXT_ABGR below)
 		// Tried: JCS_EXT_ABGR JCS_EXT_ARGB JCS_EXT_RGBA JCS_EXT_BGRA
 		
+		size_t width	= src_mgr->cinfo.image_width;
+		size_t height	= src_mgr->cinfo.image_height;
+		
 		assert(src_mgr->cinfo.num_components == 3);
-		assert(src_mgr->cinfo.image_width > 0 && src_mgr->cinfo.image_height > 0);
+		assert(width > 0 && height > 0);
 		//NSLog(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
 
 #if LEVELS_INIT == 0
-		self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(src_mgr->cinfo.image_width, src_mgr->cinfo.image_height)];
+		self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(width, height)];
 		self.ims = calloc(self.zoomLevels, sizeof(imageMemory));
 #endif
 		// Create files
 		size_t scale = 1;
 		for(size_t idx=0; idx<self.zoomLevels; ++idx) {
-			[self mapMemoryForIndex:idx width:src_mgr->cinfo.image_width/scale height:src_mgr->cinfo.image_height/scale];
+			[self mapMemoryForIndex:idx width:width/scale height:height/scale];
 			if(self.failed) break;
 			scale *= 2;
 		}
@@ -299,57 +292,77 @@ static void term_source(j_decompress_ptr cinfo);
 	if(self.failed) return YES;
 
 	co_jpeg_source_mgr *src_mgr = self.src_mgr;
+	imageMemory *imP = self.ims;
 
+	// Does one at a time
 	while(src_mgr->cinfo.output_scanline <  src_mgr->cinfo.image_height) {
 		unsigned char *scanPtr;
 		{
-			size_t tmpMapSize = self.ims[0].map.bytesPerRow;
-			size_t offset = src_mgr->writtenLines*self.ims[0].map.bytesPerRow+self.ims[0].map.emptyTileRowSize;
+			size_t tmpMapSize = imP->map.bytesPerRow;
+			size_t orientOffset = imP->map.col0offset + imP->map.row0offset*imP->map.bytesPerRow;
+			size_t offset = orientOffset + src_mgr->writtenLines*imP->map.bytesPerRow+imP->map.emptyTileRowSize;
 			size_t over = offset % self.pageSize;
 			offset -= over;
 			tmpMapSize += over;
 			
-			self.ims[0].map.mappedSize = tmpMapSize;
-			self.ims[0].map.addr = mmap(NULL, self.ims[0].map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, self.ims[0].map.fd, offset);	//  | MAP_NOCACHE
-			if(self.ims[0].map.addr == MAP_FAILED) {
+			imP->map.mappedSize = tmpMapSize;
+			imP->map.addr = mmap(NULL, imP->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, imP->map.fd, offset);	//  | MAP_NOCACHE
+			if(imP->map.addr == MAP_FAILED) {
 				NSLog(@"errno1=%s", strerror(errno) );
 				self.failed = YES;
-				self.ims[0].map.addr = NULL;
-				self.ims[0].map.mappedSize = 0;
+				imP->map.addr = NULL;
+				imP->map.mappedSize = 0;
 				return YES;
 			}
 #if MMAP_DEBUGGING == 1
-			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", self.ims[0].map.fd, self.ims[0].map.addr, (NSUInteger)self.ims[0].map.mappedSize);
+			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
 #endif
-			scanPtr = self.ims[0].map.addr + over;
+			scanPtr = imP->map.addr + over;
 		}
 	
 		unsigned char *scanLines[SCAN_LINE_MAX];
 		scanLines[0] = scanPtr;
 		int lines = jpeg_read_scanlines(&src_mgr->cinfo, scanLines, SCAN_LINE_MAX);
 		if(lines <= 0) {
-			//int mret = msync(self.ims[0].map.addr, self.ims[0].map.mappedSize, MS_ASYNC);
+			//int mret = msync(imP->map.addr, imP->map.mappedSize, MS_ASYNC);
 			//assert(mret == 0);
-			int ret = munmap(self.ims[0].map.addr, self.ims[0].map.mappedSize);
+			int ret = munmap(imP->map.addr, imP->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", self.ims[0].map.fd, self.ims[0].map.addr, (NSUInteger)self.ims[0].map.mappedSize);
+			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
 #endif
 			assert(ret == 0);
 			break;
 		}
-		self.ims[0].outLine = src_mgr->writtenLines;
+
+		// from a tiling perspective, we are this many lines into the image
+		imP->outLine = src_mgr->writtenLines + imP->map.row0offset;
 
 		// on even numbers try to update the lower resolution scans
 		if(!(src_mgr->writtenLines & 1)) {
 			size_t scale = 2;
-			imageMemory *im = &self.ims[1];
+			imageMemory *im = imP + 1;
 			for(size_t idx=1; idx<self.zoomLevels; ++idx, scale *= 2, ++im) {
-				if(src_mgr->writtenLines & (scale-1)) break;
-
-				im->outLine = src_mgr->writtenLines/scale;
+				size_t inOrientOffset;
+				size_t mask = (scale-1);
+		
+				if(imP->map.row0offset) {
+					// Image is pushed to bottom, so we grab lines bottom to top (but doing this top to bottom)
+					size_t toGo = imP->map.height - src_mgr->writtenLines;
+					if(toGo & mask) break;	// insures last line is same in all images
+				} else {
+					if(src_mgr->writtenLines & mask) break;
+				}
+				if(imP->map.col0offset) {
+					// we can figure out where to start by knowing how many pixels to output, then backing up
+					inOrientOffset = imP->map.width*bytesPerPixel - im->map.width*bytesPerPixel*scale;
+				} else {
+					inOrientOffset = 0;
+				}
+				im->outLine = im->map.row0offset + src_mgr->writtenLines/scale;	// ditto above - this far into the image from tiling perspective
 				
+				// have to map on a page boundary
 				size_t tmpMapSize = im->map.bytesPerRow;
-				size_t offset = im->outLine*tmpMapSize+im->map.emptyTileRowSize;
+				size_t offset = im->map.col0offset + im->outLine*tmpMapSize + im->map.emptyTileRowSize;
 				size_t over = offset % self.pageSize;
 				offset -= over;
 				tmpMapSize += over;
@@ -366,11 +379,11 @@ static void term_source(j_decompress_ptr cinfo);
 #if MMAP_DEBUGGING == 1
 				NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
 #endif
-		
+
 				uint32_t *outPtr = (uint32_t *)(im->map.addr + over);
-				uint32_t *inPtr  = (uint32_t *)scanPtr;
+				uint32_t *inPtr  = (uint32_t *)(scanPtr + inOrientOffset);
 				
-				for(size_t col=0; col<self.ims[0].map.width; col += scale) {
+				for(size_t col=0; col<im->map.width; ++col) {
 					*outPtr++ = *inPtr;
 					inPtr += scale;
 				}
@@ -383,16 +396,16 @@ static void term_source(j_decompress_ptr cinfo);
 				assert(ret == 0);
 			}
 		}
-		//int mret = msync(self.ims[0].map.addr, self.ims[0].map.mappedSize, MS_ASYNC);
+		//int mret = msync(imP->map.addr, imP->map.mappedSize, MS_ASYNC);
 		//assert(mret == 0);
-		int ret = munmap(self.ims[0].map.addr, self.ims[0].map.mappedSize);
+		int ret = munmap(imP->map.addr, imP->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", self.ims[0].map.fd, self.ims[0].map.addr, (NSUInteger)self.ims[0].map.mappedSize);
+		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
 #endif
 		assert(ret == 0);
 
 		// tile all images as we get full rows of tiles
-		if(self.ims[0].outLine && !(self.ims[0].outLine % TILE_SIZE)) {
+		if(imP->outLine && !(imP->outLine % TILE_SIZE)) {
 			self.failed = ![self partialTile:NO];
 			if(self.failed) break;
 		}

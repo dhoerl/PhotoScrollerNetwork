@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-Latest v2.0 April 2, 2012
+Latest v2.2 April 15, 2012
 
 This sample code:
 
@@ -21,12 +21,15 @@ Note: originally I tried to do as Apple does - receive a single jpeg file then c
 
 RECENT CHANGES:
 
-v2.2B:
-- Insure your PhotoViewController's scrollViewDidScroll: method delays sending tilePages, or you will get infrequent crashes!
+v2.2:
+- project completely orientation away. 0 means use the JPEG tag info, 1 forces "normal" as in memory rendering, and you can use 2 through 8 to force an orientation.
+
+v2.2b:
+- Insure your PhotoViewController's scrollViewDidScroll: method delays sending tilePages, or you will get infrequent crashes! See code in this project.
 - Changed TiledImageBuilder's initialization methods to use the targetted view size, not the number of levels (you can revert back if you want via an ifdef). See the notes in the interface file on how this works, and why this was an improvement for users of this class.
 - Static images now properly deal with JPEG image file orientation (incremental in process).
 
-v2.1B:
+v2.1a:
 - grab and expose the CGImageSource "properties" dictionary for ALL images regardless of decoder (a property on TiledImageBuilder)
 - above in preparation for added "orientation" correction
 - refactor TiledImageBuilder.m into a bunch of TiledImageBuilder+ categores - the single .m was becoming unwieldy
@@ -78,11 +81,10 @@ This code leverages my github Concurrent_NSOperations project (https://github.co
 The included Xcode 4 project has two targets, one using just Apple APIs, and the second using libjpeg-turbo, both explained below.
 
 KNOWN BUGS:
-- if you stop the executable with the scroll view showing, you often get a crash
+- if you stop the executable with the scroll view showing in the Simulator, you often get a crash (haven't seen this in April)
 
 TODO:
 - TiledImageBuilder does error checking and sets the "failed" flag, but my testing of this mechanism has been brief and not exhaustive!
-- fix the zoom problem that appears sometime when zooming an image close to a boundary of another image (I suspect this is in the original Apple code)
 - if an image is truly huge, then incrementally create tiles instead of having to map in two rows of tiles
 
 
