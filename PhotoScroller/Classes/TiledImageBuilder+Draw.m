@@ -272,7 +272,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	// mmap lets us map as many areas as we need.
 	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->map.fd, offset);  /*| MAP_NOCACHE */
 	if(startPtr == MAP_FAILED) {
-		NSLog(@"errno4=%s", strerror(errno) );
+		//NSLog(@"errno4=%s", strerror(errno) );
 		return 0;
 	}
 
@@ -281,7 +281,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 #else
 	ssize_t readSize = pread(im->map.fd, buffer, origCount, offset + position);
 	if((size_t)readSize != origCount) {
-		NSLog(@"errno4=%s", strerror(errno) );
+		//NSLog(@"errno4=%s", strerror(errno) );
 		return 0;
 	}
 #endif

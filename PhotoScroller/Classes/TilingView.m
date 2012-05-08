@@ -127,7 +127,6 @@
 	}
 }
 
-
 #if 0 // Out of date - will not handle rotations - you could try to apply the affine transform used above
 - (void)drawRect:(CGRect)rect
 {
