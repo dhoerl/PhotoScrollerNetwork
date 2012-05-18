@@ -109,7 +109,7 @@
 
 - (void)displayObject:(id)obj
 {
-	CGSize size;
+	CGSize size = (CGSize){0,0};	// kch
 
     // clear the previous imageView
     [imageView removeFromSuperview], imageView = nil;
