@@ -35,17 +35,32 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-@class ImageScrollView;
+#import "OperationsRunnerProtocol.h"
 
-@interface PhotoViewController : UIViewController <UIScrollViewDelegate>
-@property (nonatomic, assign) BOOL isWebTest;
-@property (nonatomic, assign) int decoder;
-@property (nonatomic, assign) int orientation;
-@property (nonatomic, assign) BOOL justDoOneImage;
+@interface OperationsRunner : NSObject
+@property (nonatomic, assign) BOOL anyThreadOK;	// do not need to be messaged on the main thread
+@property (nonatomic, assign) BOOL noDebugMsgs;	// suppress debug messages
+
+- (id)initWithDelegate:(id <OperationsRunnerProtocol>)del;
+
+- (void)runOperation:(NSOperation *)op withMsg:(NSString *)msg;
+
+- (NSSet *)operationsSet;
+- (NSUInteger)operationsCount;
+
+- (void)cancelOperations;
+- (void)enumerateOperations:(void(^)(NSOperation *op)) b;
 
 @end
 
-@interface PhotoViewController (OperationsRunner)
+#if 0 
+
+// 1) Add either a property or an ivar
+OperationsRunner *operationsRunner;
+
+// 2) Declare a category with these methods in their interface file (change MyClass to your class)
+
+@interface MyClass (OperationsRunner)
 - (void)runOperation:(NSOperation *)op withMsg:(NSString *)msg;
 
 - (NSSet *)operationsSet;
@@ -56,4 +71,24 @@
 
 @end
 
+// 3) Add this method to their implementation
+- (id)forwardingTargetForSelector:(SEL)sel
+{
+	if(
+		sel == @selector(runOperation:withMsg:)	|| 
+		sel == @selector(operationsSet)			|| 
+		sel == @selector(operationsCount)		||
+		sel == @selector(cancelOperations)		||
+		sel == @selector(enumerateOperations:)
+	) {
+		if(!operationsRunner) {
+			// Object only created if needed
+			operationsRunner = [[OperationsRunner alloc] initWithDelegate:self];
+		}
+		return operationsRunner;
+	} else {
+		return [super forwardingTargetForSelector:sel];
+	}
+}
 
+#endif

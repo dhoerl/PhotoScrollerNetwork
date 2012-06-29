@@ -55,19 +55,14 @@ translucent  property YES/NO
 #import "ConcurrentOp.h"
 #import "AppDelegate.h"
 #import "PhotoScrollerCommon.h"
-
-static char *runnerContext = "runnerContext";
+#import "OperationsRunner.h"
 
 // Compliments to Rainer Brockerhoff
 static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
-@interface PhotoViewController ()
-@property (nonatomic, strong) NSOperationQueue *queue;
-@property (nonatomic, strong) NSMutableSet *operations;
+@interface PhotoViewController () <OperationsRunnerProtocol>
 
 - (IBAction)cancelNow:(id)sender;
-
-- (void)operationDidFinish:(ConcurrentOp *)operation;
 
 - (void)configurePage:(ImageScrollView *)page forIndex:(NSUInteger)index;
 - (BOOL)isDisplayingPageForIndex:(NSUInteger)index;
@@ -91,6 +86,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	IBOutlet UIActivityIndicatorView	*spinner;
 	IBOutlet UIToolbar					*toolbar;
 
+	OperationsRunner					*operationsRunner;
     UIScrollView						*pagingScrollView;
     
     NSMutableSet						*recycledPages;
@@ -106,8 +102,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	__block uint32_t					milliSeconds;
 }
 @synthesize isWebTest;
-@synthesize queue;
-@synthesize operations;
 @synthesize decoder;
 @synthesize orientation;
 @synthesize justDoOneImage;
@@ -115,7 +109,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 #pragma mark -
 #pragma mark View loading and unloading
 
-#ifdef IMAGE_ZOOMING	
+#ifdef IMAGE_ZOOMING
+#error WHERE IS THIS FLAG SET ???
 - (IBAction)userDidTap:(id)sender
 {
 	NSLog(@"userDidTap");
@@ -188,9 +183,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 - (void)viewDidLoad 
 {
 	[spinner startAnimating];
-
-	self.operations = [NSMutableSet setWithCapacity:3];
-	self.queue = [NSOperationQueue new];
    
 	pagingScrollView = (UIScrollView *)self.view;
     pagingScrollView.contentSize = [self contentSizeForPagingScrollView];
@@ -204,6 +196,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	} else {
 		[self constructStaticImages];
 	}
+
 #ifdef IMAGE_ZOOMING	
 	UITapGestureRecognizer *tgr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(userDidTap:)];
 	[pagingScrollView addGestureRecognizer:tgr];
@@ -236,48 +229,13 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 - (IBAction)cancelNow:(id)sender
 {
-	[operations enumerateObjectsUsingBlock:^(id obj, BOOL *stop) { [obj removeObserver:self forKeyPath:@"isFinished"]; }];   
-    [self.operations removeAllObjects];
-
-	[queue cancelAllOperations];
-	[queue waitUntilAllOperationsAreFinished];
-	
+	[operationsRunner cancelOperations];
 }
 
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
-{
-	ConcurrentOp *op = object;
-	if(context == runnerContext) {
-		if(op.isFinished == YES) {
-			// we get this on the operation's thread
-			//[self performSelectorOnMainThread:@selector(operationDidFinish:) withObject:op waitUntilDone:NO];
-			dispatch_async(dispatch_get_main_queue(), ^{ [self operationDidFinish:op]; } );
-		} else {
-			//NSLog(@"NSOperation starting to RUN!!!");
-		}
-	} else {
-		if([object respondsToSelector:@selector(observeValueForKeyPath:ofObject:change:context:)])
-			[super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-	}
-}
-
-- (void)operationDidFinish:(ConcurrentOp *)op
+- (void)operationFinished:(NSOperation *)nsOP
 {
 	// what you would want in real world situations below
-
-	// if you cancel the operation when its in the set, will hit this case
-	// since observeValueForKeyPath: queues this message on the main thread
-	if(![self.operations containsObject:op]) return;
-	
-	// If we are in the queue, then we have to both remove our observation and queue membership
-	[op removeObserver:self forKeyPath:@"isFinished"];
-	[operations removeObject:op];
-	
-	// This would be the case if cancelled before we start running.
-	if(op.isCancelled) return;
-	
-	// We either failed in setup or succeeded doing something.
-	// NSLog(@"Operation Succeeded: index=%d", op.index);
+	ConcurrentOp *op = (ConcurrentOp *)nsOP;
 	
 	// Note" probably a better strategy is to put the new images in their own array, then swap arrays when done
 	if(op.imageBuilder) {
@@ -285,12 +243,12 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	} else {
 		NSLog(@"Never will show images! Just kill the app now!");
 		// Real code should obviously deal with this! I had a network failure myself while testing.
-		exit(0);
+		abort();
 	}
 
 	milliSeconds += op.milliSeconds;
 
-	if(![operations count]) {
+	if(![operationsRunner operationsCount]) {
 		[spinner stopAnimating];
 		
 		[visiblePages removeAllObjects];	// seems like a good idea
@@ -314,9 +272,17 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	dispatch_queue_t que = dispatch_queue_create("com.dfh.PhotoScroller", DISPATCH_QUEUE_SERIAL);
 
 	NSUInteger multiCore = [[NSProcessInfo processInfo] processorCount] - 1;
-	for(NSUInteger idx=0; idx<[self imageCount]; ++idx) {
+	NSArray *imageArray;
+	
+	 if([self imageCount] == 1) {
+		imageArray = [NSArray arrayWithObject:@"Space6"];
+	} else {
+		imageArray = [NSArray arrayWithObjects:@"Lake", @"Shed", @"Tree", nil];
+	}
+
+	for(NSUInteger idx=0; idx<[imageArray count]; ++idx) {
 		dispatch_async(que, ^{ [tileBuilders addObject:@""]; });
-		NSString *imageName = [self imageNameAtIndex:idx];
+		NSString *imageName = [imageArray objectAtIndex:idx];
 		NSString *path = [[NSBundle mainBundle] pathForResource:imageName ofType:@"jpg"];
 
 #if 1 // Normal Case
@@ -340,14 +306,15 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 					[spinner stopAnimating];
 					[self tilePages];
 				});
-			dispatch_release(group);
-			dispatch_release(que);
+			//dispatch_release(group);
+			//dispatch_release(que);
 		} );
 }
 
 - (void)fetchWebImages
 {
 	startTime = mach_absolute_time();
+#warning FIX ME
 	NSUInteger count = [self imageCount];
 	for(NSUInteger idx=0; idx<count; ++idx) {
 		[tileBuilders addObject:@""];
@@ -362,11 +329,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		//op.zoomLevels = ZOOM_LEVELS;
 		op.orientation = orientation;
 
-		// Order is important here
-		[op addObserver:self forKeyPath:@"isFinished" options:0 context:runnerContext];	// First, observe isFinished
-
-		[operations addObject:op];	// Second we retain and save a reference to the operation
-		[queue addOperation:op];	// Lastly, lets get going!
+		[self runOperation:op withMsg:path];
 	}
 }
 
@@ -550,6 +513,25 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 - (NSUInteger)imageCount
 {
     return justDoOneImage ? 1 : [[self imageData] count];
+}
+
+- (id)forwardingTargetForSelector:(SEL)sel
+{
+	if(
+		sel == @selector(runOperation:withMsg:)	|| 
+		sel == @selector(operationsSet)			|| 
+		sel == @selector(operationsCount)		||
+		sel == @selector(cancelOperations)		||
+		sel == @selector(enumerateOperations:)
+	) {
+		if(!operationsRunner) {
+			// Object only created if needed
+			operationsRunner = [[OperationsRunner alloc] initWithDelegate:self];
+		}
+		return operationsRunner;
+	} else {
+		return [super forwardingTargetForSelector:sel];
+	}
 }
 
 @end

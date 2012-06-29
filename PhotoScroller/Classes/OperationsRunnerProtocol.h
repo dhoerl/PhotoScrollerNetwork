@@ -35,25 +35,8 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-@class ImageScrollView;
+@protocol OperationsRunnerProtocol <NSObject>
 
-@interface PhotoViewController : UIViewController <UIScrollViewDelegate>
-@property (nonatomic, assign) BOOL isWebTest;
-@property (nonatomic, assign) int decoder;
-@property (nonatomic, assign) int orientation;
-@property (nonatomic, assign) BOOL justDoOneImage;
+- (void)operationFinished:(NSOperation *)op;	// can get this on main thread (default) or anyThread (flag below)
 
 @end
-
-@interface PhotoViewController (OperationsRunner)
-- (void)runOperation:(NSOperation *)op withMsg:(NSString *)msg;
-
-- (NSSet *)operationsSet;
-- (NSUInteger)operationsCount;
-
-- (void)cancelOperations;
-- (void)enumerateOperations:(void(^)(NSOperation *op))b;
-
-@end
-
-
