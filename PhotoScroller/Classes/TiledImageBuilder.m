@@ -41,8 +41,8 @@
 
 #import "TiledImageBuilder-Private.h"
 
-static inline size_t	calcDimension(size_t d) { return(d + (tileDimension-1)) & ~(tileDimension-1); }
-static inline size_t	calcBytesPerRow(size_t row) { return calcDimension(row) * bytesPerPixel; }
+static size_t	calcDimension(size_t d) { return(d + (tileDimension-1)) & ~(tileDimension-1); }
+static size_t	calcBytesPerRow(size_t row) { return calcDimension(row) * bytesPerPixel; }
 
 static BOOL dump_memory_usage(struct task_basic_info *info);
 
@@ -119,7 +119,7 @@ static void foo(int sig)
  
 dispatch_queue_t		fileFlushQueue;
 dispatch_group_t		fileFlushGroup;
-volatile	int32_t		fileFlushGroupSuspended;
+volatile int32_t		fileFlushGroupSuspended;
 volatile int32_t		ubc_usage;					// rough idea of what our buffer cache usage is
 float					ubc_threshold_ratio;
 
@@ -272,7 +272,7 @@ float					ubc_threshold_ratio;
 	return self;
 }
 
-#else
+#else // LEVELS_INIT == 0
 
 - (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(int)orient
 {
@@ -362,7 +362,7 @@ float					ubc_threshold_ratio;
 	}
 	return self;
 }
-#endif
+#endif // LEVELS_INIT == 0
 
 - (void)dealloc
 {
@@ -402,7 +402,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 		if(imageSize.height < size.height || imageSize.width < size.width) break;
 		++zLevels;
 	}
-	// NSLog(@"ZLEVELS=%d", zLevels);
+NSLog(@"ZLEVELS=%d", zLevels);
 	return zLevels;
 }
 
@@ -519,7 +519,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 
 			int ret = fcntl(fd, F_RDAHEAD, 0);	// don't clog up the system's disk cache
 			if(ret == -1) {
-				NSLog(@"Warning: cannot turn off F_RDAHEAD for input file (errno %d).", errno);
+				NSLog(@"Warning: cannot turn off F_RDAHEAD for input file (errno %s).", strerror(errno) );
 			}
 
 			fstore_t fst;
@@ -531,19 +531,19 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 
 			ret = fcntl(fd, F_PREALLOCATE, &fst);
 			if(ret == -1) {
-				NSLog(@"Warning: cannot F_PREALLOCATE for input file (errno %d).", errno);
+				NSLog(@"Warning: cannot F_PREALLOCATE for input file (errno %s).", strerror(errno) );
 			}
 	
 			ret = ftruncate(fd, sz);				// Now the file is there for sure
 			if(ret == -1) {
-				NSLog(@"Warning: cannot ftruncate input file (errno %d).", errno);
+				NSLog(@"Warning: cannot ftruncate input file (errno %s).", strerror(errno) );
 			}
 		} else {
 			imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
 			
 			int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
 			if(ret == -1) {
-				NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
+				NSLog(@"Warning: cannot turn off cacheing for input file (errno %s).", strerror(errno) );
 			}
 		}
 	}
@@ -610,6 +610,9 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 	mapP->bytesPerRow = calcBytesPerRow(mapP->width);
 	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
 	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;
+	// NSLog(@"CALC: %lu", calcDimension(mapP->height));
+
+	//dumpMapper("Yikes!", mapP);
 
 //NSLog(@"mapP->fd = %d", mapP->fd);
 	if(mapP->fd <= 0) {
@@ -623,7 +626,7 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
 		if(mapP->emptyAddr == MAP_FAILED) {
 			failed = YES;
-			NSLog(@"errno3=%s", strerror(errno) );
+			NSLog(@"FAILED to allocate %lu bytes - errno3=%s", mapP->mappedSize, strerror(errno) );
 			mapP->emptyAddr = NULL;
 			mapP->addr = NULL;
 			mapP->mappedSize = 0;
@@ -745,6 +748,25 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 
 
 @end
+
+#if 0
+// http://stackoverflow.com/questions/5182924/where-is-my-ipad-runtime-memory-going
+# include <mach/mach.h>
+# include <mach/mach_host.h>
+
+void dump_memory_usage() {
+  task_basic_info info;
+  mach_msg_type_number_t size = sizeof( info );
+  kern_return_t kerr = task_info( mach_task_self(), TASK_BASIC_INFO, (task_info_t)&info, &size );
+  if ( kerr == KERN_SUCCESS ) {
+    NSLog( @"task_info: 0x%08lx 0x%08lx\n", info.virtual_size, info.resident_size );
+  }
+  else {
+    NSLog( @"task_info failed with error %ld ( 0x%08lx ), '%s'\n", kerr, kerr, mach_error_string( kerr ) );
+  }
+}
+#endif
+
 
 static BOOL dump_memory_usage(struct task_basic_info *info) {
   mach_msg_type_number_t size = sizeof( struct task_basic_info );

@@ -71,6 +71,11 @@ static char *opContext = "opContext";
 	return self;
 }
 
+- (void)dealloc
+{
+	[self cancelOperations];
+}
+
 - (void)runOperation:(NSOperation *)op withMsg:(NSString *)msg
 {
 #ifndef NDEBUG

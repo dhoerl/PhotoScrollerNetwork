@@ -107,7 +107,7 @@
 		 */
 		int fd = im->map.fd;
 		assert(fd != -1);
-		int32_t file_size = (int32_t)im->map.mappedSize;
+		int32_t file_size = (int32_t)lseek(fd, 0, SEEK_END);
 		OSAtomicAdd32Barrier(file_size, &ubc_usage);
 		
 		if(ubc_usage > self.ubc_threshold) {
@@ -116,7 +116,10 @@
 				dispatch_suspend(fileFlushQueue);
 				dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ NSLog(@"unblocked!"); } );
 			}
+[self freeMemory:[NSString stringWithFormat:@"Exceeded threshold: usage=%u thresh=%u", ubc_usage, self.ubc_threshold]];
 		}
+else [self freeMemory:[NSString stringWithFormat:@"Under threshold: usage=%u thresh=%u", ubc_usage, self.ubc_threshold]];
+
 		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
 			{
 				// need to make sure file is kept open til we flush - who knows what will happen otherwise

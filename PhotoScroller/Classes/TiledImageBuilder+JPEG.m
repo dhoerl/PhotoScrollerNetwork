@@ -121,7 +121,11 @@ static void term_source(j_decompress_ptr cinfo);
 			++im->row;
 			im->rows = rows; // restore real number!
 		}
-		if(final) {
+	}
+	
+	if(final) {
+		im = self.ims;
+		for(size_t idx=0; idx<self.zoomLevels; ++idx, ++im) {
 			[self truncateEmptySpace:im];
 			int fd = im->map.fd;
 			assert(fd != -1);
@@ -434,9 +438,9 @@ static void term_source(j_decompress_ptr cinfo);
 	co_jpeg_source_mgr *src_mgr		= self.src_mgr;
 
 	// mutable data bytes pointer can change invocation to invocation
-	size_t diff					= src_mgr->pub.next_input_byte - src_mgr->data;
+	size_t diff						= src_mgr->pub.next_input_byte - src_mgr->data;
 	src_mgr->pub.next_input_byte	= dataPtr + diff;
-	src_mgr->data				= dataPtr;
+	src_mgr->data					= dataPtr;
 	src_mgr->data_length			= [webData length];
 
 	//NSLog(@"s1=%ld s2=%d", src_mgr->data_length, highWaterMark);

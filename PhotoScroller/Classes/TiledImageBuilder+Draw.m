@@ -180,7 +180,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	return newPt;
 }
 
-- (CGAffineTransform)transformForRect:(CGRect)box scale:(CGFloat)scale
+- (CGAffineTransform)transformForRect:(CGRect)box//  scale:(CGFloat)scale
 {
 	// origin is a 0, 0
 	CGAffineTransform transform = CGAffineTransformIdentity;

@@ -78,14 +78,14 @@
 - (void)start
 {
 	if([self isCancelled]) {
-		//LTLog(@"OP: cancelled before I even started!");
+		//NSLog(@"OP: cancelled before I even started!");
 		[self willChangeValueForKey:@"isFinished"];
 		finished = YES;
 		[self didChangeValueForKey:@"isFinished"];
 		return;
 	}
 #ifndef NDEBUG
-	//LTLog(@"OP: start");
+	//NSLog(@"OP: start");
 #endif
 	@autoreleasepool
 	{
@@ -106,12 +106,12 @@
 				[[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
 				//assert(ret && "first assert"); // could remove this - its here to convince myself all is well
 			}
-			//LTLog(@"OP: finished - %@", [self isCancelled] ? @"was canceled" : @"normal completion");
+			//NSLog(@"OP: finished - %@", [self isCancelled] ? @"was canceled" : @"normal completion");
 		} else {
 			[self finish];
 
 #ifndef NDEBUG
-			//LTLog(@"OP: finished - setup failed");
+			//NSLog(@"OP: finished - setup failed");
 #endif
 		}
 		// Objects retaining us
@@ -122,7 +122,7 @@
 
 - (void)dealloc
 {
-	//LTLog(@"OP: dealloc"); // didn't always see this message :-)
+	//NSLog(@"OP: dealloc"); // didn't always see this message :-)
 
 	[timer invalidate], timer = nil;
 	[connection cancel], connection = nil;
@@ -131,7 +131,7 @@
 - (BOOL)setup
 {
 #ifndef NDEBUG
-	//LTLog(@"OP: setup");
+	//NSLog(@"OP: setup");
 #endif
 	NSURLRequest *request = [NSURLRequest requestWithURL:url];
 	self.connection =  [[NSURLConnection alloc] initWithRequest:request delegate:self];
@@ -193,7 +193,7 @@
 	//NSUInteger responseLength = response.expectedContentLength == NSURLResponseUnknownLength ? 1024*1000 : response.expectedContentLength;
 
 #ifndef NDEBUG
-	//LTLog(@"ConcurrentOp: response=%@ len=%lu", response, (unsigned long)responseLength);
+	//NSLog(@"ConcurrentOp: response=%@ len=%lu", response, (unsigned long)responseLength);
 #endif
 
 #ifdef LIBJPEG
@@ -209,7 +209,7 @@
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data
 {
 #ifndef NDEBUG
-	//LTLog(@"WEB SERVICE: got Data len=%u cancelled=%d", [data length], [super isCancelled]);
+	//NSLog(@"WEB SERVICE: got Data len=%u cancelled=%d", [data length], [super isCancelled]);
 #endif
 	if([super isCancelled]) {
 		[connection cancel];
@@ -229,7 +229,7 @@
 - (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *)error
 {
 #ifndef NDEBUG
-	LTLog(@"ConcurrentOp: error: %@", [error description]);
+	NSLog(@"ConcurrentOp: error: %@", [error description]);
 #endif
 	self.webData = nil;
 
@@ -246,7 +246,7 @@
 		return;
 	}
 #ifndef NDEBUG
-	//LTLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
+	//NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
 #endif
 
 	if(decoder != libjpegIncremental) {

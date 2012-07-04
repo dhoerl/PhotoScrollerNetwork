@@ -83,6 +83,9 @@
     return self;
 }
 
+#warning BUG
+static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
+
 - (void)drawLayer:(CALayer*)layer inContext:(CGContextRef)context
 {
 	if(tb.failed) return;
@@ -94,9 +97,25 @@
 
 	// Calculate tile index
 	CGSize tileSize = [(CATiledLayer*)layer tileSize];
-	CGFloat col = box.origin.x * scale / tileSize.width;
-	CGFloat row = box.origin.y * scale / tileSize.height;
+	CGFloat col = rintf(box.origin.x * scale / tileSize.width);
+	CGFloat row = rintf(box.origin.y * scale / tileSize.height);
+
+
+	NSLog(@"scale=%f 1/scale=%flevels=%ld levelsOfDetail=%ld  row=%f col=%f offsetFromScale=%ld", scale, 1/scale, ((CATiledLayer *)layer).levelsOfDetail, ((CATiledLayer *)layer).levelsOfDetailBias, row, col, offsetFromScale(scale));
+
+
 	CGImageRef image = [tb newImageForScale:scale location:CGPointMake(col, row) box:box];
+#warning BUG
+if(!image) {
+	NSLog(@"YIKES! No Image!!! row=%f col=%f", row, col);
+	return;
+}
+if(CGImageGetWidth(image) == 0 || CGImageGetHeight(image) == 0) {
+	NSLog(@"Yikes! Image has a zero dimension! row=%f col=%f", row, col);
+	return;
+}
+
+	assert(image);
 
 	CGContextTranslateCTM(context, box.origin.x, box.origin.y + box.size.height);
 	CGContextScaleCTM(context, 1.0, -1.0);
@@ -104,7 +123,7 @@
 	box.origin.y = 0;
 	//NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
 
-	CGAffineTransform transform = [tb transformForRect:box scale:scale];
+	CGAffineTransform transform = [tb transformForRect:box /* scale:scale */];
 	CGContextConcatCTM(context, transform);
 
 	// Detect Rotation
@@ -185,7 +204,10 @@
 	return [tb imageSize];
 }
 
-#if 0 // Does not work (yet)
+#if 0 
+
+// How to render it http://stackoverflow.com/questions/5526545/render-large-catiledlayer-into-smaller-area
+
 - (UIImage *)image
 {
     UIGraphicsBeginImageContextWithOptions(self.bounds.size, YES, 0);

@@ -36,7 +36,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #define TIMING_STATS			1		// set to 1 if you want to see how long things take
-#define MEMORY_DEBUGGING		0		// set to 1 if you want to see how memory changes when images are processed (non Turbo)
+#define MEMORY_DEBUGGING		1		// set to 1 if you want to see how memory changes when images are processed
 #define MMAP_DEBUGGING			0		// set to 1 to see how mmap/munmap working
 #define MAPPING_IMAGES			0		// set to 1 to use MMAP for image tile retrieval - if 0 use pread
 #define USE_VIMAGE				0		// set to 1 if you want vImage to downsize images (slightly better quality, much much slower)
