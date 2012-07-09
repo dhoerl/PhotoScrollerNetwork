@@ -42,6 +42,7 @@
 @property (nonatomic, assign) int decoder;
 @property (nonatomic, assign) int orientation;
 @property (nonatomic, assign) BOOL justDoOneImage;
+@property (nonatomic, strong) NSString *singleName;
 
 @end
 

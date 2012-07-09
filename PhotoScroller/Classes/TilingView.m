@@ -40,9 +40,12 @@
 #import "TilingView.h"
 #import "TiledImageBuilder.h"
 
+#define LOG NSLog
+
 #if !__has_feature(objc_arc)
 #error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
 #endif
+
 
 @interface FastCATiledLayer : CATiledLayer
 @end
@@ -83,8 +86,7 @@
     return self;
 }
 
-#warning BUG
-static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
+//static inline long offsetFromScale(CGFloat scale) { long s = lrintf(1/scale); long idx = 0; while(s > 1) s /= 2.0f, ++idx; return idx; }
 
 - (void)drawLayer:(CALayer*)layer inContext:(CGContextRef)context
 {
@@ -100,20 +102,21 @@ static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f
 	CGFloat col = rintf(box.origin.x * scale / tileSize.width);
 	CGFloat row = rintf(box.origin.y * scale / tileSize.height);
 
-
-	NSLog(@"scale=%f 1/scale=%flevels=%ld levelsOfDetail=%ld  row=%f col=%f offsetFromScale=%ld", scale, 1/scale, ((CATiledLayer *)layer).levelsOfDetail, ((CATiledLayer *)layer).levelsOfDetailBias, row, col, offsetFromScale(scale));
+	//LOG(@"scale=%f 1/scale=%f levelsOfDetail=%ld levelsOfDetailBias=%ld row=%f col=%f offsetFromScale=%ld", scale, 1/scale, ((CATiledLayer *)layer).levelsOfDetail, ((CATiledLayer *)layer).levelsOfDetailBias, row, col, offsetFromScale(scale));
 
 
 	CGImageRef image = [tb newImageForScale:scale location:CGPointMake(col, row) box:box];
-#warning BUG
+
+#if 0 // had this, think its fixed
 if(!image) {
-	NSLog(@"YIKES! No Image!!! row=%f col=%f", row, col);
+	LOG(@"YIKES! No Image!!! row=%f col=%f", row, col);
 	return;
 }
 if(CGImageGetWidth(image) == 0 || CGImageGetHeight(image) == 0) {
-	NSLog(@"Yikes! Image has a zero dimension! row=%f col=%f", row, col);
+	LOG(@"Yikes! Image has a zero dimension! row=%f col=%f", row, col);
 	return;
 }
+#endif
 
 	assert(image);
 
@@ -121,7 +124,7 @@ if(CGImageGetWidth(image) == 0 || CGImageGetHeight(image) == 0) {
 	CGContextScaleCTM(context, 1.0, -1.0);
 	box.origin.x = 0;
 	box.origin.y = 0;
-	//NSLog(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
+	//LOG(@"Draw: scale=%f row=%d col=%d", scale, (int)row, (int)col);
 
 	CGAffineTransform transform = [tb transformForRect:box /* scale:scale */];
 	CGContextConcatCTM(context, transform);
@@ -132,7 +135,7 @@ if(CGImageGetWidth(image) == 0 || CGImageGetHeight(image) == 0) {
 		box.size = CGSizeMake(s.height, s.width);
 	}
 
-	// NSLog(@"BOX: %@", NSStringFromCGRect(box));
+	// LOG(@"BOX: %@", NSStringFromCGRect(box));
 
 	CGContextSetBlendMode(context, kCGBlendModeCopy);	// no blending! from QA 1708
 //if(row==0 && col==0)	
@@ -184,7 +187,7 @@ if(CGImageGetWidth(image) == 0 || CGImageGetHeight(image) == 0) {
             // if the tile would stick outside of our bounds, we need to truncate it so as to avoid
             // stretching out the partial tiles at the right and bottom edges
             tileRect = CGRectIntersection(self.bounds, tileRect);
-			if(!tileRect.size.width || !tileRect.size.height) { NSLog(@"WTF"); continue; }
+			if(!tileRect.size.width || !tileRect.size.height) { LOG(@"WTF"); continue; }
 			
             UIImage *tile = [tb tileForScale:scale row:row col:col];
             [tile drawInRect:tileRect];

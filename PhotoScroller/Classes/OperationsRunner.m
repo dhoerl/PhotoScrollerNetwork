@@ -104,8 +104,6 @@ static char *opContext = "opContext";
 
 	[queue cancelAllOperations];
 	[queue waitUntilAllOperationsAreFinished];
-
-	delegate = nil;
 }
 
 - (void)enumerateOperations:(void(^)(NSOperation *op))b

@@ -37,6 +37,8 @@
 
 #import "TiledImageBuilder-Private.h"
 
+#define LOG NSLog
+
 static void my_error_exit(j_common_ptr cinfo);
 
 static void init_source(j_decompress_ptr cinfo);
@@ -134,16 +136,16 @@ static void term_source(j_decompress_ptr cinfo);
 
 			if(ubc_usage > self.ubc_threshold) {
 				if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
-					// NSLog(@"SUSPEND==============================================================================");
+					// LOG(@"SUSPEND==============================================================================");
 					dispatch_suspend(fileFlushQueue);
-					dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ NSLog(@"unblocked!"); } );
+					dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ LOG(@"unblocked!"); } );
 				}
 			}
 			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
 				{
 					// need to make sure file is kept open til we flush - who knows what will happen otherwise
 					int ret = fcntl(fd,  F_FULLFSYNC);
-					if(ret == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
+					if(ret == -1) LOG(@"ERROR: failed to sync fd=%d", fd);
 					OSAtomicAdd32Barrier(-file_size, &ubc_usage);
 					if(ubc_usage <= self.ubc_threshold) {
 						if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
@@ -163,16 +165,16 @@ static void term_source(j_decompress_ptr cinfo);
 	const char *file = [path fileSystemRepresentation];
 	int jfd = open(file, O_RDONLY, 0);
 	if(jfd <= 0) {
-		NSLog(@"Error: failed to open input image file \"%s\" for reading (%d).\n", file, errno);
+		LOG(@"Error: failed to open input image file \"%s\" for reading (%d).\n", file, errno);
 		self.failed = YES;
 		return;
 	}
 	int ret = fcntl(jfd, F_NOCACHE, 1);	// don't clog up the system's disk cache
 	if(ret == -1) {
-		NSLog(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
+		LOG(@"Warning: cannot turn off cacheing for input file (errno %d).", errno);
 	}
 	if ((self.imageFile = fdopen(jfd, "r")) == NULL) {
-		NSLog(@"Error: failed to fdopen input image file \"%s\" for reading (%d).", file, errno);
+		LOG(@"Error: failed to fdopen input image file \"%s\" for reading (%d).", file, errno);
 		jpeg_destroy_decompress(&src_mgr->cinfo);
 		close(jfd);
 		self.failed = YES;
@@ -231,7 +233,7 @@ static void term_source(j_decompress_ptr cinfo);
 		
 		assert(src_mgr->cinfo.num_components == 3);
 		assert(width > 0 && height > 0);
-		//NSLog(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
+		//LOG(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
 
 #if LEVELS_INIT == 0
 		self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(width, height)];
@@ -279,7 +281,7 @@ static void term_source(j_decompress_ptr cinfo);
 		/* If we get here, the JPEG code has signaled an error.
 		 * We need to clean up the JPEG object, close the input file, and return.
 		 */
-		//NSLog(@"YIKES! SETJUMP");
+		//LOG(@"YIKES! SETJUMP");
 		self.failed = YES;
 		//[self cancel];
 	} else {
@@ -312,14 +314,14 @@ static void term_source(j_decompress_ptr cinfo);
 			imP->map.mappedSize = tmpMapSize;
 			imP->map.addr = mmap(NULL, imP->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, imP->map.fd, offset);	//  | MAP_NOCACHE
 			if(imP->map.addr == MAP_FAILED) {
-				NSLog(@"errno1=%s", strerror(errno) );
+				LOG(@"errno1=%s", strerror(errno) );
 				self.failed = YES;
 				imP->map.addr = NULL;
 				imP->map.mappedSize = 0;
 				return YES;
 			}
 #if MMAP_DEBUGGING == 1
-			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
+			LOG(@"MMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
 #endif
 			scanPtr = imP->map.addr + over;
 		}
@@ -332,7 +334,7 @@ static void term_source(j_decompress_ptr cinfo);
 			//assert(mret == 0);
 			int ret = munmap(imP->map.addr, imP->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
+			LOG(@"UNMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
 #endif
 			assert(ret == 0);
 			break;
@@ -374,14 +376,14 @@ static void term_source(j_decompress_ptr cinfo);
 				im->map.mappedSize = tmpMapSize;
 				im->map.addr = mmap(NULL, im->map.mappedSize, PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, offset);		// write only  | MAP_NOCACHE
 				if(im->map.addr == MAP_FAILED) {
-					NSLog(@"errno2=%s", strerror(errno) );
+					LOG(@"errno2=%s", strerror(errno) );
 					self.failed = YES;
 					im->map.addr = NULL;
 					im->map.mappedSize = 0;
 					return YES;
 				}
 #if MMAP_DEBUGGING == 1
-				NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
+				LOG(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
 #endif
 
 				uint32_t *outPtr = (uint32_t *)(im->map.addr + over);
@@ -395,7 +397,7 @@ static void term_source(j_decompress_ptr cinfo);
 				//assert(mret == 0);
 				int ret = munmap(im->map.addr, im->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-				NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
+				LOG(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.addr, (NSUInteger)im->map.mappedSize);
 #endif
 				assert(ret == 0);
 			}
@@ -404,7 +406,7 @@ static void term_source(j_decompress_ptr cinfo);
 		//assert(mret == 0);
 		int ret = munmap(imP->map.addr, imP->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
+		LOG(@"UNMAP[%d]: addr=%p 0x%X bytes", imP->map.fd, imP->map.addr, (NSUInteger)imP->map.mappedSize);
 #endif
 		assert(ret == 0);
 
@@ -415,7 +417,7 @@ static void term_source(j_decompress_ptr cinfo);
 		}
 		src_mgr->writtenLines += lines;
 	}
-	//NSLog(@"END LINES: me=%ld jpeg=%ld", src_mgr->writtenLines, src_mgr->cinfo.output_scanline);
+	//LOG(@"END LINES: me=%ld jpeg=%ld", src_mgr->writtenLines, src_mgr->cinfo.output_scanline);
 	BOOL ret = (src_mgr->cinfo.output_scanline == src_mgr->cinfo.image_height) || self.failed;
 	
 	if(ret) {
@@ -443,12 +445,12 @@ static void term_source(j_decompress_ptr cinfo);
 	src_mgr->data					= dataPtr;
 	src_mgr->data_length			= [webData length];
 
-	//NSLog(@"s1=%ld s2=%d", src_mgr->data_length, highWaterMark);
+	//LOG(@"s1=%ld s2=%d", src_mgr->data_length, highWaterMark);
 	if (setjmp(src_mgr->jerr.setjmp_buffer)) {
 		/* If we get here, the JPEG code has signaled an error.
 		 * We need to clean up the JPEG object, close the input file, and return.
 		 */
-		NSLog(@"YIKES! SETJUMP");
+		LOG(@"YIKES! SETJUMP");
 		self.failed = YES;
 		return;
 	}
@@ -475,14 +477,14 @@ static void term_source(j_decompress_ptr cinfo);
 				CFRelease(imageSourcRef);			
 			}
 
-			//NSLog(@"GOT header");
+			//LOG(@"GOT header");
 			src_mgr->got_header				= YES;
 			src_mgr->start_of_stream		= NO;
 			src_mgr->cinfo.out_color_space	= JCS_EXT_BGRA;
 
 			assert(src_mgr->cinfo.num_components == 3);
 			assert(src_mgr->cinfo.image_width > 0 && src_mgr->cinfo.image_height > 0);
-			//NSLog(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
+			//LOG(@"WID=%d HEIGHT=%d", src_mgr->cinfo.image_width, src_mgr->cinfo.image_height);
 
 			self.zoomLevels = [self zoomLevelsForSize:CGSizeMake(src_mgr->cinfo.image_width, src_mgr->cinfo.image_height)];
 			self.ims = calloc(self.zoomLevels, sizeof(imageMemory));
@@ -536,7 +538,7 @@ static boolean fill_input_buffer(j_decompress_ptr cinfo)
 
 	size_t diff = src->consumed_data - src->deleted_data;
 	size_t unreadLen = src->data_length - diff;
-	//NSLog(@"unreadLen=%ld", unreadLen);
+	//LOG(@"unreadLen=%ld", unreadLen);
 	if((long)unreadLen <= 0) {
 		return FALSE;
 	}
@@ -546,7 +548,7 @@ static boolean fill_input_buffer(j_decompress_ptr cinfo)
 	src->consumed_data = src->data_length + src->deleted_data;
 
 	src->start_of_stream = FALSE;
-	//NSLog(@"returning %ld bytes consumed_data=%ld data_length=%ld deleted_data=%ld", unreadLen, src->consumed_data, src->data_length, src->deleted_data);
+	//LOG(@"returning %ld bytes consumed_data=%ld data_length=%ld deleted_data=%ld", unreadLen, src->consumed_data, src->data_length, src->deleted_data);
 
 	return TRUE;
 }
@@ -557,11 +559,11 @@ static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 
 	if (num_bytes > 0) {
 		if(num_bytes <= (long)src->pub.bytes_in_buffer) {
-			//NSLog(@"SKIPPER1: %ld", num_bytes);
+			//LOG(@"SKIPPER1: %ld", num_bytes);
 			src->pub.next_input_byte += (size_t)num_bytes;
 			src->pub.bytes_in_buffer -= (size_t)num_bytes;
 		} else {
-			//NSLog(@"SKIPPER2: %ld", num_bytes);
+			//LOG(@"SKIPPER2: %ld", num_bytes);
 			src->consumed_data			+= num_bytes - src->pub.bytes_in_buffer;
 			src->pub.bytes_in_buffer	= 0;
 		}
@@ -571,7 +573,7 @@ static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 static boolean resync_to_restart(j_decompress_ptr cinfo, int desired)
 {
 	co_jpeg_source_mgr *src = (co_jpeg_source_mgr *)cinfo->src;
-	// NSLog(@"YIKES: resync_to_restart!!!");
+	// LOG(@"YIKES: resync_to_restart!!!");
 
 	src->jpegFailed = TRUE;
 	return FALSE;

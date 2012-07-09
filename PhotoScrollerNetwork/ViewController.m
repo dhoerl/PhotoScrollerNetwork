@@ -57,7 +57,19 @@
 	IBOutlet UISwitch *justOneImage;
 	IBOutlet UILabel *orientationValue;
 	IBOutlet UIImageView *imageView;
+	IBOutlet UILabel *fileName;
 }
+- (IBAction)sliderAction:(id)sender
+{
+	if(!sender) {
+		fileName.text = @"Space4";
+		return;
+	}
+	
+	CGFloat num = [(UISlider *)sender value];
+	fileName.text = [NSString stringWithFormat:@"Space%ld", lrintf(num)];
+}
+
 
 - (IBAction)segmentChanged:(id)sender
 {
@@ -79,6 +91,9 @@
 }
 
 #if 0 // does not work
+
+#warning FIX ME SOMEDAY
+
 - (IBAction)makeImage:(id)sender
 {
 	NSString *path = [[NSBundle mainBundle] pathForResource:@"Shed" ofType:@"jpg"];
@@ -105,6 +120,7 @@
 	pvc.decoder = technology.selectedSegmentIndex;
 	pvc.justDoOneImage = justOneImage.on;
 	pvc.orientation = [orientationValue.text integerValue];
+	pvc.singleName = fileName.text;
 
 	UIBarButtonItem *temporaryBarButtonItem = [UIBarButtonItem new];
 	[temporaryBarButtonItem setTitle:@"Back"];
@@ -132,12 +148,15 @@
 	technology.hidden = YES;
 #endif
 	self.navigationItem.title = @"PhotoScrollerNetwork";
+	
+	[self sliderAction:nil];
 }
 
 - (void)viewDidUnload
 {
 	orientationValue = nil;
 	imageView = nil;
+	fileName = nil;
     [super viewDidUnload];
 }
 

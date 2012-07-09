@@ -8,6 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		DE07428C14F0441500439550 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE07428B14F0441500439550 /* Accelerate.framework */; };
+		DE0D6C8A15AB4E100040318C /* Space4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8815AB4E100040318C /* Space4.jpg */; };
+		DE0D6C8B15AB4E100040318C /* Space4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8815AB4E100040318C /* Space4.jpg */; };
+		DE0D6C8C15AB4E100040318C /* Space4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8815AB4E100040318C /* Space4.jpg */; };
+		DE0D6C8D15AB4E100040318C /* Space4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8815AB4E100040318C /* Space4.jpg */; };
+		DE0D6C8E15AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
+		DE0D6C8F15AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
+		DE0D6C9015AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
+		DE0D6C9115AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
+		DE11142A159DE664004D2459 /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
+		DE11142B159DE666004D2459 /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
+		DE111437159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
+		DE111438159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
+		DE111439159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
+		DE11143A159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
 		DE3EC281151CC50300921348 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD93D14DC783D00D63E5A /* main.m */; };
 		DE3EC282151CC50300921348 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD94114DC783D00D63E5A /* AppDelegate.m */; };
 		DE3EC283151CC50300921348 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD94414DC783D00D63E5A /* ViewController.m */; };
@@ -69,6 +83,10 @@
 		DE3EC2D1151CC50D00921348 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97914DC788F00D63E5A /* ReadMe.txt */; };
 		DE3EC2DB151CC53600921348 /* ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AA151CC50300921348 /* ViewController.xib */; };
 		DE3EC2DC151CC53600921348 /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AC151CC50300921348 /* PhotoViewController.xib */; };
+		DE49F743159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
+		DE49F744159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
+		DE49F745159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
+		DE49F746159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
 		DE4AD93214DC783D00D63E5A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD93114DC783D00D63E5A /* UIKit.framework */; };
 		DE4AD93414DC783D00D63E5A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD93314DC783D00D63E5A /* Foundation.framework */; };
 		DE4AD93614DC783D00D63E5A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE4AD93514DC783D00D63E5A /* CoreGraphics.framework */; };
@@ -139,18 +157,23 @@
 		DE7AB90215309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DE7AB90315309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DE7AB90415309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
-		DED014101524F92900B9335E /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
-		DED014111524F94000B9335E /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		DE07428B14F0441500439550 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		DE0D6C8815AB4E100040318C /* Space4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space4.jpg; sourceTree = "<group>"; };
+		DE0D6C8915AB4E100040318C /* Space5.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space5.jpg; sourceTree = "<group>"; };
+		DE111423159DD20A004D2459 /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libturbojpeg.a; sourceTree = "<group>"; };
+		DE111436159E0138004D2459 /* Space6.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space6.jpg; sourceTree = "<group>"; };
 		DE3EC2A5151CC50300921348 /* PhotoScrollerNetwork-iPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PhotoScrollerNetwork-iPad.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE3EC2A8151CC50300921348 /* PhotoScrollerNetwork copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PhotoScrollerNetwork copy-Info.plist"; path = "/Volumes/Data/git/PhotoScrollerNetwork/PhotoScrollerNetwork copy-Info.plist"; sourceTree = "<absolute>"; };
 		DE3EC2AB151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScrollerNetwork/en.lproj/ViewController.xib"; sourceTree = "<group>"; };
 		DE3EC2AD151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScroller/en.lproj/PhotoViewController.xib"; sourceTree = "<group>"; };
 		DE3EC2D8151CC50D00921348 /* PhotoScrollerNetworkTurbo-iPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PhotoScrollerNetworkTurbo-iPad.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE3EC2DA151CC50E00921348 /* PhotoScrollerNetworkTurbo copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PhotoScrollerNetworkTurbo copy-Info.plist"; path = "/Volumes/Data/git/PhotoScrollerNetwork/PhotoScrollerNetworkTurbo copy-Info.plist"; sourceTree = "<absolute>"; };
+		DE49F741159A716700AE4340 /* OperationsRunner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OperationsRunner.h; sourceTree = "<group>"; };
+		DE49F742159A716700AE4340 /* OperationsRunner.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OperationsRunner.m; sourceTree = "<group>"; };
+		DE49F748159A719900AE4340 /* OperationsRunnerProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OperationsRunnerProtocol.h; sourceTree = "<group>"; };
 		DE4AD92D14DC783D00D63E5A /* PhotoScrollerNetwork.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetwork.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE4AD93114DC783D00D63E5A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		DE4AD93314DC783D00D63E5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -191,7 +214,7 @@
 		DE4AD99F14DC7AF800D63E5A /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
 		DE4AD9A014DC7AF800D63E5A /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		DE4AD9C814DEE4DB00D63E5A /* ConcurrentOp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = ConcurrentOp.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; };
+		DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConcurrentOp.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		DE4ADA4614E1A56500D63E5A /* PhotoScrollerNetworkTurbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoScrollerNetworkTurbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE588D8614E9433A00C7E151 /* README.txt */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; path = README.txt; sourceTree = "<group>"; };
 		DE7AB8F615309AA300C4CFE7 /* TiledImageBuilder-Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = "TiledImageBuilder-Private.h"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -219,13 +242,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DED014111524F94000B9335E /* libturbojpeg.a in Frameworks */,
 				DE3EC2BB151CC50D00921348 /* Accelerate.framework in Frameworks */,
 				DE3EC2BC151CC50D00921348 /* ImageIO.framework in Frameworks */,
 				DE3EC2BD151CC50D00921348 /* QuartzCore.framework in Frameworks */,
 				DE3EC2BE151CC50D00921348 /* UIKit.framework in Frameworks */,
 				DE3EC2BF151CC50D00921348 /* Foundation.framework in Frameworks */,
 				DE3EC2C0151CC50D00921348 /* CoreGraphics.framework in Frameworks */,
+				DE11142B159DE666004D2459 /* libturbojpeg.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,13 +268,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DED014101524F92900B9335E /* libturbojpeg.a in Frameworks */,
 				DE07428C14F0441500439550 /* Accelerate.framework in Frameworks */,
 				DE4ADA2914E1A56500D63E5A /* ImageIO.framework in Frameworks */,
 				DE4ADA2A14E1A56500D63E5A /* QuartzCore.framework in Frameworks */,
 				DE4ADA2B14E1A56500D63E5A /* UIKit.framework in Frameworks */,
 				DE4ADA2C14E1A56500D63E5A /* Foundation.framework in Frameworks */,
 				DE4ADA2D14E1A56500D63E5A /* CoreGraphics.framework in Frameworks */,
+				DE11142A159DE664004D2459 /* libturbojpeg.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,6 +298,7 @@
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
 				DE4AD99E14DC78ED00D63E5A /* Images */,
+				DE111423159DD20A004D2459 /* libturbojpeg.a */,
 				DE4AD93014DC783D00D63E5A /* Frameworks */,
 				DE4AD92E14DC783D00D63E5A /* Products */,
 				DE3EC2A8151CC50300921348 /* PhotoScrollerNetwork copy-Info.plist */,
@@ -354,6 +378,9 @@
 				DE4AD9C914DEE4DB00D63E5A /* ConcurrentOp.m */,
 				DE4AD95214DC788F00D63E5A /* ImageScrollView.h */,
 				DE4AD95314DC788F00D63E5A /* ImageScrollView.m */,
+				DE49F748159A719900AE4340 /* OperationsRunnerProtocol.h */,
+				DE49F741159A716700AE4340 /* OperationsRunner.h */,
+				DE49F742159A716700AE4340 /* OperationsRunner.m */,
 				DE4AD95414DC788F00D63E5A /* PhotoViewController.h */,
 				DE4AD95514DC788F00D63E5A /* PhotoViewController.m */,
 				DE7AB8F615309AA300C4CFE7 /* TiledImageBuilder-Private.h */,
@@ -382,6 +409,9 @@
 				DE4AD96414DC788F00D63E5A /* Lake.jpg */,
 				DE4AD96714DC788F00D63E5A /* Shed.jpg */,
 				DE4AD96A14DC788F00D63E5A /* Tree.jpg */,
+				DE0D6C8815AB4E100040318C /* Space4.jpg */,
+				DE0D6C8915AB4E100040318C /* Space5.jpg */,
+				DE111436159E0138004D2459 /* Space6.jpg */,
 			);
 			path = "Full Images";
 			sourceTree = "<group>";
@@ -523,6 +553,9 @@
 				DE3EC29F151CC50300921348 /* ReadMe.txt in Resources */,
 				DE3EC2AE151CC50300921348 /* ViewController.xib in Resources */,
 				DE3EC2AF151CC50300921348 /* PhotoViewController.xib in Resources */,
+				DE111439159E0138004D2459 /* Space6.jpg in Resources */,
+				DE0D6C8C15AB4E100040318C /* Space4.jpg in Resources */,
+				DE0D6C9015AB4E100040318C /* Space5.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -547,6 +580,9 @@
 				DE3EC2D1151CC50D00921348 /* ReadMe.txt in Resources */,
 				DE3EC2DB151CC53600921348 /* ViewController.xib in Resources */,
 				DE3EC2DC151CC53600921348 /* PhotoViewController.xib in Resources */,
+				DE11143A159E0138004D2459 /* Space6.jpg in Resources */,
+				DE0D6C8D15AB4E100040318C /* Space4.jpg in Resources */,
+				DE0D6C9115AB4E100040318C /* Space5.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -571,6 +607,9 @@
 				DE4AD99614DC788F00D63E5A /* iTunesArtwork in Resources */,
 				DE4AD99A14DC788F00D63E5A /* ReadMe.txt in Resources */,
 				DE4AD9A314DC811900D63E5A /* PhotoViewController.xib in Resources */,
+				DE111437159E0138004D2459 /* Space6.jpg in Resources */,
+				DE0D6C8A15AB4E100040318C /* Space4.jpg in Resources */,
+				DE0D6C8E15AB4E100040318C /* Space5.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -595,6 +634,9 @@
 				DE4ADA3D14E1A56500D63E5A /* iTunesArtwork in Resources */,
 				DE4ADA3E14E1A56500D63E5A /* ReadMe.txt in Resources */,
 				DE4ADA3F14E1A56500D63E5A /* PhotoViewController.xib in Resources */,
+				DE111438159E0138004D2459 /* Space6.jpg in Resources */,
+				DE0D6C8B15AB4E100040318C /* Space4.jpg in Resources */,
+				DE0D6C8F15AB4E100040318C /* Space5.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -644,6 +686,7 @@
 				DE3EC288151CC50300921348 /* ConcurrentOp.m in Sources */,
 				DE7AB8FF15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
 				DE7AB90315309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
+				DE49F745159A716700AE4340 /* OperationsRunner.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -662,6 +705,7 @@
 				DE7AB8FA15309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m in Sources */,
 				DE7AB90015309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
 				DE7AB90415309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
+				DE49F746159A716700AE4340 /* OperationsRunner.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -679,6 +723,7 @@
 				DE4AD9CA14DEE4DB00D63E5A /* ConcurrentOp.m in Sources */,
 				DE7AB8FD15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
 				DE7AB90115309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
+				DE49F743159A716700AE4340 /* OperationsRunner.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -697,6 +742,7 @@
 				DE7AB8F915309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m in Sources */,
 				DE7AB8FE15309BD200C4CFE7 /* TiledImageBuilder+Draw.m in Sources */,
 				DE7AB90215309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */,
+				DE49F744159A716700AE4340 /* OperationsRunner.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -760,7 +806,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
 				WRAPPER_EXTENSION = app;
@@ -773,7 +818,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				STRIP_INSTALLED_PRODUCT = YES;
 				TARGETED_DEVICE_FAMILY = 2;
@@ -787,7 +831,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
 				WRAPPER_EXTENSION = app;
@@ -800,8 +843,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
-				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/libjpeg-turbo/lib",
+					"\"$(SRCROOT)\"",
+				);
 				OTHER_CFLAGS = "-DLIBJPEG";
 				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
@@ -817,8 +862,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
-				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/libjpeg-turbo/lib",
+					"\"$(SRCROOT)\"",
+				);
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -839,8 +886,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
-				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/libjpeg-turbo/lib",
+					"\"$(SRCROOT)\"",
+				);
 				OTHER_CFLAGS = "-DLIBJPEG";
 				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
@@ -877,7 +926,7 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -903,7 +952,7 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -919,7 +968,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -931,7 +979,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
@@ -944,8 +991,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
-				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/libjpeg-turbo/lib",
+					"\"$(SRCROOT)\"",
+				);
 				OTHER_CFLAGS = "-DLIBJPEG";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
@@ -959,8 +1008,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
-				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/libjpeg-turbo/lib",
+					"\"$(SRCROOT)\"",
+				);
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -981,7 +1032,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Hoerl (A9Y94TLV83)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
@@ -993,8 +1044,9 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				OTHER_CFLAGS = "";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "4F591FB2-1D3A-4CC8-BCCA-9A9001A93AF4";
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
@@ -1007,7 +1059,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1016,15 +1067,15 @@
 		DE588D6014E81ABA00C7E151 /* ReleaseWithAsserts */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Hoerl (A9Y94TLV83)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
-				LIBRARY_SEARCH_PATHS = "/opt/libjpeg-turbo/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"/opt/libjpeg-turbo/lib",
+					"\"$(SRCROOT)\"",
+				);
 				OTHER_CFLAGS = "-DLIBJPEG";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "D7CAF0BA-A3BB-45E1-B36F-7BAC00A12FB3";
 				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
 				WRAPPER_EXTENSION = app;
 			};

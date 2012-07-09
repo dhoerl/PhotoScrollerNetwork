@@ -41,6 +41,8 @@
 
 #import "TiledImageBuilder-Private.h"
 
+#define LOG NSLog
+
 static size_t	calcDimension(size_t d) { return(d + (tileDimension-1)) & ~(tileDimension-1); }
 static size_t	calcBytesPerRow(size_t row) { return calcDimension(row) * bytesPerPixel; }
 
@@ -103,7 +105,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now)
 #if 0
 static void foo(int sig)
 {
-	NSLog(@"YIKES: got signal %d", sig);
+	LOG(@"YIKES: got signal %d", sig);
 }
 #endif
 
@@ -196,7 +198,7 @@ float					ubc_threshold_ratio;
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+		LOG(@"FINISH: %u milliseconds", milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"FINISHED"];
@@ -222,7 +224,7 @@ float					ubc_threshold_ratio;
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		NSLog(@"FINISH-I: %u milliseconds", milliSeconds);
+		LOG(@"FINISH-I: %u milliseconds", milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"FINISHED"];
@@ -265,7 +267,7 @@ float					ubc_threshold_ratio;
 #ifdef LIBJPEG
 		src_mgr				= calloc(1, sizeof(co_jpeg_source_mgr));
 #endif
-		//NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+		//LOG(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
 
 		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];
 	}
@@ -286,7 +288,7 @@ float					ubc_threshold_ratio;
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+		LOG(@"FINISH: %u milliseconds", milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"FINISHED"];
@@ -312,7 +314,7 @@ float					ubc_threshold_ratio;
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		NSLog(@"FINISH-I: %u milliseconds", milliSeconds);
+		LOG(@"FINISH-I: %u milliseconds", milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"FINISHED"];
@@ -356,7 +358,7 @@ float					ubc_threshold_ratio;
 #ifdef LIBJPEG
 		src_mgr				= calloc(1, sizeof(co_jpeg_source_mgr));
 #endif
-		//NSLog(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+		//LOG(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
 
 		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];
 	}
@@ -384,7 +386,7 @@ float					ubc_threshold_ratio;
 
 - (void)lowMemory:(NSNotification *)note
 {
-NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usage);
+LOG(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usage);
 	ubc_threshold = lrintf((float)ubc_threshold * ubc_threshold_ratio);
 	
 	[self freeMemory:@"Yikes!"];
@@ -396,13 +398,13 @@ NSLog(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usa
 	while(YES) {
 		imageSize.width /= 2.0f;
 		imageSize.height /= 2.0f;
-		//NSLog(@"zoomLevelsForSize: TEST IF reducedHeight=%f <= height=%f || reductedWidth=%f < width=%f zLevels=%d", imageSize.height, size.height, imageSize.width, size.width, zLevels);
+		//LOG(@"zoomLevelsForSize: TEST IF reducedHeight=%f <= height=%f || reductedWidth=%f < width=%f zLevels=%d", imageSize.height, size.height, imageSize.width, size.width, zLevels);
 		
 		// We don't want to define levels that could only be magnified when viewed, not reduced.
 		if(imageSize.height < size.height || imageSize.width < size.width) break;
 		++zLevels;
 	}
-NSLog(@"ZLEVELS=%d", zLevels);
+LOG(@"ZLEVELS=%d", zLevels);
 	return zLevels;
 }
 
@@ -428,7 +430,7 @@ NSLog(@"ZLEVELS=%d", zLevels);
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		finishTime = [self timeStamp];
 		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		NSLog(@"FINISH: %u milliseconds", milliSeconds);
+		LOG(@"FINISH: %u milliseconds", milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"dataFinished"];
@@ -438,7 +440,7 @@ NSLog(@"ZLEVELS=%d", zLevels);
 
 - (void)decodeImageURL:(NSURL *)url
 {
-	//NSLog(@"URL=%@", url);
+	//LOG(@"URL=%@", url);
 #ifdef LIBJPEG
 	if(decoder == libjpegTurboDecoder) {
 		NSData *data = [NSData dataWithContentsOfURL:url];
@@ -494,7 +496,7 @@ NSLog(@"ZLEVELS=%d", zLevels);
 		success = NO;
 	} else {
 		if ((imageFile = fdopen(fd, "r+")) == NULL) {
-			NSLog(@"Error: failed to fdopen image file \"%@\" for \"r+\" (%d).", imagePath, errno);
+			LOG(@"Error: failed to fdopen image file \"%@\" for \"r+\" (%d).", imagePath, errno);
 			close(fd);
 			failed = YES;
 			success = NO;
@@ -509,17 +511,17 @@ NSLog(@"ZLEVELS=%d", zLevels);
 {
 	char *template = strdup([[NSTemporaryDirectory() stringByAppendingPathComponent:@"imXXXXXX"] fileSystemRepresentation]);
 	int fd = mkstemp(template);
-	//NSLog(@"CREATE TMP FILE: %s fd=%d", template, fd);
+	//LOG(@"CREATE TMP FILE: %s fd=%d", template, fd);
 	if(fd == -1) {
 		failed = YES;
-		NSLog(@"OPEN failed file %s %s", template, strerror(errno));
+		LOG(@"OPEN failed file %s %s", template, strerror(errno));
 	} else {
 		if(unlinkFile) {
 			unlink(template);	// so it goes away when the fd is closed or on a crash
 
 			int ret = fcntl(fd, F_RDAHEAD, 0);	// don't clog up the system's disk cache
 			if(ret == -1) {
-				NSLog(@"Warning: cannot turn off F_RDAHEAD for input file (errno %s).", strerror(errno) );
+				LOG(@"Warning: cannot turn off F_RDAHEAD for input file (errno %s).", strerror(errno) );
 			}
 
 			fstore_t fst;
@@ -531,19 +533,19 @@ NSLog(@"ZLEVELS=%d", zLevels);
 
 			ret = fcntl(fd, F_PREALLOCATE, &fst);
 			if(ret == -1) {
-				NSLog(@"Warning: cannot F_PREALLOCATE for input file (errno %s).", strerror(errno) );
+				LOG(@"Warning: cannot F_PREALLOCATE for input file (errno %s).", strerror(errno) );
 			}
 	
 			ret = ftruncate(fd, sz);				// Now the file is there for sure
 			if(ret == -1) {
-				NSLog(@"Warning: cannot ftruncate input file (errno %s).", strerror(errno) );
+				LOG(@"Warning: cannot ftruncate input file (errno %s).", strerror(errno) );
 			}
 		} else {
 			imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
 			
 			int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
 			if(ret == -1) {
-				NSLog(@"Warning: cannot turn off cacheing for input file (errno %s).", strerror(errno) );
+				LOG(@"Warning: cannot turn off cacheing for input file (errno %s).", strerror(errno) );
 			}
 		}
 	}
@@ -598,7 +600,7 @@ NSLog(@"ZLEVELS=%d", zLevels);
 		}
 		if(rowOffset) {
 			imsP->map.row0offset = imsP->rows * tileDimension - imsP->map.height;
-			// NSLog(@"ROW OFFSET = %ld", imsP->map.row0offset);
+			// LOG(@"ROW OFFSET = %ld", imsP->map.row0offset);
 		}
 		if(orientation >= 5 && orientation <= 8) imsP->rotated = YES;
 	}
@@ -610,13 +612,13 @@ NSLog(@"ZLEVELS=%d", zLevels);
 	mapP->bytesPerRow = calcBytesPerRow(mapP->width);
 	mapP->emptyTileRowSize = mapP->bytesPerRow * tileDimension;
 	mapP->mappedSize = mapP->bytesPerRow * calcDimension(mapP->height) + mapP->emptyTileRowSize;
-	// NSLog(@"CALC: %lu", calcDimension(mapP->height));
+	// LOG(@"CALC: %lu", calcDimension(mapP->height));
 
 	//dumpMapper("Yikes!", mapP);
 
-//NSLog(@"mapP->fd = %d", mapP->fd);
+//LOG(@"mapP->fd = %d", mapP->fd);
 	if(mapP->fd <= 0) {
-//NSLog(@"Was 0 so call create");
+//LOG(@"Was 0 so call create");
 		mapP->fd = [self createTempFile:YES  size:mapP->mappedSize];
 		if(mapP->fd == -1) return;
 	}
@@ -626,13 +628,13 @@ NSLog(@"ZLEVELS=%d", zLevels);
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
 		if(mapP->emptyAddr == MAP_FAILED) {
 			failed = YES;
-			NSLog(@"FAILED to allocate %lu bytes - errno3=%s", mapP->mappedSize, strerror(errno) );
+			LOG(@"FAILED to allocate %lu bytes - errno3=%s", mapP->mappedSize, strerror(errno) );
 			mapP->emptyAddr = NULL;
 			mapP->addr = NULL;
 			mapP->mappedSize = 0;
 		}
 #if MMAP_DEBUGGING == 1
-		NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", mapP->fd, mapP->emptyAddr, (NSUInteger)mapP->mappedSize);
+		LOG(@"MMAP[%d]: addr=%p 0x%X bytes", mapP->fd, mapP->emptyAddr, (NSUInteger)mapP->mappedSize);
 #endif
 	}
 }
@@ -686,9 +688,9 @@ NSLog(@"ZLEVELS=%d", zLevels);
         NSNumber *freeFileSystemSizeInBytes = [dictionary objectForKey:NSFileSystemFreeSize];
         totalSpace = [fileSystemSizeInBytes unsignedLongLongValue];
         totalFreeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
-        NSLog(@"Disk Capacity of %llu MiB with %llu MiB free disk available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
+        LOG(@"Disk Capacity of %llu MiB with %llu MiB free disk available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
     } else {  
-        NSLog(@"Error Obtaining System Memory Info: Domain = %@, Code = %@", [error domain], [error code]);  
+        LOG(@"Error Obtaining System Memory Info: Domain = %@, Code = %@", [error domain], [error code]);  
     }  
 
     return totalFreeSpace;
@@ -709,7 +711,7 @@ NSLog(@"ZLEVELS=%d", zLevels);
     vm_statistics_data_t vm_stat;
 
     if (host_statistics(host_port, HOST_VM_INFO, (host_info_t)&vm_stat, &host_size) != KERN_SUCCESS) {
-        NSLog(@"Failed to fetch vm statistics");
+        LOG(@"Failed to fetch vm statistics");
 	} else {
 		/* Stats in bytes */ 
 		natural_t mem_used = (vm_stat.active_count +
@@ -729,7 +731,7 @@ NSLog(@"ZLEVELS=%d", zLevels);
 		}
 		
 #if MEMORY_DEBUGGING == 1
-		NSLog(@"%@:   "
+		LOG(@"%@:   "
 			"total: %u "
 			"used: %u "
 			"FREE: %u "
@@ -759,10 +761,10 @@ void dump_memory_usage() {
   mach_msg_type_number_t size = sizeof( info );
   kern_return_t kerr = task_info( mach_task_self(), TASK_BASIC_INFO, (task_info_t)&info, &size );
   if ( kerr == KERN_SUCCESS ) {
-    NSLog( @"task_info: 0x%08lx 0x%08lx\n", info.virtual_size, info.resident_size );
+    LOG( @"task_info: 0x%08lx 0x%08lx\n", info.virtual_size, info.resident_size );
   }
   else {
-    NSLog( @"task_info failed with error %ld ( 0x%08lx ), '%s'\n", kerr, kerr, mach_error_string( kerr ) );
+    LOG( @"task_info failed with error %ld ( 0x%08lx ), '%s'\n", kerr, kerr, mach_error_string( kerr ) );
   }
 }
 #endif

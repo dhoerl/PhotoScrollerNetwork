@@ -37,6 +37,8 @@
 
 #import "TiledImageBuilder-Private.h"
 
+#define LOG NSLog
+
 @implementation TiledImageBuilder (Tile)
 
 - (BOOL)tileBuilder:(imageMemory *)im useMMAP:(BOOL )useMMAP
@@ -44,7 +46,7 @@
 	unsigned char *optr = im->map.emptyAddr;
 	unsigned char *iptr = im->map.addr;
 	
-	// NSLog(@"tile...");
+	// LOG(@"tile...");
 	// Now, we are going to pre-tile the image in 256x256 tiles, so we can map in contigous chunks of memory
 	for(size_t row=im->row; row<im->rows; ++row) {
 		unsigned char *tileIptr;
@@ -53,7 +55,7 @@
 			im->map.emptyAddr = mmap(NULL, im->map.mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, im->map.fd, row*im->map.emptyTileRowSize);  /*| MAP_NOCACHE */
 			if(im->map.emptyAddr == MAP_FAILED) return NO;
 #if MMAP_DEBUGGING == 1
-			NSLog(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+			LOG(@"MMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
 #endif	
 			im->map.addr = im->map.emptyAddr + im->map.emptyTileRowSize;
 			
@@ -77,7 +79,7 @@
 			//assert(mret == 0);
 			int ret = munmap(im->map.emptyAddr, im->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-			NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+			LOG(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
 #endif
 			assert(ret == 0);
 			if(ret) self.failed = YES;
@@ -85,7 +87,7 @@
 			iptr = tileIptr + im->map.emptyTileRowSize;
 		}
 	}
-	//NSLog(@"...tile");
+	//LOG(@"...tile");
 
 	if(!useMMAP) {
 		// OK we're done with this memory now
@@ -93,7 +95,7 @@
 		//assert(mret == 0);
 		int ret = munmap(im->map.emptyAddr, im->map.mappedSize);
 #if MMAP_DEBUGGING == 1
-		NSLog(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
+		LOG(@"UNMAP[%d]: addr=%p 0x%X bytes", im->map.fd, im->map.emptyAddr, (NSUInteger)im->map.mappedSize);
 #endif
 		assert(ret==0);
 		if(ret) self.failed = YES;
@@ -112,9 +114,9 @@
 		
 		if(ubc_usage > self.ubc_threshold) {
 			if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
-				// NSLog(@"SUSPEND==========================================================usage=%d thresh=%d", ubc_usage, ubc_thresh);
+				// LOG(@"SUSPEND==========================================================usage=%d thresh=%d", ubc_usage, ubc_thresh);
 				dispatch_suspend(fileFlushQueue);
-				dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ NSLog(@"unblocked!"); } );
+				dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ LOG(@"unblocked!"); } );
 			}
 [self freeMemory:[NSString stringWithFormat:@"Exceeded threshold: usage=%u thresh=%u", ubc_usage, self.ubc_threshold]];
 		}
@@ -124,7 +126,7 @@ else [self freeMemory:[NSString stringWithFormat:@"Under threshold: usage=%u thr
 			{
 				// need to make sure file is kept open til we flush - who knows what will happen otherwise
 				int ret2 = fcntl(fd,  F_FULLFSYNC);
-				if(ret2 == -1) NSLog(@"ERROR: failed to sync fd=%d", fd);
+				if(ret2 == -1) LOG(@"ERROR: failed to sync fd=%d", fd);
 				OSAtomicAdd32Barrier(-file_size, &ubc_usage);				
 				if(ubc_usage <= self.ubc_threshold) {
 					if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
@@ -144,7 +146,7 @@ else [self freeMemory:[NSString stringWithFormat:@"Under threshold: usage=%u thr
 	off_t properLen = lseek(im->map.fd, 0, SEEK_END) - im->map.emptyTileRowSize;
 	int ret = ftruncate(im->map.fd, properLen);
 	if(ret) {
-		NSLog(@"Failed to truncate file!");
+		LOG(@"Failed to truncate file!");
 		self.failed = YES;
 	}
 	im->map.mappedSize = 0;	// force errors if someone tries to use mmap now

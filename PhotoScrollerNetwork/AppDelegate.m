@@ -100,6 +100,11 @@ AppDelegate *appDelegate;
 	 Save data if appropriate.
 	 See also applicationDidEnterBackground:.
 	 */
+	 NSLog(@"appDelegate: applicationWillTerminate");
 }
 
+- (void)applicationDidReceiveMemoryWarning:(UIApplication *)application
+{
+	 NSLog(@"appDelegate: applicationDidReceiveMemoryWarning");
+}
 @end

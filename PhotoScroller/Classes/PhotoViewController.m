@@ -105,6 +105,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 @synthesize decoder;
 @synthesize orientation;
 @synthesize justDoOneImage;
+@synthesize singleName;
 
 #pragma mark -
 #pragma mark View loading and unloading
@@ -275,7 +276,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	NSArray *imageArray;
 	
 	 if([self imageCount] == 1) {
-		imageArray = [NSArray arrayWithObject:@"Space6"];
+		imageArray = [NSArray arrayWithObject:singleName];
 	} else {
 		imageArray = [NSArray arrayWithObjects:@"Lake", @"Shed", @"Tree", nil];
 	}
@@ -314,12 +315,12 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 - (void)fetchWebImages
 {
 	startTime = mach_absolute_time();
-#warning FIX ME
+
 	NSUInteger count = [self imageCount];
 	for(NSUInteger idx=0; idx<count; ++idx) {
 		[tileBuilders addObject:@""];
 		
-		NSString *imageName = [self imageNameAtIndex:idx];
+		NSString *imageName = count == 1 ? singleName : [self imageNameAtIndex:idx];
 		NSString *path = [[@"http://dl.dropbox.com/u/60414145" stringByAppendingPathComponent:imageName] stringByAppendingPathExtension:@"jpg"];
 
 		ConcurrentOp *op = [ConcurrentOp new];

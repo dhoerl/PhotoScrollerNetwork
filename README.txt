@@ -1,5 +1,10 @@
 PhotoScrollerNetwork Project
-Latest v2.2 April 15, 2012
+Latest v2.3 June 26, 2012
+
+NOTE: At WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
+that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
+can be done now with the current APIs. So, even though I had said I hacked a solution into this project, in the end
+its actually pretty elegant!
 
 This sample code:
 
@@ -20,6 +25,9 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v2.3:
+- extracted out the Concurrent Operations control into a small helper class, Operations Runner. This makes PhotoViewController.m simpler, and puts all the tricky code in one place.
 
 v2.2:
 - project completely orientation away. 0 means use the JPEG tag info, 1 forces "normal" as in memory rendering, and you can use 2 through 8 to force an orientation.

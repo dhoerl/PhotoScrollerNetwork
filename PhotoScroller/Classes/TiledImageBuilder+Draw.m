@@ -37,7 +37,9 @@
 
 #import "TiledImageBuilder-Private.h"
 
-static inline long offsetFromScale(CGFloat scale) { long s = lrintf(scale*1000.f); long idx = 0; while(s < 1000) s *= 2, ++idx; return idx; }
+#define LOG NSLog
+
+static inline long offsetFromScale(CGFloat scale) { long s = lrintf(1/scale); long idx = 0; while(s > 1) s /= 2.0f, ++idx; return idx; }
 
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,
@@ -107,7 +109,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	im->tileWidth = MIN(im->map.width-x, tileDimension);
 	im->tileHeight = MIN(im->map.height-y, tileDimension);
 
-	// NSLog(@"PT:%@->%@ box:%@ h=%ld w=%ld", NSStringFromCGPoint(origPt), NSStringFromCGPoint(pt), NSStringFromCGSize(box.size), im->tileHeight, im->tileWidth);
+	// LOG(@"PT:%@->%@ box:%@ h=%ld w=%ld", NSStringFromCGPoint(origPt), NSStringFromCGPoint(pt), NSStringFromCGSize(box.size), im->tileHeight, im->tileWidth);
 
 	size_t imgSize = tileBytesPerRow*im->tileHeight;
 	struct CGDataProviderDirectCallbacks callBacks = { 0, 0, 0, PhotoScrollerProviderGetBytesAtPosition, PhotoScrollerProviderReleaseInfoCallback};
@@ -176,7 +178,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		newPt = CGPointMake(origPt.y, imP->rows - origPt.x - 1);
 		break;
 	}
-	// NSLog(@"OLDPT=%@ NEWPT=%@", NSStringFromCGPoint(origPt), NSStringFromCGPoint(newPt) );
+	// LOG(@"OLDPT=%@ NEWPT=%@", NSStringFromCGPoint(origPt), NSStringFromCGPoint(newPt) );
 	return newPt;
 }
 
@@ -264,7 +266,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	if(!im->row) {
 		offset += im->map.row0offset * tileBytesPerRow;
 	}
-	//NSLog(@"Draw col=%ld rowl%ld", im->col, im->row);
+	//LOG(@"Draw col=%ld rowl%ld", im->col, im->row);
 
 #if MAPPING_IMAGES == 1	
 	// Turning the NOCACHE flag off might up performance, but really clog the system
@@ -272,7 +274,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 	// mmap lets us map as many areas as we need.
 	unsigned char *startPtr = mmap(NULL, mapSize, PROT_READ, MAP_FILE | MAP_SHARED | MAP_NOCACHE, im->map.fd, offset);  /*| MAP_NOCACHE */
 	if(startPtr == MAP_FAILED) {
-		//NSLog(@"errno4=%s", strerror(errno) );
+		//LOG(@"errno4=%s", strerror(errno) );
 		return 0;
 	}
 
@@ -281,7 +283,7 @@ static size_t PhotoScrollerProviderGetBytesAtPosition (
 #else
 	ssize_t readSize = pread(im->map.fd, buffer, origCount, offset + position);
 	if((size_t)readSize != origCount) {
-		//NSLog(@"errno4=%s", strerror(errno) );
+		//LOG(@"errno4=%s", strerror(errno) );
 		return 0;
 	}
 #endif
