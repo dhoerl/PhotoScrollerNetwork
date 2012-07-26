@@ -541,7 +541,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 				LOG(@"Warning: cannot ftruncate input file (errno %s).", strerror(errno) );
 			}
 		} else {
-			imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
+			imagePath = @(template);
 			
 			int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
 			if(ret == -1) {
