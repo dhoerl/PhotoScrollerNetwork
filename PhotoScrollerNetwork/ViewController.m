@@ -62,7 +62,7 @@
 - (IBAction)sliderAction:(id)sender
 {
 	if(!sender) {
-		fileName.text = @"Space4";
+		fileName.text = @"Space4"; // Space4
 		return;
 	}
 	

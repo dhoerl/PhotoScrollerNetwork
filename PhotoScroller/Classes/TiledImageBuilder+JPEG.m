@@ -55,7 +55,6 @@ static void term_source(j_decompress_ptr cinfo);
 - (void)decodeImageData:(NSData *)data
 {
 	assert(self.decoder == libjpegTurboDecoder);
-	
 	tjhandle decompressor = tjInitDecompress();
 
 	unsigned char *jpegBuf = (unsigned char *)[data bytes];
@@ -68,6 +67,7 @@ static void term_source(j_decompress_ptr cinfo);
 		&jheight,
 		&jpegSubsamp 
 		);
+
 	if(!self.failed) {
 		{
 			CGImageSourceRef imageSourcRef = CGImageSourceCreateIncremental(NULL);
@@ -220,6 +220,7 @@ static void term_source(j_decompress_ptr cinfo);
 				self.properties = CFBridgingRelease(dict);
 				if(!self.orientation) {
 					self.orientation = [[self.properties objectForKey:@"Orientation"] integerValue];
+					NSLog(@"ORIENTATION=%d string=%@", self.orientation, [self.properties objectForKey:@"Orientation"]);
 				}
 			}
 			CFRelease(imageSourcRef);			

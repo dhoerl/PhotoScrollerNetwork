@@ -582,7 +582,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 		case 5:
 			break;
 		case 2:
-		case 6:
+		case 8:
 			colOffset = YES;
 			break;
 		case 3:
@@ -591,7 +591,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 			rowOffset = YES;
 			break;
 		case 4:
-		case 8:
+		case 6:
 			rowOffset = YES;
 			break;
 		}
@@ -690,7 +690,7 @@ LOG(@"ZLEVELS=%d", zLevels);
         totalFreeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
         LOG(@"Disk Capacity of %llu MiB with %llu MiB free disk available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
     } else {  
-        LOG(@"Error Obtaining System Memory Info: Domain = %@, Code = %@", [error domain], [error code]);  
+        LOG(@"Error Obtaining System Memory Info: Domain = %@, Code = %d", [error domain], [error code]);  
     }  
 
     return totalFreeSpace;

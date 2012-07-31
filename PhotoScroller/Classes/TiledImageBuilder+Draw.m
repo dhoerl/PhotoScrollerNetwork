@@ -87,7 +87,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	case 5:
 		break;
 	case 2:
-	case 6:
+	case 8:
 		newCol = YES;
 		break;
 	case 3:
@@ -96,7 +96,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		newRow = YES;
 		break;
 	case 4:
-	case 8:
+	case 6:
 		newRow = YES;
 		break;
 	}
@@ -169,13 +169,13 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		newPt = CGPointMake(origPt.y, origPt.x);
 		break;
 	case 6:
-		newPt = CGPointMake(imP->cols - origPt.y - 1, origPt.x);
+		newPt = CGPointMake(origPt.y, imP->rows - origPt.x - 1);
 		break;
 	case 7:
 		newPt = CGPointMake(imP->cols - origPt.y - 1, imP->rows - origPt.x - 1);
 		break;
 	case 8:
-		newPt = CGPointMake(origPt.y, imP->rows - origPt.x - 1);
+		newPt = CGPointMake(imP->cols - origPt.y - 1, origPt.x);
 		break;
 	}
 	// LOG(@"OLDPT=%@ NEWPT=%@", NSStringFromCGPoint(origPt), NSStringFromCGPoint(newPt) );
@@ -215,7 +215,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	case 6:
 		flipH = YES;
 		flipV = YES;
-		rotate = -(CGFloat)(90*M_PI)/180;
+		rotate = +(CGFloat)(90*M_PI)/180;
 		break;
 	case 7:
 		flipV = YES;
@@ -224,7 +224,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	case 8:
 		flipH = YES;
 		flipV = YES;
-		rotate = +(CGFloat)(90*M_PI)/180;
+		rotate = -(CGFloat)(90*M_PI)/180;
 		break;
 	}
 
@@ -297,6 +297,14 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 }
 
 #if 0
+
+// http://sylvana.net/jpegcrop/exif_orientation.html
+
+For convenience, here is what the letter F would look like if it were tagged correctly
+ and displayed by a program that ignores the orientation tag (thus showing the stored image):
+ 
+PHASE 1
+
   1        2       3      4         5            6           7          8
 
 888888  888888      88  88      8888888888  88                  88  8888888888
@@ -304,4 +312,13 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 8888      8888    8888  8888    88          8888888888  8888888888          88
 88          88      88  88
 88          88  888888  888888
+
+PHASE 3
+
+888888  888888      88  88      8888888888  8888888888          88  88
+88          88      88  88      88  88          88  88      88  88  88  88
+8888      8888    8888  8888    88                  88  8888888888  8888888888
+88          88      88  88
+88          88  888888  888888
+
 #endif
