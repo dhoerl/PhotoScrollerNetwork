@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-Latest v2.3 June 26, 2012
+Latest v2.4 July 31, 2012
 
 NOTE: At WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
 that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
@@ -25,6 +25,10 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v2.4:
+- when set to one image, downloads MASSIVE NASA images from the web - 18000 x 18000 dimensions - to show this app can deal with about anything you can throw at it
+- JPEG orientations 6 and 8 were reversed (see comments at bottom of this page "http://sylvana.net/jpegcrop/exif_orientation.html")
 
 v2.3:
 - extracted out the Concurrent Operations control into a small helper class, Operations Runner. This makes PhotoViewController.m simpler, and puts all the tricky code in one place.
@@ -93,8 +97,7 @@ KNOWN BUGS:
 
 TODO:
 - TiledImageBuilder does error checking and sets the "failed" flag, but my testing of this mechanism has been brief and not exhaustive!
-- if an image is truly huge, then incrementally create tiles instead of having to map in two rows of tiles
-
+- if an image is truly huge, then incrementally create tiles instead of having to map in two rows of tiles (may not be needed)
 
 
 PhotoScollerNetwork Target: FAST AND EFFICIENT TILING USING A CGIMAGESOURCE
