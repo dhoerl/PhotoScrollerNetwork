@@ -40,6 +40,7 @@
 #endif
 
 #import "ImageScrollView.h"
+
 #import "TilingView.h"
 #import "TiledImageBuilder.h"
 
@@ -116,7 +117,7 @@
     
     // reset our zoomScale to 1.0 before doing any further calculations
     self.zoomScale = 1.0;
-    
+
 	if([obj isKindOfClass:[TiledImageBuilder class]]) {
 		TiledImageBuilder *tiledImage = (TiledImageBuilder *)obj;
 		size = [tiledImage imageSize];
