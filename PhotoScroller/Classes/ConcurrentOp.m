@@ -229,7 +229,7 @@
 - (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *)error
 {
 #ifndef NDEBUG
-	LTLog(@"ConcurrentOp: error: %@", [error description]);
+	NSLog(@"ConcurrentOp: error: %@", [error description]);
 #endif
 	self.webData = nil;
 

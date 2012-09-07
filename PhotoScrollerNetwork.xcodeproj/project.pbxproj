@@ -157,6 +157,10 @@
 		DE7AB90215309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DE7AB90315309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DE7AB90415309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
+		DEB06F6C15F7ACA000BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
+		DEB06F6E15F7ACAD00BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
+		DEB06F6F15F7ACAE00BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
+		DEB06F7015F7ACAE00BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -222,6 +226,7 @@
 		DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+Draw.m"; sourceTree = "<group>"; };
 		DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = "TiledImageBuilder+Tile.m"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoScrollerCommon.h; sourceTree = "<group>"; };
+		DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = large_leaves_70mp.jpg; sourceTree = "<group>"; };
 		DED0140F1524F92900B9335E /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libturbojpeg.a; path = /usr/lib/libturbojpeg.a; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
@@ -406,6 +411,7 @@
 		DE4AD96214DC788F00D63E5A /* Full Images */ = {
 			isa = PBXGroup;
 			children = (
+				DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */,
 				DE4AD96414DC788F00D63E5A /* Lake.jpg */,
 				DE4AD96714DC788F00D63E5A /* Shed.jpg */,
 				DE4AD96A14DC788F00D63E5A /* Tree.jpg */,
@@ -556,6 +562,7 @@
 				DE111439159E0138004D2459 /* Space6.jpg in Resources */,
 				DE0D6C8C15AB4E100040318C /* Space4.jpg in Resources */,
 				DE0D6C9015AB4E100040318C /* Space5.jpg in Resources */,
+				DEB06F6F15F7ACAE00BAA8D0 /* large_leaves_70mp.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -583,6 +590,7 @@
 				DE11143A159E0138004D2459 /* Space6.jpg in Resources */,
 				DE0D6C8D15AB4E100040318C /* Space4.jpg in Resources */,
 				DE0D6C9115AB4E100040318C /* Space5.jpg in Resources */,
+				DEB06F6E15F7ACAD00BAA8D0 /* large_leaves_70mp.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -610,6 +618,7 @@
 				DE111437159E0138004D2459 /* Space6.jpg in Resources */,
 				DE0D6C8A15AB4E100040318C /* Space4.jpg in Resources */,
 				DE0D6C8E15AB4E100040318C /* Space5.jpg in Resources */,
+				DEB06F6C15F7ACA000BAA8D0 /* large_leaves_70mp.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -637,6 +646,7 @@
 				DE111438159E0138004D2459 /* Space6.jpg in Resources */,
 				DE0D6C8B15AB4E100040318C /* Space4.jpg in Resources */,
 				DE0D6C8F15AB4E100040318C /* Space5.jpg in Resources */,
+				DEB06F7015F7ACAE00BAA8D0 /* large_leaves_70mp.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1032,7 +1042,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: David Hoerl (A9Y94TLV83)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
@@ -1046,7 +1056,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				OTHER_CFLAGS = "";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "4F591FB2-1D3A-4CC8-BCCA-9A9001A93AF4";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;

@@ -62,7 +62,7 @@
 - (IBAction)sliderAction:(id)sender
 {
 	if(!sender) {
-		fileName.text = @"Space4"; // Space4
+		fileName.text = @"large_leaves_70mp"; // Space4 large_leaves_70mp
 		return;
 	}
 	
