@@ -45,7 +45,7 @@
 
 - (IBAction)segmentChanged:(id)sender;
 - (IBAction)stepperStepped:(id)sender;
-//- (IBAction)makeImage:(id)sender; // in progress
+- (IBAction)makeImage:(id)sender; // in progress
 
 @end
 
@@ -121,7 +121,7 @@
 	pvc.justDoOneImage = justOneImage.on;
 	pvc.orientation = [orientationValue.text integerValue];
 	pvc.singleName = fileName.text;
-
+assert(fileName.text);
 	UIBarButtonItem *temporaryBarButtonItem = [UIBarButtonItem new];
 	[temporaryBarButtonItem setTitle:@"Back"];
 	self.navigationItem.backBarButtonItem = temporaryBarButtonItem;

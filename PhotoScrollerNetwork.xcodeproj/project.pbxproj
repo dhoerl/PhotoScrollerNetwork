@@ -50,8 +50,8 @@
 		DE3EC29D151CC50300921348 /* Icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97014DC788F00D63E5A /* Icon@2x.png */; };
 		DE3EC29E151CC50300921348 /* iTunesArtwork in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97114DC788F00D63E5A /* iTunesArtwork */; };
 		DE3EC29F151CC50300921348 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97914DC788F00D63E5A /* ReadMe.txt */; };
-		DE3EC2AE151CC50300921348 /* ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AA151CC50300921348 /* ViewController.xib */; };
-		DE3EC2AF151CC50300921348 /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AC151CC50300921348 /* PhotoViewController.xib */; };
+		DE3EC2AE151CC50300921348 /* ViewController~ipad.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AA151CC50300921348 /* ViewController~ipad.xib */; };
+		DE3EC2AF151CC50300921348 /* PhotoViewController~ipad.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AC151CC50300921348 /* PhotoViewController~ipad.xib */; };
 		DE3EC2B2151CC50D00921348 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD93D14DC783D00D63E5A /* main.m */; };
 		DE3EC2B3151CC50D00921348 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD94114DC783D00D63E5A /* AppDelegate.m */; };
 		DE3EC2B4151CC50D00921348 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DE4AD94414DC783D00D63E5A /* ViewController.m */; };
@@ -81,8 +81,8 @@
 		DE3EC2CF151CC50D00921348 /* Icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97014DC788F00D63E5A /* Icon@2x.png */; };
 		DE3EC2D0151CC50D00921348 /* iTunesArtwork in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97114DC788F00D63E5A /* iTunesArtwork */; };
 		DE3EC2D1151CC50D00921348 /* ReadMe.txt in Resources */ = {isa = PBXBuildFile; fileRef = DE4AD97914DC788F00D63E5A /* ReadMe.txt */; };
-		DE3EC2DB151CC53600921348 /* ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AA151CC50300921348 /* ViewController.xib */; };
-		DE3EC2DC151CC53600921348 /* PhotoViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AC151CC50300921348 /* PhotoViewController.xib */; };
+		DE3EC2DB151CC53600921348 /* ViewController~ipad.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AA151CC50300921348 /* ViewController~ipad.xib */; };
+		DE3EC2DC151CC53600921348 /* PhotoViewController~ipad.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE3EC2AC151CC50300921348 /* PhotoViewController~ipad.xib */; };
 		DE49F743159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
 		DE49F744159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
 		DE49F745159A716700AE4340 /* OperationsRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = DE49F742159A716700AE4340 /* OperationsRunner.m */; };
@@ -171,8 +171,8 @@
 		DE111436159E0138004D2459 /* Space6.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space6.jpg; sourceTree = "<group>"; };
 		DE3EC2A5151CC50300921348 /* PhotoScrollerNetwork-iPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PhotoScrollerNetwork-iPad.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE3EC2A8151CC50300921348 /* PhotoScrollerNetwork copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PhotoScrollerNetwork copy-Info.plist"; path = "/Volumes/Data/git/PhotoScrollerNetwork/PhotoScrollerNetwork copy-Info.plist"; sourceTree = "<absolute>"; };
-		DE3EC2AB151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScrollerNetwork/en.lproj/ViewController.xib"; sourceTree = "<group>"; };
-		DE3EC2AD151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScroller/en.lproj/PhotoViewController.xib"; sourceTree = "<group>"; };
+		DE3EC2AB151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScrollerNetwork/en.lproj/ViewController~ipad.xib"; sourceTree = "<group>"; };
+		DE3EC2AD151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScroller/en.lproj/PhotoViewController~ipad.xib"; sourceTree = "<group>"; };
 		DE3EC2D8151CC50D00921348 /* PhotoScrollerNetworkTurbo-iPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PhotoScrollerNetworkTurbo-iPad.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE3EC2DA151CC50E00921348 /* PhotoScrollerNetworkTurbo copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PhotoScrollerNetworkTurbo copy-Info.plist"; path = "/Volumes/Data/git/PhotoScrollerNetwork/PhotoScrollerNetworkTurbo copy-Info.plist"; sourceTree = "<absolute>"; };
 		DE49F741159A716700AE4340 /* OperationsRunner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OperationsRunner.h; sourceTree = "<group>"; };
@@ -286,20 +286,10 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		DE3EC2A7151CC50300921348 /* Resources-iPad */ = {
-			isa = PBXGroup;
-			children = (
-				DE3EC2AA151CC50300921348 /* ViewController.xib */,
-				DE3EC2AC151CC50300921348 /* PhotoViewController.xib */,
-			);
-			name = "Resources-iPad";
-			sourceTree = "<group>";
-		};
 		DE4AD92214DC783D00D63E5A = {
 			isa = PBXGroup;
 			children = (
 				DE588D8614E9433A00C7E151 /* README.txt */,
-				DE3EC2A7151CC50300921348 /* Resources-iPad */,
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
 				DE4AD99E14DC78ED00D63E5A /* Images */,
@@ -345,6 +335,7 @@
 				DE4AD94314DC783D00D63E5A /* ViewController.h */,
 				DE4AD94414DC783D00D63E5A /* ViewController.m */,
 				DE4AD94614DC783D00D63E5A /* ViewController.xib */,
+				DE3EC2AA151CC50300921348 /* ViewController~ipad.xib */,
 				DE4AD93814DC783D00D63E5A /* Supporting Files */,
 			);
 			path = PhotoScrollerNetwork;
@@ -368,6 +359,7 @@
 				DE4AD95B14DC788F00D63E5A /* MainWindow.xib */,
 				DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */,
 				DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */,
+				DE3EC2AC151CC50300921348 /* PhotoViewController~ipad.xib */,
 				DE4AD95F14DC788F00D63E5A /* ImageData.plist */,
 				DE4AD96014DC788F00D63E5A /* Images */,
 				DE4AD97914DC788F00D63E5A /* ReadMe.txt */,
@@ -557,8 +549,8 @@
 				DE3EC29D151CC50300921348 /* Icon@2x.png in Resources */,
 				DE3EC29E151CC50300921348 /* iTunesArtwork in Resources */,
 				DE3EC29F151CC50300921348 /* ReadMe.txt in Resources */,
-				DE3EC2AE151CC50300921348 /* ViewController.xib in Resources */,
-				DE3EC2AF151CC50300921348 /* PhotoViewController.xib in Resources */,
+				DE3EC2AE151CC50300921348 /* ViewController~ipad.xib in Resources */,
+				DE3EC2AF151CC50300921348 /* PhotoViewController~ipad.xib in Resources */,
 				DE111439159E0138004D2459 /* Space6.jpg in Resources */,
 				DE0D6C8C15AB4E100040318C /* Space4.jpg in Resources */,
 				DE0D6C9015AB4E100040318C /* Space5.jpg in Resources */,
@@ -585,8 +577,8 @@
 				DE3EC2CF151CC50D00921348 /* Icon@2x.png in Resources */,
 				DE3EC2D0151CC50D00921348 /* iTunesArtwork in Resources */,
 				DE3EC2D1151CC50D00921348 /* ReadMe.txt in Resources */,
-				DE3EC2DB151CC53600921348 /* ViewController.xib in Resources */,
-				DE3EC2DC151CC53600921348 /* PhotoViewController.xib in Resources */,
+				DE3EC2DB151CC53600921348 /* ViewController~ipad.xib in Resources */,
+				DE3EC2DC151CC53600921348 /* PhotoViewController~ipad.xib in Resources */,
 				DE11143A159E0138004D2459 /* Space6.jpg in Resources */,
 				DE0D6C8D15AB4E100040318C /* Space4.jpg in Resources */,
 				DE0D6C9115AB4E100040318C /* Space5.jpg in Resources */,
@@ -759,20 +751,22 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		DE3EC2AA151CC50300921348 /* ViewController.xib */ = {
+		DE3EC2AA151CC50300921348 /* ViewController~ipad.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
 				DE3EC2AB151CC50300921348 /* en */,
 			);
-			name = ViewController.xib;
+			name = "ViewController~ipad.xib";
+			path = ..;
 			sourceTree = "<group>";
 		};
-		DE3EC2AC151CC50300921348 /* PhotoViewController.xib */ = {
+		DE3EC2AC151CC50300921348 /* PhotoViewController~ipad.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
 				DE3EC2AD151CC50300921348 /* en */,
 			);
-			name = PhotoViewController.xib;
+			name = "PhotoViewController~ipad.xib";
+			path = ..;
 			sourceTree = "<group>";
 		};
 		DE4AD93A14DC783D00D63E5A /* InfoPlist.strings */ = {
