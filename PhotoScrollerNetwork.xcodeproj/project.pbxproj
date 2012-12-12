@@ -507,7 +507,7 @@
 		DE4AD92414DC783D00D63E5A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0430;
+				LastUpgradeCheck = 0450;
 			};
 			buildConfigurationList = DE4AD92714DC783D00D63E5A /* Build configuration list for PBXProject "PhotoScrollerNetwork" */;
 			compatibilityVersion = "Xcode 3.2";

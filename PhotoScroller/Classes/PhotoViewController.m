@@ -55,6 +55,7 @@ translucent  property YES/NO
 #import "ConcurrentOp.h"
 #import "AppDelegate.h"
 #import "PhotoScrollerCommon.h"
+#import "OperationsRunnerProtocol.h"
 #import "OperationsRunner.h"
 
 // Compliments to Rainer Brockerhoff

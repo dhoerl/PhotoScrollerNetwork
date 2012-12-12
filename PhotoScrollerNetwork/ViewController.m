@@ -45,7 +45,7 @@
 
 - (IBAction)segmentChanged:(id)sender;
 - (IBAction)stepperStepped:(id)sender;
-- (IBAction)makeImage:(id)sender; // in progress
+//- (IBAction)makeImage:(id)sender; // in progress
 
 @end
 
@@ -61,13 +61,14 @@
 }
 - (IBAction)sliderAction:(id)sender
 {
-	if(!sender) {
-		fileName.text = @"large_leaves_70mp"; // Space4 large_leaves_70mp
-		return;
-	}
-	
 	CGFloat num = [(UISlider *)sender value];
-	fileName.text = [NSString stringWithFormat:@"Space%ld", lrintf(num)];
+	long val = lrintf(num);
+
+	if(!sender || !val) {
+		fileName.text = @"large_leaves_70mp"; // Space4 large_leaves_70mp
+	} else {
+		fileName.text = [NSString stringWithFormat:@"Space%ld", val + 3];
+	}
 }
 
 

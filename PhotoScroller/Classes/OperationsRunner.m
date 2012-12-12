@@ -1,46 +1,30 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *
- * This file is part of PhotoScrollerNetwork -- An iOS project that smoothly and efficiently
- * renders large images in progressively smaller ones for display in a CATiledLayer backed view.
- * Images can either be local, or more interestingly, downloaded from the internet.
- * Images can be rendered by an iOS CGImageSource, libjpeg-turbo, or incrmentally by
- * libjpeg (the turbo version) - the latter gives the best speed.
- *
- * Parts taken with minor changes from Apple's PhotoScroller sample code, the
- * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
- * was completely original source code developed by me.
- *
- * Copyright 2012 David Hoerl All Rights Reserved.
- *
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY David Hoerl ''AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL David Hoerl OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+// NSOperation-WebFetches-MadeEasy (TM)
+// Copyright (C) 2012 by David Hoerl
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
 
-#define LOG		NSLog
+#define LOG NSLog
 
 #import "OperationsRunner.h"
 
-#define kIsFinished		@"isFinished"	// NSOperations
-#define kIsExecuting	@"isExecuting"	// NSOperations
+#import "OperationsRunnerProtocol.h"
 
 static char *opContext = "opContext";
 
@@ -57,7 +41,8 @@ static char *opContext = "opContext";
 	dispatch_queue_t operationsQueue;
 	__weak id <OperationsRunnerProtocol> delegate;
 }
-@synthesize anyThreadOK;
+@synthesize msgDelOn;	// default is msgDelOnMainThread
+@synthesize delegateThread;
 @synthesize noDebugMsgs;
 
 - (id)initWithDelegate:(id <OperationsRunnerProtocol>)del
@@ -66,7 +51,8 @@ static char *opContext = "opContext";
 		delegate	= del;
 		queue		= [NSOperationQueue new];
 		operations	= [NSMutableSet setWithCapacity:10];
-		operationsQueue = dispatch_queue_create("com.lot18.operationsQueue", DISPATCH_QUEUE_CONCURRENT);
+		operationsQueue = dispatch_queue_create("com.operationsRunner.operationsQueue", DISPATCH_QUEUE_SERIAL);
+		//[queue setMaxConcurrentOperationCount:THROTTLE_NUM];	// future feature
 	}
 	return self;
 }
@@ -74,17 +60,15 @@ static char *opContext = "opContext";
 - (void)dealloc
 {
 	[self cancelOperations];
+	
+	dispatch_release(operationsQueue);
 }
 
 - (void)runOperation:(NSOperation *)op withMsg:(NSString *)msg
 {
-#ifndef NDEBUG
-	if(!noDebugMsgs) LOG(@"Run Operation: %@", msg);
-#endif
-
-	[op addObserver:self forKeyPath:kIsFinished options:0 context:opContext];	// First, observe isFinished
-	dispatch_barrier_async(operationsQueue, ^
+	dispatch_async(operationsQueue, ^
 		{
+			[op addObserver:self forKeyPath:@"isFinished" options:0 context:opContext];	// First, observe isFinished
 			[operations addObject:op];	// Second we retain and save a reference to the operation
 		} );
 
@@ -94,11 +78,14 @@ static char *opContext = "opContext";
 -(void)cancelOperations
 {
 	//LOG(@"OP cancelOperations");
-
 	// if user waited for all data, the operation queue will be empty.
-	dispatch_barrier_sync(operationsQueue, ^
+	dispatch_sync(operationsQueue, ^
 		{
-			[operations enumerateObjectsUsingBlock:^(id obj, BOOL *stop) { [obj removeObserver:self forKeyPath:@"isFinished"]; }];   
+			//[operations enumerateObjectsUsingBlock:^(id obj, BOOL *stop) { [obj removeObserver:self forKeyPath:@"isFinished" context:opContext]; }];
+			[operations enumerateObjectsUsingBlock:^(NSOperation *op, BOOL *stop)
+				{
+					[op removeObserver:self forKeyPath:@"isFinished" context:opContext];
+				}];
 			[operations removeAllObjects];
 		} );
 
@@ -131,24 +118,46 @@ static char *opContext = "opContext";
         } );
 	if(!containsObject) return;
 	
-	// If we are in the queue, then we have to both remove our observation and queue membership
-	[operation removeObserver:self forKeyPath:@"isFinished"];
-	dispatch_barrier_async(operationsQueue, ^
-		{
-			[operations removeObject:operation];
-		} );
 	
 	// User cancelled
 	if(operation.isCancelled) return;
+
+	//LOG(@"OP RUNNER GOT A MESSAGE %d for thread %@", msgDelOn, delegateThread);
+
+	switch(msgDelOn) {
+	case msgDelOnMainThread:
+		//dispatch_async(dispatch_get_main_queue(), ^{ [delegate operationFinished:operation]; } );
+		[self performSelectorOnMainThread:@selector(_operationFinished:) withObject:operation waitUntilDone:NO];
+		break;
+
+	case msgDelOnAnyThread:
+		[self _operationFinished:operation];
+		break;
 	
-	// We either failed in setup or succeeded doing something.
-	[delegate operationFinished:operation];
+	case msgOnSpecificThread:
+		[self performSelector:@selector(_operationFinished:) onThread:delegateThread withObject:operation waitUntilDone:NO];
+		break;
+	}
 }
 
-// Done on the main thread
 - (void)operationFinished:(NSOperation *)op
 {
 	assert(!"Should never happen!");
+}
+
+- (void)_operationFinished:(NSOperation *)op
+{
+	dispatch_sync(operationsQueue, ^
+		{
+			// Need to see if while this sat in the designated thread, it was cancelled
+			BOOL notCancelled = [operations containsObject:op];
+			if(notCancelled) {
+				// If we are in the queue, then we have to remove our stuff, and in all cases make sure no KVO enabled
+				[op removeObserver:self forKeyPath:@"isFinished" context:opContext];
+				[operations removeObject:op];
+			}
+		} );
+	[delegate operationFinished:op];
 }
 
 - (NSSet *)operationsSet
@@ -178,12 +187,7 @@ static char *opContext = "opContext";
 		//LOG(@"KVO: isFinished=%d %@ op=%@", op.isFinished, NSStringFromClass([self class]), NSStringFromClass([op class]));
 		if(op.isFinished == YES) {
 			// we get this on the operation's thread
-			// [self performSelectorOnMainThread:@selector(operationDidFinish:) withObject:op waitUntilDone:YES];
-			if(anyThreadOK) {
-				[self operationDidFinish:op];
-			} else {
-				dispatch_async(dispatch_get_main_queue(), ^{ [self operationDidFinish:op]; } );
-			}
+			[self operationDidFinish:op];
 			//LOG(@"DONE!!!");
 		} else {
 			//LOG(@"NSOperation starting to RUN!!!");
