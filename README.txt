@@ -1,5 +1,7 @@
 PhotoScrollerNetwork Project
-Latest v2.4 July 31, 2012
+Latest v2.5 Jan 6, 2013
+
+NOTE: Please use one of the 'Turbo' schemes to build - the older non-turbo schemes do not currently work
 
 NOTE: At WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
 that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
@@ -25,6 +27,9 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v2.5:
+- finally got libturbojpeg to build for armv7s, so this project is now SDK6 and armv7s friendly
 
 v2.4:
 - when set to one image, downloads MASSIVE NASA images from the web - 18000 x 18000 dimensions - to show this app can deal with about anything you can throw at it

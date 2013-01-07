@@ -16,8 +16,6 @@
 		DE0D6C8F15AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
 		DE0D6C9015AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
 		DE0D6C9115AB4E100040318C /* Space5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE0D6C8915AB4E100040318C /* Space5.jpg */; };
-		DE11142A159DE664004D2459 /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
-		DE11142B159DE666004D2459 /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DED0140F1524F92900B9335E /* libturbojpeg.a */; };
 		DE111437159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
 		DE111438159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
 		DE111439159E0138004D2459 /* Space6.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE111436159E0138004D2459 /* Space6.jpg */; };
@@ -157,6 +155,8 @@
 		DE7AB90215309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DE7AB90315309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
 		DE7AB90415309BD200C4CFE7 /* TiledImageBuilder+Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */; };
+		DEA67887169AF97C00011D0B /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEA67881169AF82B00011D0B /* libturbojpeg.a */; };
+		DEA67888169AF9A800011D0B /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DEA67881169AF82B00011D0B /* libturbojpeg.a */; };
 		DEB06F6C15F7ACA000BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
 		DEB06F6E15F7ACAD00BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
 		DEB06F6F15F7ACAE00BAA8D0 /* large_leaves_70mp.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */; };
@@ -167,7 +167,6 @@
 		DE07428B14F0441500439550 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		DE0D6C8815AB4E100040318C /* Space4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space4.jpg; sourceTree = "<group>"; };
 		DE0D6C8915AB4E100040318C /* Space5.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space5.jpg; sourceTree = "<group>"; };
-		DE111423159DD20A004D2459 /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libturbojpeg.a; sourceTree = "<group>"; };
 		DE111436159E0138004D2459 /* Space6.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space6.jpg; sourceTree = "<group>"; };
 		DE3EC2A5151CC50300921348 /* PhotoScrollerNetwork-iPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PhotoScrollerNetwork-iPad.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE3EC2A8151CC50300921348 /* PhotoScrollerNetwork copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PhotoScrollerNetwork copy-Info.plist"; path = "/Volumes/Data/git/PhotoScrollerNetwork/PhotoScrollerNetwork copy-Info.plist"; sourceTree = "<absolute>"; };
@@ -226,6 +225,28 @@
 		DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+Draw.m"; sourceTree = "<group>"; };
 		DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = "TiledImageBuilder+Tile.m"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoScrollerCommon.h; sourceTree = "<group>"; };
+		DEA6786F169AF82B00011D0B /* bmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bmp.h; sourceTree = "<group>"; };
+		DEA67870169AF82B00011D0B /* cderror.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cderror.h; sourceTree = "<group>"; };
+		DEA67871169AF82B00011D0B /* cdjpeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cdjpeg.h; sourceTree = "<group>"; };
+		DEA67872169AF82B00011D0B /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		DEA67873169AF82B00011D0B /* jchuff.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jchuff.h; sourceTree = "<group>"; };
+		DEA67874169AF82B00011D0B /* jconfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jconfig.h; sourceTree = "<group>"; };
+		DEA67875169AF82B00011D0B /* jdct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jdct.h; sourceTree = "<group>"; };
+		DEA67876169AF82B00011D0B /* jdhuff.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jdhuff.h; sourceTree = "<group>"; };
+		DEA67877169AF82B00011D0B /* jerror.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jerror.h; sourceTree = "<group>"; };
+		DEA67878169AF82B00011D0B /* jinclude.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jinclude.h; sourceTree = "<group>"; };
+		DEA67879169AF82B00011D0B /* jmemsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jmemsys.h; sourceTree = "<group>"; };
+		DEA6787A169AF82B00011D0B /* jmorecfg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jmorecfg.h; sourceTree = "<group>"; };
+		DEA6787B169AF82B00011D0B /* jpegcomp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jpegcomp.h; sourceTree = "<group>"; };
+		DEA6787C169AF82B00011D0B /* jpegint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jpegint.h; sourceTree = "<group>"; };
+		DEA6787D169AF82B00011D0B /* jpeglib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jpeglib.h; sourceTree = "<group>"; };
+		DEA6787E169AF82B00011D0B /* jsimd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsimd.h; sourceTree = "<group>"; };
+		DEA6787F169AF82B00011D0B /* jsimddct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsimddct.h; sourceTree = "<group>"; };
+		DEA67880169AF82B00011D0B /* jversion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jversion.h; sourceTree = "<group>"; };
+		DEA67881169AF82B00011D0B /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libturbojpeg.a; sourceTree = "<group>"; };
+		DEA67882169AF82B00011D0B /* tjutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tjutil.h; sourceTree = "<group>"; };
+		DEA67883169AF82B00011D0B /* transupp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = transupp.h; sourceTree = "<group>"; };
+		DEA67884169AF82B00011D0B /* turbojpeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = turbojpeg.h; sourceTree = "<group>"; };
 		DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = large_leaves_70mp.jpg; sourceTree = "<group>"; };
 		DED0140F1524F92900B9335E /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libturbojpeg.a; path = /usr/lib/libturbojpeg.a; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
@@ -253,7 +274,7 @@
 				DE3EC2BE151CC50D00921348 /* UIKit.framework in Frameworks */,
 				DE3EC2BF151CC50D00921348 /* Foundation.framework in Frameworks */,
 				DE3EC2C0151CC50D00921348 /* CoreGraphics.framework in Frameworks */,
-				DE11142B159DE666004D2459 /* libturbojpeg.a in Frameworks */,
+				DEA67888169AF9A800011D0B /* libturbojpeg.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -279,7 +300,7 @@
 				DE4ADA2B14E1A56500D63E5A /* UIKit.framework in Frameworks */,
 				DE4ADA2C14E1A56500D63E5A /* Foundation.framework in Frameworks */,
 				DE4ADA2D14E1A56500D63E5A /* CoreGraphics.framework in Frameworks */,
-				DE11142A159DE664004D2459 /* libturbojpeg.a in Frameworks */,
+				DEA67887169AF97C00011D0B /* libturbojpeg.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,11 +310,11 @@
 		DE4AD92214DC783D00D63E5A = {
 			isa = PBXGroup;
 			children = (
+				DEA6786E169AF82B00011D0B /* libturbojpeg */,
 				DE588D8614E9433A00C7E151 /* README.txt */,
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
 				DE4AD99E14DC78ED00D63E5A /* Images */,
-				DE111423159DD20A004D2459 /* libturbojpeg.a */,
 				DE4AD93014DC783D00D63E5A /* Frameworks */,
 				DE4AD92E14DC783D00D63E5A /* Products */,
 				DE3EC2A8151CC50300921348 /* PhotoScrollerNetwork copy-Info.plist */,
@@ -426,6 +447,35 @@
 				DE4AD97114DC788F00D63E5A /* iTunesArtwork */,
 			);
 			name = Images;
+			sourceTree = "<group>";
+		};
+		DEA6786E169AF82B00011D0B /* libturbojpeg */ = {
+			isa = PBXGroup;
+			children = (
+				DEA6786F169AF82B00011D0B /* bmp.h */,
+				DEA67870169AF82B00011D0B /* cderror.h */,
+				DEA67871169AF82B00011D0B /* cdjpeg.h */,
+				DEA67872169AF82B00011D0B /* config.h */,
+				DEA67873169AF82B00011D0B /* jchuff.h */,
+				DEA67874169AF82B00011D0B /* jconfig.h */,
+				DEA67875169AF82B00011D0B /* jdct.h */,
+				DEA67876169AF82B00011D0B /* jdhuff.h */,
+				DEA67877169AF82B00011D0B /* jerror.h */,
+				DEA67878169AF82B00011D0B /* jinclude.h */,
+				DEA67879169AF82B00011D0B /* jmemsys.h */,
+				DEA6787A169AF82B00011D0B /* jmorecfg.h */,
+				DEA6787B169AF82B00011D0B /* jpegcomp.h */,
+				DEA6787C169AF82B00011D0B /* jpegint.h */,
+				DEA6787D169AF82B00011D0B /* jpeglib.h */,
+				DEA6787E169AF82B00011D0B /* jsimd.h */,
+				DEA6787F169AF82B00011D0B /* jsimddct.h */,
+				DEA67880169AF82B00011D0B /* jversion.h */,
+				DEA67881169AF82B00011D0B /* libturbojpeg.a */,
+				DEA67882169AF82B00011D0B /* tjutil.h */,
+				DEA67883169AF82B00011D0B /* transupp.h */,
+				DEA67884169AF82B00011D0B /* turbojpeg.h */,
+			);
+			path = libturbojpeg;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -847,15 +897,11 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"/opt/libjpeg-turbo/lib",
-					"\"$(SRCROOT)\"",
-				);
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)\"";
 				OTHER_CFLAGS = "-DLIBJPEG";
-				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
-				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
+				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -866,20 +912,16 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"/opt/libjpeg-turbo/lib",
-					"\"$(SRCROOT)\"",
-				);
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)\"";
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 				);
-				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
 				STRIP_INSTALLED_PRODUCT = YES;
 				TARGETED_DEVICE_FAMILY = 2;
-				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
+				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -890,15 +932,11 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"/opt/libjpeg-turbo/lib",
-					"\"$(SRCROOT)\"",
-				);
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)\"";
 				OTHER_CFLAGS = "-DLIBJPEG";
-				OTHER_LDFLAGS = libturbojpeg/libturbojpeg.a;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
-				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
+				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
 			};
 			name = ReleaseWithAsserts;
@@ -930,7 +968,7 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -956,7 +994,7 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -996,12 +1034,12 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
-					"/opt/libjpeg-turbo/lib",
 					"\"$(SRCROOT)\"",
+					"\"$(SRCROOT)/libturbojpeg\"",
 				);
 				OTHER_CFLAGS = "-DLIBJPEG";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
-				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
+				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1013,8 +1051,8 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
-					"/opt/libjpeg-turbo/lib",
 					"\"$(SRCROOT)\"",
+					"\"$(SRCROOT)/libturbojpeg\"",
 				);
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
@@ -1023,7 +1061,7 @@
 				);
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
 				STRIP_INSTALLED_PRODUCT = YES;
-				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
+				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -1048,7 +1086,7 @@
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CFLAGS = "";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				SDKROOT = iphoneos;
@@ -1075,12 +1113,12 @@
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
 				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
-					"/opt/libjpeg-turbo/lib",
 					"\"$(SRCROOT)\"",
+					"\"$(SRCROOT)/libturbojpeg\"",
 				);
 				OTHER_CFLAGS = "-DLIBJPEG";
 				PRODUCT_NAME = PhotoScrollerNetworkTurbo;
-				USER_HEADER_SEARCH_PATHS = "/opt/libjpeg-turbo/include";
+				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
 			};
 			name = ReleaseWithAsserts;

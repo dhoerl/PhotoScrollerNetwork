@@ -5,7 +5,7 @@
 #define JPEG_LIB_VERSION 62
 
 /* libjpeg-turbo version */
-#define LIBJPEG_TURBO_VERSION 1.2.80
+#define LIBJPEG_TURBO_VERSION 1.2.0
 
 /* Support arithmetic encoding */
 #define C_ARITH_CODING_SUPPORTED 1
@@ -44,7 +44,7 @@
 /* #undef RIGHT_SHIFT_IS_UNSIGNED */
 
 /* Use accelerated SIMD routines. */
-/* #undef WITH_SIMD */
+#define WITH_SIMD 1
 
 /* Define to 1 if type `char' is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__

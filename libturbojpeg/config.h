@@ -2,7 +2,7 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Build number */
-#define BUILD "20120210"
+#define BUILD "20130106"
 
 /* Support arithmetic encoding */
 #define C_ARITH_CODING_SUPPORTED 1
@@ -71,7 +71,7 @@
 #define JPEG_LIB_VERSION 62
 
 /* libjpeg-turbo version */
-#define LIBJPEG_TURBO_VERSION 1.2.80
+#define LIBJPEG_TURBO_VERSION 1.2.0
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -96,13 +96,16 @@
 #define PACKAGE_NAME "libjpeg-turbo"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libjpeg-turbo 1.2.80"
+#define PACKAGE_STRING "libjpeg-turbo 1.2.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libjpeg-turbo"
 
+/* Define to the home page for this package. */
+#define PACKAGE_URL ""
+
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.2.80"
+#define PACKAGE_VERSION "1.2.0"
 
 /* Define if shift is unsigned */
 /* #undef RIGHT_SHIFT_IS_UNSIGNED */
@@ -111,10 +114,10 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "1.2.80"
+#define VERSION "1.2.0"
 
 /* Use accelerated SIMD routines. */
-/* #undef WITH_SIMD */
+#define WITH_SIMD 1
 
 /* Define to 1 if type `char' is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__
