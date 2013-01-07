@@ -30,6 +30,7 @@ RECENT CHANGES:
 
 v2.5:
 - finally got libturbojpeg to build for armv7s, so this project is now SDK6 and armv7s friendly
+- cleaned up some bogus references to /opt and elsewhere when looking for libturbojpeg library or headers
 
 v2.4:
 - when set to one image, downloads MASSIVE NASA images from the web - 18000 x 18000 dimensions - to show this app can deal with about anything you can throw at it
