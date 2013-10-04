@@ -29,7 +29,7 @@ Note: originally I tried to do as Apple does - receive a single jpeg file then c
 RECENT CHANGES:
 
 v2.6
-- updated for iOS7. Seems we get a tilePages message from the OS earlier than before, and the code wasn't ready. Protect that now with a flag. Other very minor changes.
+- updated for iOS7 and Xcode 5. Seems we get a tilePages message from the OS earlier than before, and the code wasn't ready. Protect that now with a flag. Other very minor changes.
 
 v2.5:
 - finally got libturbojpeg to build for armv7s, so this project is now SDK6 and armv7s friendly
