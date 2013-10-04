@@ -148,7 +148,7 @@ static void term_source(j_decompress_ptr cinfo);
 					if(ret == -1) LOG(@"ERROR: failed to sync fd=%d", fd);
 					OSAtomicAdd32Barrier(-file_size, &ubc_usage);
 					if(ubc_usage <= self.ubc_threshold) {
-						if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
+						if(OSAtomicCompareAndSwap32Barrier(1, 0, &fileFlushGroupSuspended)) {
 							dispatch_resume(fileFlushQueue);
 						}
 					}

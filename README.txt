@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-Latest v2.5 Jan 6, 2013
+Latest v2.6 Oct 4, 2013
 
 NOTE: Please use one of the 'Turbo' schemes to build - the older non-turbo schemes do not currently work
 
@@ -27,6 +27,9 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v2.6
+- updated for iOS7. Seems we get a tilePages message from the OS earlier than before, and the code wasn't ready. Protect that now with a flag. Other very minor changes.
 
 v2.5:
 - finally got libturbojpeg to build for armv7s, so this project is now SDK6 and armv7s friendly

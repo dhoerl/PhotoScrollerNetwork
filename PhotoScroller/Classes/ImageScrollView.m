@@ -112,6 +112,8 @@
 {
 	CGSize size;
 
+	assert(obj);
+	
     // clear the previous imageView
     [imageView removeFromSuperview], imageView = nil;
     
@@ -134,6 +136,7 @@
 		imageView = (UIView *)obj;
 		scale = 1;
 	} else {
+		NSLog(@"CLASS %@", NSStringFromClass([obj class]));
 		assert(!"Not of the correct class");
 	}
 	

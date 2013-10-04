@@ -209,7 +209,7 @@
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data
 {
 #ifndef NDEBUG
-	//LTLog(@"WEB SERVICE: got Data len=%u cancelled=%d", [data length], [super isCancelled]);
+	//NSLog(@"WEB SERVICE: got Data len=%u cancelled=%d", [data length], [super isCancelled]);
 #endif
 	if([super isCancelled]) {
 		[connection cancel];
@@ -232,6 +232,7 @@
 	NSLog(@"ConcurrentOp: error: %@", [error description]);
 #endif
 	self.webData = nil;
+	self.imageBuilder = nil;
 
     [connection cancel];
 
@@ -246,10 +247,15 @@
 		return;
 	}
 #ifndef NDEBUG
-	//LTLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
+	//NSLog(@"ConcurrentOp FINISHED LOADING WITH Received Bytes: %u", [webData length]);
 #endif
 
-	if(decoder != libjpegIncremental) {
+	if(decoder == libjpegIncremental) {
+		if(imageBuilder.failed) {
+			NSLog(@"FAILED!");
+			imageBuilder = nil;
+		}
+	} else {
 		[imageBuilder dataFinished];
 		//[imageBuilder decodeImageData:webData];
 	}

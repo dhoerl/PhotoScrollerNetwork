@@ -101,6 +101,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	
 	uint64_t							startTime;
 	__block uint32_t					milliSeconds;
+	
+	BOOL								ok2tile;
 }
 @synthesize isWebTest;
 @synthesize decoder;
@@ -205,18 +207,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 #endif
 }
 
-- (void)viewDidUnload
-{
-	spinner = nil;
-	toolbar = nil;
-    [super viewDidUnload];
-
-    pagingScrollView = nil;
-    recycledPages = nil;
-    visiblePages = nil;
-	tileBuilders = nil;
-}
-
 - (void)dealloc
 {
 	[self cancelNow:nil];
@@ -255,6 +245,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		
 		[visiblePages removeAllObjects];	// seems like a good idea
 		[recycledPages removeAllObjects];	// seems like a good idea
+		ok2tile = YES;
 		[self tilePages];
 	
 		uint64_t finishTime = mach_absolute_time();
@@ -306,6 +297,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 				{
 					self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds/[self imageCount]];
 					[spinner stopAnimating];
+					ok2tile = YES;
 					[self tilePages];
 				});
 			//dispatch_release(group);
@@ -337,6 +329,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 - (void)tilePages 
 {
+	if(!ok2tile) return;
+
     // Calculate which pages are visible
     CGRect visibleBounds = pagingScrollView.bounds;
     NSInteger firstNeededPageIndex = lrintf( floorf(CGRectGetMinX(visibleBounds) / CGRectGetWidth(visibleBounds)) );
