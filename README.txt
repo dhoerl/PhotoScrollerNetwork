@@ -1,7 +1,7 @@
 PhotoScrollerNetwork Project
 Latest v2.6 Oct 4, 2013
 
-NOTE: Please use one of the 'Turbo' schemes to build - the older non-turbo schemes do not currently work
+NOTE: Please use one of the 'Turbo' schemes to build (e.g. PhotoScrollerNetworkTurbo) - the older non-turbo schemes do not currently work and will crash
 
 NOTE: At WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
 that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
