@@ -406,11 +406,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 #pragma mark -
 #pragma mark View controller rotation methods
 
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation 
-{
-    return YES;
-}
-
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
     // here, our pagingScrollView bounds have not yet been updated for the new interface orientation. So this is a good

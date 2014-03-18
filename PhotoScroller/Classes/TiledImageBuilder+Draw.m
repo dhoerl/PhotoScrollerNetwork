@@ -53,7 +53,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 
 @implementation TiledImageBuilder (Draw)
 
-#if 0 // only used if doing drawRect not drawLayer
+#if 1 // only used if doing drawRect not drawLayer in the main code, but needed for getColorPixel
 - (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt
 {
 	CGImageRef image = [self newImageForScale:scale location:pt box:CGRectMake(0, 0, 0, 0)];

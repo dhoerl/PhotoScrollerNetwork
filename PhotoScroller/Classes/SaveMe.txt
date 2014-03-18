@@ -1,4 +1,77 @@
+
+
+// Take a big chunk of either free memory or all memory
+freeMemory fm		= [self freeMemory:@"Initialize"];
+float freeThresh	= (float)fm.freeMemory*ubc_threshold_ratio;
+float totalThresh	= (float)fm.totlMemory*ubc_threshold_ratio;
+size_t ubc_threshold = lrintf(MAX(freeThresh, totalThresh));
+
+typedef struct {
+	size_t freeMemory;
+	size_t usedMemory;
+	size_t totlMemory;
+	size_t resident_size;
+	size_t virtual_size;
+} freeMemory;
+
+- (freeMemory)freeMemory:(NSString *)msg
+{
+	// http://stackoverflow.com/questions/5012886
+    mach_port_t host_port;
+    mach_msg_type_number_t host_size;
+    vm_size_t pagesize;
+	freeMemory fm = { 0, 0, 0, 0, 0 };
+
+    host_port = mach_host_self();
+    host_size = sizeof(vm_statistics_data_t) / sizeof(integer_t);
+    host_page_size(host_port, &pagesize);        
+
+    vm_statistics_data_t vm_stat;
+
+    if (host_statistics(host_port, HOST_VM_INFO, (host_info_t)&vm_stat, &host_size) != KERN_SUCCESS) {
+        LOG(@"Failed to fetch vm statistics");
+	} else {
+		/* Stats in bytes */ 
+		natural_t mem_used = (vm_stat.active_count +
+							  vm_stat.inactive_count +
+							  vm_stat.wire_count) * pagesize;
+		natural_t mem_free = vm_stat.free_count * pagesize;
+		natural_t mem_total = mem_used + mem_free;
 		
+		fm.freeMemory = (size_t)mem_free;
+		fm.usedMemory = (size_t)mem_used;
+		fm.totlMemory = (size_t)mem_total;
+		
+		struct task_basic_info info;
+		if(dump_memory_usage(&info)) {
+			fm.resident_size = (size_t)info.resident_size;
+			fm.virtual_size = (size_t)info.virtual_size;
+		}
+		
+#if MEMORY_DEBUGGING == 1
+		LOG(@"%@:   "
+			"total: %u "
+			"used: %u "
+			"FREE: %u "
+			"  [resident=%u virtual=%u]", 
+			msg, 
+			(unsigned int)mem_total, 
+			(unsigned int)mem_used, 
+			(unsigned int)mem_free, 
+			(unsigned int)fm.resident_size, 
+			(unsigned int)fm.virtual_size
+		);
+#endif
+	}
+	return fm;
+}
+
+
+
+
+
+
+
 
 
 

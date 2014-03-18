@@ -153,14 +153,6 @@ assert(fileName.text);
 	[self sliderAction:nil];
 }
 
-- (void)viewDidUnload
-{
-	orientationValue = nil;
-	imageView = nil;
-	fileName = nil;
-    [super viewDidUnload];
-}
-
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
@@ -181,12 +173,6 @@ assert(fileName.text);
 - (void)viewDidDisappear:(BOOL)animated
 {
 	[super viewDidDisappear:animated];
-}
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-    // Return YES for supported orientations
-	return (interfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
 }
 
 @end

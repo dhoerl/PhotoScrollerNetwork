@@ -96,7 +96,7 @@
 
 - (CGSize)imageSize;	// orientation modifies over what is downloaded
 - (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)pt box:(CGRect)box;
-//- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt; used when doing drawRect
+- (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt; // used when doing drawRect, but now for getImageColor
 - (CGAffineTransform)transformForRect:(CGRect)box; //  scale:(CGFloat)scale;
 - (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt;
 

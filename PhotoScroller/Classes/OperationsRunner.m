@@ -61,8 +61,6 @@ static char *opContext = "opContext";
 {
 	[self cancelOperations];
 
-#warning NEEDED FOR 5.1
-	// dispatch_release(operationsQueue);
 }
 
 - (void)runOperation:(NSOperation *)op withMsg:(NSString *)msg

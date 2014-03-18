@@ -207,6 +207,53 @@ if(CGImageGetWidth(image) == 0 || CGImageGetHeight(image) == 0) {
 	return [tb imageSize];
 }
 
+-(UIColor *)getColorAtPosition:(CGPoint)pt
+{
+	CATiledLayer *tiledLayer = (CATiledLayer *)[self layer];
+	CGSize tileSize = tiledLayer.tileSize;
+
+	UIGraphicsBeginImageContextWithOptions(tileSize, YES, 0);
+
+#if __LP64__
+	long col = lrint( floor(pt.x / tileSize.width) );
+	long row = lrint( floor(pt.y / tileSize.height) );
+	CGPoint offsetPt = CGPointMake( round(pt.x - col * tileSize.width), round(  (pt.y - row * tileSize.height) ) );
+#else
+	long col = lrintf( floorf(pt.x / tileSize.width) );
+	long row = lrintf( floorf(pt.y / tileSize.height) );
+	CGPoint offsetPt = CGPointMake( roundf(pt.x - col * tileSize.width), roundf(  (pt.y - row * tileSize.height) ) );
+#endif
+
+	CGRect tileRect = CGRectMake(0, 0, tileSize.width, tileSize.height);
+	UIImage *tile = [tb tileForScale:1 location:CGPointMake(col, row)];
+	[tile drawInRect:tileRect];
+	UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+	
+	UIGraphicsEndImageContext();
+
+	CGRect sourceRect = CGRectMake(offsetPt.x, offsetPt.y, 1, 1);
+	CGImageRef imageRef = CGImageCreateWithImageInRect(image.CGImage, sourceRect);
+
+	CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+	unsigned char *buffer = malloc(4);
+	CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big;
+	CGContextRef context = CGBitmapContextCreate(buffer, 1, 1, 8, 4, colorSpace, bitmapInfo);
+	CGColorSpaceRelease(colorSpace);
+	CGContextDrawImage(context, CGRectMake(0, 0, 1, 1), imageRef);
+	CGImageRelease(imageRef);
+	CGContextRelease(context);
+
+	CGFloat d = 255;
+	CGFloat r = buffer[0] / d;
+	CGFloat g = buffer[1] / d;
+	CGFloat b = buffer[2] / d;
+	CGFloat a = buffer[3] / d;
+
+	free(buffer);
+		
+    return [UIColor colorWithRed:r green:g blue:b alpha:a];
+}
+
 #if 0 
 
 // How to render it http://stackoverflow.com/questions/5526545/render-large-catiledlayer-into-smaller-area
