@@ -41,18 +41,18 @@
 
 
 @implementation ConcurrentOp
+{
+	NSMutableData *data;
+}
 
 - (uint32_t)milliSeconds
 {
 	return _imageBuilder.milliSeconds;
 }
 
-@end
-
-@implementation ConcurrentOp (NSURLConnectionDelegate)
-
 - (NSMutableURLRequest *)setup
 {
+	data = [NSMutableData dataWithCapacity:10000];
 	self.imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:_decoder size:CGSizeMake(320, 320) orientation:_orientation];
 	return [super setup];
 }
@@ -63,8 +63,16 @@
 
 #ifdef LIBJPEG
 	if(_decoder == libjpegIncremental) {
-		BOOL consumed = [_imageBuilder jpegAdvance:webData];
-		if(consumed) {
+		// Since the SesslonDelegate is trying to be sophisticated, and use the chained dispatch_data obhects,
+		// our consumer is just consuming chunks at its own pace. So we'll always keep the webData at 0 byes,
+		// and use our own internal mutable object to transfer bytes. Its the best compromise we can use.
+		if([webData length]) {
+			[data appendData:webData];
+			BOOL consumed = [_imageBuilder jpegAdvance:data];
+			if(consumed) {
+				// This use to be hidden in the imagebuilder class, really was hard to spot
+				[data setLength:0];
+			}
 			dispatch_queue_t q	= dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 			super.webData = (NSData *)dispatch_data_create(NULL, 0, q, ^{});
 			super.currentReceiveSize = 0;

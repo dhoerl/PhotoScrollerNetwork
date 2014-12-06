@@ -1,7 +1,10 @@
 PhotoScrollerNetwork Project
-Latest v2.6 Oct 4, 2013
+Latest v3.0 Dec 6, 2014
+
+*** libjpeg-turbo is now includes arm64 ***
 
 NOTE: Please use one of the 'Turbo' schemes to build (e.g. PhotoScrollerNetworkTurbo) - the older non-turbo schemes do not currently work and will crash
+
 
 NOTE: At WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
 that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
@@ -27,6 +30,12 @@ This sample code:
 Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
 
 RECENT CHANGES:
+
+v3.0
+- was able to build libjpeg-turbo for arm64! (see my other project libjpeg-turbo-builder)
+- updated for iOS8
+- rotation code is commented out, maybe later
+- separated out, and update, the networking code (uses the latest iOS8 code from my FastAndEasyWebFetches project)
 
 v2.6
 - updated for iOS7 and Xcode 5. Seems we get a tilePages message from the OS earlier than before, and the code wasn't ready. Protect that now with a flag. Other very minor changes.

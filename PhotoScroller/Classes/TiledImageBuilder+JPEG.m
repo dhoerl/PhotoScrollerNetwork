@@ -507,7 +507,6 @@ static void term_source(j_decompress_ptr cinfo);
 			// When we consume all the data in the web buffer, safe to free it up for the system to resuse
 			if(src_mgr->pub.bytes_in_buffer == 0) {
 				src_mgr->deleted_data += [webData length];
-				//[webData setLength:0];
 				consumed = YES;
 			}
 		}
