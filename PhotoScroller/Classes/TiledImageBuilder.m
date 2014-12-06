@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -125,29 +125,15 @@ volatile int32_t		fileFlushGroupSuspended;
 volatile int32_t		ubc_usage;					// rough idea of what our buffer cache usage is
 float					ubc_threshold_ratio;
 
-@interface TiledImageBuilder ()
-
-#if LEVELS_INIT == 1
-- (id)initWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels;
-#else
-- (id)initWithDecoder:(imageDecoder)dec size:(CGSize)size;
-#endif
-
-- (void)decodeImageURL:(NSURL *)url;
-- (void)decodeImage:(CGImageRef)image;
-
-- (BOOL)createImageFile;
-- (int)createTempFile:(BOOL)unlinkFile size:(size_t)size;
-
-@end
 
 @implementation TiledImageBuilder
 {
-	NSString	*imagePath;
+	NSString	*_imagePath;
 	BOOL		mapWholeFile;
 	BOOL		deleteImageFile;
 	CGSize		size;
 }
+#if 0
 @synthesize decoder;
 @synthesize properties;
 @synthesize ims;
@@ -162,6 +148,7 @@ float					ubc_threshold_ratio;
 @synthesize milliSeconds;
 #ifdef LIBJPEG
 @synthesize src_mgr;
+#endif
 #endif
 
 + (void)initialize
@@ -186,19 +173,19 @@ float					ubc_threshold_ratio;
 }
 
 #if LEVELS_INIT == 0
-- (id)initWithImage:(CGImageRef)image size:(CGSize)sz orientation:(int)orient
+- (id)initWithImage:(CGImageRef)image size:(CGSize)sz orientation:(NSInteger)orient
 {
 	if((self = [self initWithDecoder:cgimageDecoder size:sz])) {
-		orientation = orient;
+		_orientation = orient;
 		{
 			mapWholeFile = YES;
 			[self decodeImage:image];
 		}
 
 #if TIMING_STATS == 1 && !defined(NDEBUG)
-		finishTime = [self timeStamp];
-		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		LOG(@"FINISH: %u milliseconds", milliSeconds);
+		_finishTime = [self timeStamp];
+		_milliSeconds = (uint32_t)DeltaMAT(_startTime, _finishTime);
+		LOG(@"FINISH: %u milliseconds", _milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"FINISHED"];
@@ -207,12 +194,12 @@ float					ubc_threshold_ratio;
 	return self;
 }
 
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec size:(CGSize)sz  orientation:(int)orient
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec size:(CGSize)sz  orientation:(NSInteger)orient
 {
 	if((self = [self initWithDecoder:dec size:sz])) {
-		orientation = orient;
+		_orientation = orient;
 #ifdef LIBJPEG
-		if(decoder == libjpegIncremental) {
+		if(_decoder == libjpegIncremental) {
 			[self jpegInitFile:path];
 		} else
 #endif		
@@ -222,9 +209,9 @@ float					ubc_threshold_ratio;
 		}
 
 #if TIMING_STATS == 1 && !defined(NDEBUG)
-		finishTime = [self timeStamp];
-		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		LOG(@"FINISH-I: %u milliseconds", milliSeconds);
+		_finishTime = [self timeStamp];
+		_milliSeconds = (uint32_t)DeltaMAT(_startTime, _finishTime);
+		LOG(@"FINISH-I: %u milliseconds", _milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"FINISHED"];
@@ -232,12 +219,12 @@ float					ubc_threshold_ratio;
 	}
 	return self;
 }
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec size:(CGSize)sz orientation:(int)orient
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec size:(CGSize)sz orientation:(NSInteger)orient
 {
 	if((self = [self initWithDecoder:dec size:sz])) {
-		orientation = orient;
+		_orientation = orient;
 #ifdef LIBJPEG
-		if(decoder == libjpegIncremental) {
+		if(_decoder == libjpegIncremental) {
 			[self jpegInitNetwork];
 		} else 
 #endif
@@ -252,22 +239,23 @@ float					ubc_threshold_ratio;
 {
 	if((self = [super init])) {
 #if TIMING_STATS == 1 && !defined(NDEBUG)
-		startTime = [self timeStamp];
+		_startTime = [self timeStamp];
 #endif		
-		decoder		= dec;
-		pageSize	= getpagesize();
+		_decoder	= dec;
+		_pageSize	= getpagesize();
 		size		= sz;
 
 		// Take a big chunk of either free memory or all memory
 		freeMemory fm		= [self freeMemory:@"Initialize"];
 		float freeThresh	= (float)fm.freeMemory*ubc_threshold_ratio;
 		float totalThresh	= (float)fm.totlMemory*ubc_threshold_ratio;
-		ubc_threshold		= lrintf(MAX(freeThresh, totalThresh));
+		_ubc_threshold		= (int32_t)lrintf(MAX(freeThresh, totalThresh));
 
 #ifdef LIBJPEG
-		src_mgr				= calloc(1, sizeof(co_jpeg_source_mgr));
+		_src_mgr			= calloc(1, sizeof(co_jpeg_source_mgr));
 #endif
-		//LOG(@"freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)freeThresh/(1024*1024), (int)totalThresh/(1024*1024), (int)ubc_threshold/(1024*1024));
+		//LOG(@"A: freeThresh=%lf totalThresh=%lf ubc_thresh=%u", (freeThresh), (totalThresh), ubc_threshold);
+		//LOG(@"B: freeThresh=%d totalThresh=%d ubc_thresh=%d", (int)(freeThresh/(1024*1024)), (int)(totalThresh/(1024*1024)), (int)(_ubc_threshold/(1024*1024)));
 
 		[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(lowMemory:) name:UIApplicationDidReceiveMemoryWarningNotification object:[UIApplication sharedApplication]];
 	}
@@ -276,7 +264,7 @@ float					ubc_threshold_ratio;
 
 #else // LEVELS_INIT == 0
 
-- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(int)orient
+- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(NSInteger)orient
 {
 	if((self = [self initWithDecoder:cgimageDecoder levels:levels])) {
 		orientation = orient;
@@ -297,7 +285,7 @@ float					ubc_threshold_ratio;
 	return self;
 }
 
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec levels:(NSUInteger)levels orientation:(int)orient
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)dec levels:(NSUInteger)levels orientation:(NSInteger)orient
 {
 	if((self = [self initWithDecoder:dec levels:levels])) {
 		orientation = orient;
@@ -322,7 +310,7 @@ float					ubc_threshold_ratio;
 	}
 	return self;
 }
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels orientation:(int)orient
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels orientation:(NSInteger)orient
 {
 	if((self = [self initWithDecoder:dec levels:levels])) {
 		orientation = orient;
@@ -370,24 +358,24 @@ float					ubc_threshold_ratio;
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];		
 
-	for(NSUInteger idx=0; idx<zoomLevels;++idx) {
-		int fd = ims[idx].map.fd;
+	for(NSUInteger idx=0; idx<_zoomLevels;++idx) {
+		int fd = _ims[idx].map.fd;
 		if(fd>0) close(fd);
 	}
-	free(ims);
+	free(_ims);
 
-	if(imageFile) fclose(imageFile);
-	if(imagePath) unlink([imagePath fileSystemRepresentation]);
+	if(_imageFile) fclose(_imageFile);
+	if(_imagePath) unlink([_imagePath fileSystemRepresentation]);
 #ifdef LIBJPEG
-	if(src_mgr->cinfo.src)	jpeg_destroy_decompress(&src_mgr->cinfo);
-	free(src_mgr);
+	if(_src_mgr->cinfo.src)	jpeg_destroy_decompress(&_src_mgr->cinfo);
+	free(_src_mgr);
 #endif
 }
 
 - (void)lowMemory:(NSNotification *)note
 {
-LOG(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", ubc_threshold, ubc_usage);
-	ubc_threshold = lrintf((float)ubc_threshold * ubc_threshold_ratio);
+LOG(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", _ubc_threshold, ubc_usage);
+	_ubc_threshold = (int32_t)lrintf((float)_ubc_threshold * ubc_threshold_ratio);
 	
 	[self freeMemory:@"Yikes!"];
 }		
@@ -408,29 +396,29 @@ LOG(@"ZLEVELS=%d", zLevels);
 	return zLevels;
 }
 
-- (void)appendToImageFile:(NSData *)data
+- (void)writeToImageFile:(NSData *)data
 {
 	size_t len = [data length];	// got a zero byte data object!
-	if(!failed && len) {
-		size_t ret = fwrite([data bytes], len, 1, imageFile);
+	if(!_failed && len) {
+		size_t ret = fwrite([data bytes], len, 1, _imageFile);
 		assert(ret == 1);
-		if(ret != 1) failed = YES;
+		if(ret != 1) _failed = YES;
 	}
 }
 
 - (void)dataFinished
 {
-	if(!failed) {
-		startTime = [self timeStamp];
+	if(!_failed) {
+		_startTime = [self timeStamp];
 
-		fclose(imageFile), imageFile = NULL;
-		[self decodeImageURL:[NSURL fileURLWithPath:imagePath]];
-		unlink([imagePath fileSystemRepresentation]), imagePath = NULL;
+		fclose(_imageFile), _imageFile = NULL;
+		[self decodeImageURL:[NSURL fileURLWithPath:_imagePath]];
+		unlink([_imagePath fileSystemRepresentation]), _imagePath = NULL;
 		
 #if TIMING_STATS == 1 && !defined(NDEBUG)
-		finishTime = [self timeStamp];
-		milliSeconds = (uint32_t)DeltaMAT(startTime, finishTime);
-		LOG(@"FINISH: %u milliseconds", milliSeconds);
+		_finishTime = [self timeStamp];
+		_milliSeconds = (uint32_t)DeltaMAT(_startTime, _finishTime);
+		LOG(@"FINISH: %u milliseconds", _milliSeconds);
 #endif
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"dataFinished"];
@@ -442,27 +430,27 @@ LOG(@"ZLEVELS=%d", zLevels);
 {
 	//LOG(@"URL=%@", url);
 #ifdef LIBJPEG
-	if(decoder == libjpegTurboDecoder) {
+	if(_decoder == libjpegTurboDecoder) {
 		NSData *data = [NSData dataWithContentsOfURL:url];
 		[self decodeImageData:data];
 	} else
 #endif
-	if(decoder == cgimageDecoder) {
-		failed = YES;
+	if(_decoder == cgimageDecoder) {
+		_failed = YES;
 		CGImageSourceRef imageSourcRef = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
 		if(imageSourcRef) {
 			CFDictionaryRef dict = CGImageSourceCopyPropertiesAtIndex(imageSourcRef, 0, NULL);
 			if(dict) {
 				//CFShow(dict);
-				properties = CFBridgingRelease(dict);
-				if(!orientation) {
-					orientation = [[properties objectForKey:@"Orientation"] integerValue];
+				_properties = CFBridgingRelease(dict);
+				if(!_orientation) {
+					_orientation = [[_properties objectForKey:@"Orientation"] integerValue];
 				}
 			}
 			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
 			CFRelease(imageSourcRef), imageSourcRef = NULL;
 			if(image) {
-				failed = NO;
+				_failed = NO;
 				[self decodeImage:image];
 				CGImageRelease(image);
 			}
@@ -472,19 +460,19 @@ LOG(@"ZLEVELS=%d", zLevels);
 
 - (void)decodeImage:(CGImageRef)image
 {
-	assert(decoder == cgimageDecoder);
+	assert(_decoder == cgimageDecoder);
 	
 	size_t width	= CGImageGetWidth(image);
 	size_t height	= CGImageGetHeight(image);
 	
 #if LEVELS_INIT == 0
-	zoomLevels = [self zoomLevelsForSize:CGSizeMake(width, height)];
-	ims = calloc(zoomLevels, sizeof(imageMemory));
+	_zoomLevels = [self zoomLevelsForSize:CGSizeMake(width, height)];
+	_ims = calloc(_zoomLevels, sizeof(imageMemory));
 #endif
 
 	[self mapMemoryForIndex:0 width:width height:height];
 	[self drawImage:image];
-	if(!failed) [self createLevelsAndTile];
+	if(!_failed) [self createLevelsAndTile];
 }
 
 - (BOOL)createImageFile
@@ -492,13 +480,13 @@ LOG(@"ZLEVELS=%d", zLevels);
 	BOOL success;
 	int fd = [self createTempFile:NO size:0];
 	if(fd == -1) {
-		failed = YES;
+		_failed = YES;
 		success = NO;
 	} else {
-		if ((imageFile = fdopen(fd, "r+")) == NULL) {
-			LOG(@"Error: failed to fdopen image file \"%@\" for \"r+\" (%d).", imagePath, errno);
+		if ((_imageFile = fdopen(fd, "r+")) == NULL) {
+			LOG(@"Error: failed to fdopen image file \"%@\" for \"r+\" (%d).", _imagePath, errno);
 			close(fd);
-			failed = YES;
+			_failed = YES;
 			success = NO;
 		} else {
 			success = YES;
@@ -513,7 +501,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 	int fd = mkstemp(template);
 	//LOG(@"CREATE TMP FILE: %s fd=%d", template, fd);
 	if(fd == -1) {
-		failed = YES;
+		_failed = YES;
 		LOG(@"OPEN failed file %s %s", template, strerror(errno));
 	} else {
 		if(unlinkFile) {
@@ -541,7 +529,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 				LOG(@"Warning: cannot ftruncate input file (errno %s).", strerror(errno) );
 			}
 		} else {
-			imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
+			_imagePath = [NSString stringWithCString:template encoding:NSASCIIStringEncoding];
 			
 			int ret = fcntl(fd, F_NOCACHE, 1);	// don't clog up the system's disk cache
 			if(ret == -1) {
@@ -557,7 +545,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 {
 	// Don't open another file til memory pressure has dropped
 	dispatch_group_wait(fileFlushGroup, DISPATCH_TIME_FOREVER);
-	imageMemory *imsP = &ims[idx];
+	imageMemory *imsP = &_ims[idx];
 	
 	imsP->map.width = w;
 	imsP->map.height = h;
@@ -576,7 +564,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 	{
 		BOOL colOffset = NO;
 		BOOL rowOffset = NO; 
-		switch(orientation) {
+		switch(_orientation) {
 		case 0:
 		case 1:
 		case 5:
@@ -602,7 +590,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 			imsP->map.row0offset = imsP->rows * tileDimension - imsP->map.height;
 			// LOG(@"ROW OFFSET = %ld", imsP->map.row0offset);
 		}
-		if(orientation >= 5 && orientation <= 8) imsP->rotated = YES;
+		if(_orientation >= 5 && _orientation <= 8) imsP->rotated = YES;
 	}
 }
 
@@ -627,7 +615,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 		mapP->emptyAddr = mmap(NULL, mapP->mappedSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED | MAP_NOCACHE, mapP->fd, 0);	//  | MAP_NOCACHE
 		mapP->addr = mapP->emptyAddr + mapP->emptyTileRowSize;
 		if(mapP->emptyAddr == MAP_FAILED) {
-			failed = YES;
+			_failed = YES;
 			LOG(@"FAILED to allocate %lu bytes - errno3=%s", mapP->mappedSize, strerror(errno) );
 			mapP->emptyAddr = NULL;
 			mapP->addr = NULL;
@@ -641,24 +629,24 @@ LOG(@"ZLEVELS=%d", zLevels);
 
 - (void)drawImage:(CGImageRef)image
 {
-	if(image && !failed) {
-		assert(ims[0].map.addr);
+	if(image && !_failed) {
+		assert(_ims[0].map.addr);
 
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"drawImage start"];
 #endif
-		madvise(ims[0].map.addr, ims[0].map.mappedSize-ims[0].map.emptyTileRowSize, MADV_SEQUENTIAL);
+		madvise(_ims[0].map.addr, _ims[0].map.mappedSize-_ims[0].map.emptyTileRowSize, MADV_SEQUENTIAL);
 
-		unsigned char *addr = ims[0].map.addr + ims[0].map.col0offset + ims[0].map.row0offset*ims[0].map.bytesPerRow;
-		CGContextRef context = CGBitmapContextCreate(addr, ims[0].map.width, ims[0].map.height, bitsPerComponent, ims[0].map.bytesPerRow, colorSpace, 
+		unsigned char *addr = _ims[0].map.addr + _ims[0].map.col0offset + _ims[0].map.row0offset*_ims[0].map.bytesPerRow;
+		CGContextRef context = CGBitmapContextCreate(addr, _ims[0].map.width, _ims[0].map.height, bitsPerComponent, _ims[0].map.bytesPerRow, colorSpace,
 			kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little); 	// kCGImageAlphaNoneSkipFirst kCGImageAlphaNoneSkipLast   kCGBitmapByteOrder32Big kCGBitmapByteOrder32Little
 		assert(context);
 		CGContextSetBlendMode(context, kCGBlendModeCopy); // Apple uses this in QA1708
-		CGRect rect = CGRectMake(0, 0, ims[0].map.width, ims[0].map.height);
+		CGRect rect = CGRectMake(0, 0, _ims[0].map.width, _ims[0].map.height);
 		CGContextDrawImage(context, rect, image);
 		CGContextRelease(context);
 
-		madvise(ims[0].map.addr, ims[0].map.mappedSize-ims[0].map.emptyTileRowSize, MADV_FREE); // MADV_DONTNEED
+		madvise(_ims[0].map.addr, _ims[0].map.mappedSize-_ims[0].map.emptyTileRowSize, MADV_FREE); // MADV_DONTNEED
 
 #if MEMORY_DEBUGGING == 1
 		[self freeMemory:@"drawImage done"];
@@ -690,7 +678,7 @@ LOG(@"ZLEVELS=%d", zLevels);
         totalFreeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
         LOG(@"Disk Capacity of %llu MiB with %llu MiB free disk available.", ((totalSpace/1024ll)/1024ll), ((totalFreeSpace/1024ll)/1024ll));
     } else {  
-        LOG(@"Error Obtaining System Memory Info: Domain = %@, Code = %d", [error domain], [error code]);  
+        LOG(@"Error Obtaining System Memory Info: Domain = %@, Code = %td", [error domain], [error code]);
     }  
 
     return totalFreeSpace;
@@ -714,10 +702,10 @@ LOG(@"ZLEVELS=%d", zLevels);
         LOG(@"Failed to fetch vm statistics");
 	} else {
 		/* Stats in bytes */ 
-		natural_t mem_used = (vm_stat.active_count +
+		natural_t mem_used = (natural_t)((vm_stat.active_count +
 							  vm_stat.inactive_count +
-							  vm_stat.wire_count) * pagesize;
-		natural_t mem_free = vm_stat.free_count * pagesize;
+							  vm_stat.wire_count) * pagesize);
+		natural_t mem_free = (natural_t)(vm_stat.free_count * pagesize);
 		natural_t mem_total = mem_used + mem_free;
 		
 		fm.freeMemory = (size_t)mem_free;

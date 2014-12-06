@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -42,44 +42,24 @@ barStyle  property UIBarStyleBlack
 translucent  property YES/NO
 */
 
-#if !__has_feature(objc_arc)
-#error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
-#endif
-
-//#include <mach/mach.h>			// freeMemory
+//#include <mach/mach.h>		// freeMemory
 #include <mach/mach_time.h>		// time metrics
 
 #import "PhotoViewController.h"
 #import "ImageScrollView.h"
 #import "TiledImageBuilder.h"
-#import "ConcurrentOp.h"
 #import "AppDelegate.h"
 #import "PhotoScrollerCommon.h"
-#import "OperationsRunnerProtocol.h"
-#import "OperationsRunner.h"
+
+// My Asynchronous Web Fetching Code
+#import "OperationsRunner8.h"
+#import "ORSessionDelegate.h"
+#import "ConcurrentOp.h"
 
 // Compliments to Rainer Brockerhoff
 static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 @interface PhotoViewController () <OperationsRunnerProtocol>
-
-- (IBAction)cancelNow:(id)sender;
-
-- (void)configurePage:(ImageScrollView *)page forIndex:(NSUInteger)index;
-- (BOOL)isDisplayingPageForIndex:(NSUInteger)index;
-
-- (CGRect)frameForPageAtIndex:(NSUInteger)index;
-- (CGSize)contentSizeForPagingScrollView;
-
-- (void)tilePages;
-//- (ImageScrollView *)dequeueRecycledPage;
-
-- (NSUInteger)imageCount;
-- (NSString *)imageNameAtIndex:(NSUInteger)index;
-
-- (void)constructStaticImages;
-- (void)fetchWebImages;
-
 @end
 
 @implementation PhotoViewController
@@ -104,11 +84,21 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	
 	BOOL								ok2tile;
 }
-@synthesize isWebTest;
-@synthesize decoder;
-@synthesize orientation;
-@synthesize justDoOneImage;
-@synthesize singleName;
+
++ (void)initialize
+{
+	if(self == [PhotoViewController class]) {
+	
+		ORSessionDelegate *del = [ORSessionDelegate new];	// URSessionDelegate subclass
+		
+		NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+		config.URLCache = nil;
+		config.HTTPShouldSetCookies = YES;
+		config.HTTPShouldUsePipelining = YES;
+
+		[OperationsRunner createSharedSessionWithConfiguration:config delegate:del];
+	}
+}
 
 #pragma mark -
 #pragma mark View loading and unloading
@@ -186,6 +176,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 - (void)viewDidLoad 
 {
+	[super viewDidLoad];
+
 	[spinner startAnimating];
    
 	pagingScrollView = (UIScrollView *)self.view;
@@ -195,8 +187,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
     recycledPages = [[NSMutableSet alloc] init];
     visiblePages  = [[NSMutableSet alloc] init];
 	tileBuilders  = [[NSMutableArray alloc] init];
-	if(isWebTest) {
+	if(_isWebTest) {
+		operationsRunner = [[OperationsRunner alloc] initWithDelegate:self];
 		[self fetchWebImages];
+		
 	} else {
 		[self constructStaticImages];
 	}
@@ -224,10 +218,10 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	[operationsRunner cancelOperations];
 }
 
-- (void)operationFinished:(NSOperation *)nsOP
+- (void)operationFinished:(FECWF_WEBFETCHER *)_op count:(NSUInteger)remainingOps
 {
 	// what you would want in real world situations below
-	ConcurrentOp *op = (ConcurrentOp *)nsOP;
+	ConcurrentOp *op = (ConcurrentOp *)_op;
 	
 	// Note" probably a better strategy is to put the new images in their own array, then swap arrays when done
 	if(op.imageBuilder) {
@@ -240,7 +234,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 	milliSeconds += op.milliSeconds;
 
-	if(![operationsRunner operationsCount]) {
+	if(!remainingOps) {
 		[spinner stopAnimating];
 		
 		[visiblePages removeAllObjects];	// seems like a good idea
@@ -268,7 +262,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	NSArray *imageArray;
 	
 	 if([self imageCount] == 1) {
-		imageArray = [NSArray arrayWithObject:singleName];
+		imageArray = [NSArray arrayWithObject:_singleName];
 	} else {
 		imageArray = [NSArray arrayWithObjects:@"Lake", @"Shed", @"Tree", nil];
 	}
@@ -282,7 +276,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
-				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:decoder size:CGSizeMake(320, 320) orientation:orientation];
+				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:_decoder size:CGSizeMake(320, 320) orientation:_orientation];
 				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; milliSeconds += tb.milliSeconds; });
 			} );
 #else // You can now use temporary UIImageViews as placeholders while fetching or tiling the images. Test it below.
@@ -290,12 +284,15 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:iv]; });
 #endif
 	}
+	uint32_t count = (uint32_t)[self imageCount];
+	if(!count) count = 1;
+	uint32_t ms= milliSeconds/count;
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
 		{
 			dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 			dispatch_async(dispatch_get_main_queue(), ^
 				{
-					self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", milliSeconds/[self imageCount]];
+					self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", ms];
 					[spinner stopAnimating];
 					ok2tile = YES;
 					[self tilePages];
@@ -313,17 +310,17 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	for(NSUInteger idx=0; idx<count; ++idx) {
 		[tileBuilders addObject:@""];
 		
-		NSString *imageName = count == 1 ? singleName : [self imageNameAtIndex:idx];
+		NSString *imageName = count == 1 ? _singleName : [self imageNameAtIndex:idx];
 		NSString *path = [[@"http://dl.dropbox.com/u/60414145" stringByAppendingPathComponent:imageName] stringByAppendingPathExtension:@"jpg"];
 
 		ConcurrentOp *op = [ConcurrentOp new];
-		op.url = [NSURL URLWithString:path];
-		op.decoder = decoder;
+		op.urlStr = path;
+		op.decoder = _decoder;
 		op.index = idx;
 		//op.zoomLevels = ZOOM_LEVELS;
-		op.orientation = orientation;
+		op.orientation = _orientation;
 
-		[self runOperation:op withMsg:path];
+		[operationsRunner runOperation:op withMsg:path];
 	}
 }
 
@@ -333,8 +330,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
     // Calculate which pages are visible
     CGRect visibleBounds = pagingScrollView.bounds;
-    NSInteger firstNeededPageIndex = lrintf( floorf(CGRectGetMinX(visibleBounds) / CGRectGetWidth(visibleBounds)) );
-    NSInteger lastNeededPageIndex  = lrintf( floorf((CGRectGetMaxX(visibleBounds)-1) / CGRectGetWidth(visibleBounds)) );
+    NSInteger firstNeededPageIndex = (NSInteger)lrint( floor(CGRectGetMinX(visibleBounds) / CGRectGetWidth(visibleBounds)) );
+    NSInteger lastNeededPageIndex  = (NSInteger)lrint( floor((CGRectGetMaxX(visibleBounds)-1) / CGRectGetWidth(visibleBounds)) );
     firstNeededPageIndex = MAX(firstNeededPageIndex, 0);
     lastNeededPageIndex  = MIN(lastNeededPageIndex, [self imageCount] - 1);
 
@@ -350,7 +347,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	[recycledPages makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
     // add missing pages
-    for (int index = firstNeededPageIndex; index <= lastNeededPageIndex; index++) {
+    for (NSInteger index = firstNeededPageIndex; index <= lastNeededPageIndex; index++) {
         if (![self isDisplayingPageForIndex:index]) {
 			ImageScrollView *page = [recycledPages anyObject];
 			if (page) {
@@ -403,6 +400,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	}
 }
 
+#if 0 // Deprecated
 #pragma mark -
 #pragma mark View controller rotation methods
 
@@ -446,6 +444,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
     CGFloat newOffset = (firstVisiblePageIndexBeforeRotation * pageWidth) + (percentScrolledIntoFirstVisiblePage * pageWidth);
     pagingScrollView.contentOffset = CGPointMake(newOffset, 0);
 }
+#endif
 
 #pragma mark -
 #pragma mark  Frame calculations
@@ -479,11 +478,11 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
         // read the filenames/sizes out of a plist in the app bundle
         NSString *path = [[NSBundle mainBundle] pathForResource:@"ImageData" ofType:@"plist"];
         NSData *plistData = [NSData dataWithContentsOfFile:path];
-        NSString *error; NSPropertyListFormat format;
-        __imageData = [NSPropertyListSerialization propertyListFromData:plistData
-                                                        mutabilityOption:NSPropertyListImmutable
-                                                                  format:&format
-                                                        errorDescription:&error];
+        __autoreleasing NSError *error; NSPropertyListFormat format;
+        __imageData = [NSPropertyListSerialization propertyListWithData:plistData
+												   options:NSPropertyListImmutable
+                                                   format:&format
+												   error:&error];
         if (!__imageData) {
             NSLog(@"Failed to read image names. Error: %@", error);
         }
@@ -503,26 +502,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 
 - (NSUInteger)imageCount
 {
-    return justDoOneImage ? 1 : [[self imageData] count];
-}
-
-- (id)forwardingTargetForSelector:(SEL)sel
-{
-	if(
-		sel == @selector(runOperation:withMsg:)	|| 
-		sel == @selector(operationsSet)			|| 
-		sel == @selector(operationsCount)		||
-		sel == @selector(cancelOperations)		||
-		sel == @selector(enumerateOperations:)
-	) {
-		if(!operationsRunner) {
-			// Object only created if needed
-			operationsRunner = [[OperationsRunner alloc] initWithDelegate:self];
-		}
-		return operationsRunner;
-	} else {
-		return [super forwardingTargetForSelector:sel];
-	}
+    return _justDoOneImage ? 1 : [[self imageData] count];
 }
 
 @end

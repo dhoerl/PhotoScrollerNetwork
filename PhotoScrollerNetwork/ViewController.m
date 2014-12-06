@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -37,7 +37,7 @@
 
 #import "ViewController.h"
 #import "PhotoViewController.h"
-#import "ConcurrentOp.h"
+//#import "ConcurrentOp.h"
 #import "TiledImageBuilder.h"
 #import "TilingView.h"
 
@@ -59,18 +59,18 @@
 	IBOutlet UIImageView *imageView;
 	IBOutlet UILabel *fileName;
 }
+
 - (IBAction)sliderAction:(id)sender
 {
-	CGFloat num = [(UISlider *)sender value];
+	float num = (float)[(UISlider *)sender value];
 	long val = lrintf(num);
 
 	if(!sender || !val) {
 		fileName.text = @"large_leaves_70mp"; // Space4 large_leaves_70mp
 	} else {
-		fileName.text = [NSString stringWithFormat:@"Space%ld", val + 3];
+		fileName.text = [NSString stringWithFormat:@"Space%ld", val+3];
 	}
 }
-
 
 - (IBAction)segmentChanged:(id)sender
 {

@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -35,10 +35,6 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#if !__has_feature(objc_arc)
-#error THIS CODE MUST BE COMPILED WITH ARC ENABLED!
-#endif
-
 #import "ImageScrollView.h"
 
 #import "TilingView.h"
@@ -48,8 +44,6 @@
 {
 	CGFloat scale;
 }
-@synthesize imageView;
-@synthesize aspectFill;
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -73,7 +67,7 @@
     // center the image as it becomes smaller than the size of the screen
     
     CGSize boundsSize = self.bounds.size;
-    CGRect frameToCenter = imageView.frame;
+    CGRect frameToCenter = _imageView.frame;
     
     // center horizontally
     if (frameToCenter.size.width < boundsSize.width)
@@ -87,13 +81,13 @@
     else
         frameToCenter.origin.y = 0;
     
-    imageView.frame = frameToCenter;
+    _imageView.frame = frameToCenter;
     
-    if ([imageView isKindOfClass:[TilingView class]]) {
+    if ([_imageView isKindOfClass:[TilingView class]]) {
         // to handle the interaction between CATiledLayer and high resolution screens, we need to manually set the
         // tiling view's contentScaleFactor to 1.0. (If we omitted this, it would be 2.0 on high resolution screens,
         // which would cause the CATiledLayer to ask us for tiles of the wrong scales.)
-        imageView.contentScaleFactor = 1.0;
+        _imageView.contentScaleFactor = 1.0;
     }
 }
 
@@ -102,7 +96,7 @@
 
 - (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView
 {
-    return imageView;
+    return _imageView;
 }
 
 #pragma mark -
@@ -115,7 +109,7 @@
 	assert(obj);
 	
     // clear the previous imageView
-    [imageView removeFromSuperview], imageView = nil;
+    [_imageView removeFromSuperview], self.imageView = nil;
     
     // reset our zoomScale to 1.0 before doing any further calculations
     self.zoomScale = 1.0;
@@ -127,20 +121,20 @@
 		// make a new TilingView for the new image
 		TilingView *view = [[TilingView alloc] initWithImageBuilder:tiledImage];
 		view.annotates = ANNOTATE_TILES;
-		imageView =  view;
+		self.imageView =  view;
 		scale = [[UIScreen mainScreen] scale];
 	} else
 	if([obj isKindOfClass:[UIImageView class]]) {
 		UIImageView *iv = (UIImageView *)obj;
 		size = iv.image.size;
-		imageView = (UIView *)obj;
+		self.imageView = (UIView *)obj;
 		scale = 1;
 	} else {
 		NSLog(@"CLASS %@", NSStringFromClass([obj class]));
 		assert(!"Not of the correct class");
 	}
 	
-	[self addSubview:imageView];
+	[self addSubview:_imageView];
 	self.contentSize = size;
 	
     [self setMaxMinZoomScalesForCurrentBounds];
@@ -150,14 +144,14 @@
 - (void)setMaxMinZoomScalesForCurrentBounds
 {
     CGSize boundsSize = self.bounds.size;
-    CGSize imageSize = imageView.bounds.size;
+    CGSize imageSize = _imageView.bounds.size;
     
     // calculate min/max zoomscale
     CGFloat xScale = boundsSize.width / imageSize.width;    // the scale needed to perfectly fit the image width-wise
     CGFloat yScale = boundsSize.height / imageSize.height;  // the scale needed to perfectly fit the image height-wise
 
     CGFloat minScale;
-	if(aspectFill) {
+	if(_aspectFill) {
 		minScale = MAX(xScale, yScale);						// use max of these to allow the image to fill the screen
 	} else {
 		minScale = MIN(xScale, yScale);						// use minimum of these to allow the image to become fully visible
@@ -183,7 +177,7 @@
 - (CGPoint)pointToCenterAfterRotation
 {
     CGPoint boundsCenter = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
-    return [self convertPoint:boundsCenter toView:imageView];
+    return [self convertPoint:boundsCenter toView:_imageView];
 }
 
 // returns the zoom scale to attempt to restore after rotation. 
@@ -220,7 +214,7 @@
     // Step 2: restore center point, first making sure it is within the allowable range.
     
     // 2a: convert our desired center point back to our own coordinate space
-    CGPoint boundsCenter = [self convertPoint:oldCenter fromView:imageView];
+    CGPoint boundsCenter = [self convertPoint:oldCenter fromView:_imageView];
     // 2b: calculate the content offset that would yield that center point
     CGPoint offset = CGPointMake(boundsCenter.x - self.bounds.size.width / 2.0f, 
                                  boundsCenter.y - self.bounds.size.height / 2.0f);

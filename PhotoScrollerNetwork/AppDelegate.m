@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -38,6 +38,11 @@
 #import "AppDelegate.h"
 
 #import "ViewController.h"
+
+#include <stdlib.h>
+
+//extern int putenv$UNIX2003();
+//int putenv$UNIX2003() { return 0; }
 
 AppDelegate *appDelegate;
 

@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -39,7 +39,7 @@
 
 #define LOG NSLog
 
-static inline long offsetFromScale(CGFloat scale) { long s = lrintf(1/scale); long idx = 0; while(s > 1) s /= 2.0f, ++idx; return idx; }
+static inline long offsetFromScale(float scale) { long s = lrintf(1/scale); long idx = 0; while(s > 1) s /= 2.0f, ++idx; return idx; }
 
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,
@@ -53,7 +53,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 
 @implementation TiledImageBuilder (Draw)
 
-#if 1 // only used if doing drawRect not drawLayer in the main code, but needed for getColorPixel
+// used if doing drawRect not drawLayer in the main code, but needed for getColorPixel
 - (UIImage *)tileForScale:(CGFloat)scale location:(CGPoint)pt
 {
 	CGImageRef image = [self newImageForScale:scale location:pt box:CGRectMake(0, 0, 0, 0)];
@@ -61,17 +61,16 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	CGImageRelease(image);
 	return img;
 }
-#endif
 
 - (CGImageRef)newImageForScale:(CGFloat)scale location:(CGPoint)origPt box:(CGRect)box
 {
 	if(self.failed) return nil;
 
 	CGPoint pt = [self translateTileForScale:scale location:origPt];
-	int col = lrintf(pt.x);
-	int row = lrintf(pt.y);
+	int col = (int)lrint(pt.x);
+	int row = (int)lrint(pt.y);
 
-	long idx = offsetFromScale(scale);
+	long idx = offsetFromScale((float)scale);
 	imageMemory *im = (imageMemory *)malloc(sizeof(imageMemory));
 	memcpy(im, &self.ims[idx], sizeof(imageMemory));
 	im->col = col;
@@ -100,8 +99,8 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 		newRow = YES;
 		break;
 	}
-	int ncol = newCol ? (im->cols - col - 1) : col;
-	int nrow = newRow ? (im->rows - row - 1) : row;
+	int ncol = newCol ? (int)(im->cols - col - 1) : col;
+	int nrow = newRow ? (int)(im->rows - row - 1) : row;
 			
 	size_t x = ncol * tileDimension;
 	size_t y = nrow * tileDimension;
@@ -147,7 +146,7 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 
 - (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt
 {
-	NSUInteger idx = offsetFromScale(scale);
+	NSUInteger idx = offsetFromScale((float)scale);
 	imageMemory *imP = &self.ims[idx];
 	
 	CGPoint newPt;

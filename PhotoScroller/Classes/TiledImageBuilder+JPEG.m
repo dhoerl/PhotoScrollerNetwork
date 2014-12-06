@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -97,7 +97,7 @@ static void term_source(j_decompress_ptr cinfo);
 			jpegSize,
 			imP->map.addr + imP->map.col0offset + imP->map.row0offset*imP->map.bytesPerRow,
 			jwidth,
-			imP->map.bytesPerRow,
+			(int)imP->map.bytesPerRow,
 			jheight,
 			TJPF_BGRA,
 			TJFLAG_NOREALLOC
@@ -220,7 +220,7 @@ static void term_source(j_decompress_ptr cinfo);
 				self.properties = CFBridgingRelease(dict);
 				if(!self.orientation) {
 					self.orientation = [[self.properties objectForKey:@"Orientation"] integerValue];
-					NSLog(@"ORIENTATION=%d string=%@", self.orientation, [self.properties objectForKey:@"Orientation"]);
+					NSLog(@"ORIENTATION=%zd string=%@", self.orientation, [self.properties objectForKey:@"Orientation"]);
 				}
 			}
 			CFRelease(imageSourcRef);			
@@ -435,10 +435,11 @@ static void term_source(j_decompress_ptr cinfo);
 
 @implementation TiledImageBuilder (JPEG_PUB)
 
-- (void)jpegAdvance:(NSMutableData *)webData
+- (BOOL)jpegAdvance:(NSData *)webData
 {
-	unsigned char *dataPtr			= (unsigned char *)[webData mutableBytes];
+	unsigned char *dataPtr			= (unsigned char *)[webData bytes];
 	co_jpeg_source_mgr *src_mgr		= self.src_mgr;
+	BOOL consumed					= NO;
 
 	// mutable data bytes pointer can change invocation to invocation
 	size_t diff						= src_mgr->pub.next_input_byte - src_mgr->data;
@@ -453,7 +454,7 @@ static void term_source(j_decompress_ptr cinfo);
 		 */
 		LOG(@"YIKES! SETJUMP");
 		self.failed = YES;
-		return;
+		return NO;
 	}
 	if(src_mgr->jpegFailed) self.failed = YES;
 
@@ -461,7 +462,7 @@ static void term_source(j_decompress_ptr cinfo);
 		if(!src_mgr->got_header) {
 			/* Step 3: read file parameters with jpeg_read_header() */
 			int jret = jpeg_read_header(&src_mgr->cinfo, FALSE);
-			if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return;
+			if(jret == JPEG_SUSPENDED || jret != JPEG_HEADER_OK) return NO;
 
 			{
 				CGImageSourceRef imageSourcRef = CGImageSourceCreateIncremental(NULL);
@@ -506,10 +507,12 @@ static void term_source(j_decompress_ptr cinfo);
 			// When we consume all the data in the web buffer, safe to free it up for the system to resuse
 			if(src_mgr->pub.bytes_in_buffer == 0) {
 				src_mgr->deleted_data += [webData length];
-				[webData setLength:0];
+				//[webData setLength:0];
+				consumed = YES;
 			}
 		}
 	}
+	return consumed;
 }
 
 @end

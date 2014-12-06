@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -35,23 +35,61 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#import "PhotoScrollerCommon.h"
+#import "ConcurrentOp.h"
 
-@class TiledImageBuilder;
+#import "TiledImageBuilder.h"
 
-@interface ConcurrentOp : NSOperation
-@property (nonatomic, assign) imageDecoder decoder;					// type of operation to perform
-@property (nonatomic, assign) NSUInteger orientation;				// 0 == automatic, or force one using 1-8
-@property (nonatomic, assign) NSUInteger zoomLevels;				// type of operation to perform
-@property (nonatomic, assign) NSUInteger index;						// if multiple operations, what index am i
-@property (nonatomic, assign, readonly) NSUInteger milliSeconds;	// time it takes to decode the image
-@property (nonatomic, strong) NSThread *thread;						// convenience method for the curious
-@property (nonatomic, strong) NSURL *url;							// passed in - where to get the image
-@property (nonatomic, strong) NSMutableData *webData;				// could be private, but sometimes useful. Where the URL cvonnection saves data
-@property (nonatomic, strong) TiledImageBuilder *imageBuilder;		// controller for the bit maps used to provide CATiles
 
-- (void)finish;				// should be run on the operation's thread - could create a convenience method that does this then hide thread
-- (void)runConnection;		// convenience method - messages using proper thread
-- (void)cancel;				// subclassed convenience method
+@implementation ConcurrentOp
+
+- (uint32_t)milliSeconds
+{
+	return _imageBuilder.milliSeconds;
+}
+
+@end
+
+@implementation ConcurrentOp (NSURLConnectionDelegate)
+
+- (NSMutableURLRequest *)setup
+{
+	self.imageBuilder = [[TiledImageBuilder alloc] initForNetworkDownloadWithDecoder:_decoder size:CGSizeMake(320, 320) orientation:_orientation];
+	return [super setup];
+}
+
+- (void)setWebData:(NSData *)webData
+{
+	super.webData = webData;
+
+#ifdef LIBJPEG
+	if(_decoder == libjpegIncremental) {
+		BOOL consumed = [_imageBuilder jpegAdvance:webData];
+		if(consumed) {
+			dispatch_queue_t q	= dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+			super.webData = (NSData *)dispatch_data_create(NULL, 0, q, ^{});
+			super.currentReceiveSize = 0;
+		}
+	}
+#endif
+}
+
+- (void)completed
+{
+	
+#ifdef LIBJPEG
+	if(_decoder == libjpegIncremental) {
+		if(_imageBuilder.failed) {
+			NSLog(@"FAILED!");
+			self.imageBuilder = nil;
+		}
+	} else
+#endif
+	{
+		[_imageBuilder writeToImageFile:self.webData];
+		[_imageBuilder dataFinished];
+	}
+
+	[super completed];
+}
 
 @end

@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -78,16 +78,16 @@
 + (void)setUbcThreshold:(float)val;									// default is 0.5 - Image disk cache can use half of the available free memory pool
 
 #if LEVELS_INIT == 0
-- (id)initWithImage:(CGImageRef)image size:(CGSize)sz orientation:(int)orientation;
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder size:(CGSize)sz orientation:(int)orientation;
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec size:(CGSize)sz orientation:(int)orientation;
+- (id)initWithImage:(CGImageRef)image size:(CGSize)sz orientation:(NSInteger)orientation;
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder size:(CGSize)sz orientation:(NSInteger)orientation;
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec size:(CGSize)sz orientation:(NSInteger)orientation;
 #else
-- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(int)orientation;
-- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels orientation:(int)orientation;
-- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels orientation:(int)orientation;
+- (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(NSInteger)orientation;
+- (id)initWithImagePath:(NSString *)path withDecode:(imageDecoder)decoder levels:(NSUInteger)levels orientation:(NSInteger)orientation;
+- (id)initForNetworkDownloadWithDecoder:(imageDecoder)dec levels:(NSUInteger)levels orientation:(NSInteger)orientation;
 #endif
 
-- (void)appendToImageFile:(NSData *)data;
+- (void)writeToImageFile:(NSData *)data;
 - (void)dataFinished;
 
 @end
@@ -105,7 +105,7 @@
 #ifdef LIBJPEG
 @interface TiledImageBuilder (JPEG_PUB)
 
-- (void)jpegAdvance:(NSMutableData *)data;
+- (BOOL)jpegAdvance:(NSData *)data;
 
 @end
 #endif

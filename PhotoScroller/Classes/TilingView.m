@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -99,15 +99,15 @@
 
 	// Calculate tile index
 	CGSize tileSize = [(CATiledLayer*)layer tileSize];
-	CGFloat col = rintf(box.origin.x * scale / tileSize.width);
-	CGFloat row = rintf(box.origin.y * scale / tileSize.height);
+	CGFloat col = (CGFloat)rint(box.origin.x * scale / tileSize.width);
+	CGFloat row = (CGFloat)rint(box.origin.y * scale / tileSize.height);
 
 	//LOG(@"scale=%f 1/scale=%f levelsOfDetail=%ld levelsOfDetailBias=%ld row=%f col=%f offsetFromScale=%ld", scale, 1/scale, ((CATiledLayer *)layer).levelsOfDetail, ((CATiledLayer *)layer).levelsOfDetailBias, row, col, offsetFromScale(scale));
 
 
 	CGImageRef image = [tb newImageForScale:scale location:CGPointMake(col, row) box:box];
 
-#if 0 // had this, think its fixed
+#if 0 // had this happen, think its fixed
 if(!image) {
 	LOG(@"YIKES! No Image!!! row=%f col=%f", row, col);
 	return;

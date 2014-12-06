@@ -35,15 +35,18 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-@class ImageScrollView;
+#import "WebFetcher8.h"
 
-@interface PhotoViewController : UIViewController <UIScrollViewDelegate>
-@property (nonatomic, assign) BOOL isWebTest;
-@property (nonatomic, assign) NSInteger decoder;
-@property (nonatomic, assign) NSInteger orientation;
-@property (nonatomic, assign) BOOL justDoOneImage;
-@property (nonatomic, strong) NSString *singleName;
+#import "PhotoScrollerCommon.h"
+
+@class TiledImageBuilder;
+
+@interface ConcurrentOp : FECWF_WEBFETCHER
+@property (nonatomic, assign) imageDecoder decoder;					// type of operation to perform
+@property (nonatomic, assign) NSUInteger orientation;				// 0 == automatic, or force one using 1-8
+@property (nonatomic, assign) NSUInteger zoomLevels;				// type of operation to perform
+@property (nonatomic, assign) NSUInteger index;						// if multiple operations, what index am i
+@property (nonatomic, assign, readonly) uint32_t milliSeconds;		// time it takes to decode the image
+@property (nonatomic, strong) TiledImageBuilder *imageBuilder;		// controller for the bit maps used to provide CATiles
 
 @end
-
-

@@ -10,7 +10,7 @@
  * ConcurrentOp from my ConcurrentOperations github sample code, and TiledImageBuilder
  * was completely original source code developed by me.
  *
- * Copyright 2012 David Hoerl All Rights Reserved.
+ * Copyright 2012-2014 David Hoerl All Rights Reserved.
  *
  *
  * Redistribution and use in source and binary forms, with or without modification, are
@@ -35,7 +35,9 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
+//typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
+
+typedef NS_ENUM(NSInteger, imageDecoder) { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental };
 
 #define ZOOM_LEVELS			 4
 #define TILE_SIZE			256		// could make larger or smaller, but power of 2
