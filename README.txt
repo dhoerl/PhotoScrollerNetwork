@@ -29,6 +29,12 @@ This sample code:
 - production quality - all "PhotoScroller/Classes" source being used in an upcoming Lot18 app
   (except PhotoViewController, which was absorbed into another class)
 
+The imageDecoder enum defined in PhotoScrollerCommon directs the mod of decompression:
+
+	cgimageDecoder=0,		// Use CGImage, libjpeg-turbo not required
+	libjpegTurboDecoder,	// Use libjpeg-turbo, but not incrementally (used when loading a local file)
+	libjpegIncremental		// Used when we download a file from the web, so we can process it a chunk at a time.
+
 Notes:
 
 * originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on

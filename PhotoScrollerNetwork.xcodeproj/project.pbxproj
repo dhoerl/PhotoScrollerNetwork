@@ -227,7 +227,7 @@
 		DE7AB8F815309AFF00C4CFE7 /* TiledImageBuilder+JPEG.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = "TiledImageBuilder+JPEG.m"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+Draw.m"; sourceTree = "<group>"; };
 		DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = "TiledImageBuilder+Tile.m"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoScrollerCommon.h; sourceTree = "<group>"; };
+		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PhotoScrollerCommon.h; path = ../PhotoScrollerCommon.h; sourceTree = "<group>"; };
 		DEA6786F169AF82B00011D0B /* bmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bmp.h; sourceTree = "<group>"; };
 		DEA67870169AF82B00011D0B /* cderror.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cderror.h; sourceTree = "<group>"; };
 		DEA67871169AF82B00011D0B /* cdjpeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cdjpeg.h; sourceTree = "<group>"; };
@@ -392,7 +392,6 @@
 				DEC616911A339B3500BB265D /* Network */,
 				DE4AD94F14DC788F00D63E5A /* Classes */,
 				DE4AD95B14DC788F00D63E5A /* MainWindow.xib */,
-				DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */,
 				DE4AD95D14DC788F00D63E5A /* PhotoViewController.xib */,
 				DE3EC2AC151CC50300921348 /* PhotoViewController~ipad.xib */,
 				DE4AD95F14DC788F00D63E5A /* ImageData.plist */,
@@ -406,6 +405,7 @@
 			isa = PBXGroup;
 			children = (
 				DE4AD95614DC788F00D63E5A /* SaveMe.txt */,
+				DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */,
 				DE4AD95214DC788F00D63E5A /* ImageScrollView.h */,
 				DE4AD95314DC788F00D63E5A /* ImageScrollView.m */,
 				DE4AD95414DC788F00D63E5A /* PhotoViewController.h */,

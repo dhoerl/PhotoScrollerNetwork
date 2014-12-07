@@ -1,1 +1,4 @@
-The code in WhatYouNeediOS8+ is taken from https://github.com/dhoerl/FastEasyConcurrentWebFetches
+The code in WhatYouNeediOS8+ is taken from https://github.com/dhoerl/FastEasyConcurrentWebFetches.
+
+The ConcurrentOp code is now used by the OperationsRunner fetcher, but can easily be adapted to
+whatever networking suite you use.
