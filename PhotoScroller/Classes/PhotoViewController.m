@@ -286,7 +286,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	}
 	uint32_t count = (uint32_t)[self imageCount];
 	if(!count) count = 1;
-	uint32_t ms= milliSeconds/count;
+	uint32_t ms = milliSeconds/count;
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
 		{
 			dispatch_group_wait(group, DISPATCH_TIME_FOREVER);

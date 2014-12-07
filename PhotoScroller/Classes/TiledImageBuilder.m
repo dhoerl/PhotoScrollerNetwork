@@ -133,24 +133,6 @@ float					ubc_threshold_ratio;
 	BOOL		deleteImageFile;
 	CGSize		size;
 }
-#if 0
-@synthesize decoder;
-@synthesize properties;
-@synthesize ims;
-@synthesize imageFile;
-@synthesize pageSize;
-@synthesize orientation;
-@synthesize ubc_threshold;
-@synthesize zoomLevels;
-@synthesize failed;
-@synthesize startTime;
-@synthesize finishTime;
-@synthesize milliSeconds;
-#ifdef LIBJPEG
-@synthesize src_mgr;
-#endif
-#endif
-
 + (void)initialize
 {
 	if(self == [TiledImageBuilder class]) {
@@ -226,7 +208,7 @@ float					ubc_threshold_ratio;
 #ifdef LIBJPEG
 		if(_decoder == libjpegIncremental) {
 			[self jpegInitNetwork];
-		} else 
+		} else
 #endif
 		{
 			mapWholeFile = YES;
@@ -262,7 +244,7 @@ float					ubc_threshold_ratio;
 	return self;
 }
 
-#else // LEVELS_INIT == 0
+#else // LEVELS_INIT != 0
 
 - (id)initWithImage:(CGImageRef)image levels:(NSUInteger)levels orientation:(NSInteger)orient
 {
@@ -604,9 +586,9 @@ LOG(@"ZLEVELS=%d", zLevels);
 
 	//dumpMapper("Yikes!", mapP);
 
-//LOG(@"mapP->fd = %d", mapP->fd);
+	//LOG(@"mapP->fd = %d", mapP->fd);
 	if(mapP->fd <= 0) {
-//LOG(@"Was 0 so call create");
+		//LOG(@"Was 0 so call create");
 		mapP->fd = [self createTempFile:YES  size:mapP->mappedSize];
 		if(mapP->fd == -1) return;
 	}
@@ -625,6 +607,37 @@ LOG(@"ZLEVELS=%d", zLevels);
 		LOG(@"MMAP[%d]: addr=%p 0x%X bytes", mapP->fd, mapP->emptyAddr, (NSUInteger)mapP->mappedSize);
 #endif
 	}
+}
+
+- (CGSize)imageSize
+{
+#if LIBJPEG
+	switch(self.orientation) {
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+		return CGSizeMake(_ims[0].map.height, _ims[0].map.width);
+	default:
+		return CGSizeMake(_ims[0].map.width, _ims[0].map.height);
+	}
+#else
+	//NSLog(@"decoder %d", (int)(cgimageDecoder));
+	//NSLog(@"props %@", _properties);
+
+	CGFloat width = [_properties[@"PixelWidth"] floatValue];
+	CGFloat height = [_properties[@"PixelHeight"] floatValue];
+	
+	switch(self.orientation) {
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+		return CGSizeMake(height, width);
+	default:
+		return CGSizeMake(width, height);
+	}
+#endif
 }
 
 - (void)drawImage:(CGImageRef)image

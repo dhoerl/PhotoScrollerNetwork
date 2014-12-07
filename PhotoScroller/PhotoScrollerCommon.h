@@ -35,9 +35,11 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-//typedef enum { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental } imageDecoder;
-
-typedef NS_ENUM(NSInteger, imageDecoder) { cgimageDecoder=0, libjpegTurboDecoder, libjpegIncremental };
+typedef NS_ENUM(NSInteger, imageDecoder) {
+	cgimageDecoder=0,		// Use CGImage
+	libjpegTurboDecoder,	// Use libjpeg-turbo, but not incrementally (used when loading a local file)
+	libjpegIncremental		// Used when we download a file from the web, so we can process it a chunk at a time.
+};
 
 #define ZOOM_LEVELS			 4
 #define TILE_SIZE			256		// could make larger or smaller, but power of 2

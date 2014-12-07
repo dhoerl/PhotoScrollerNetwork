@@ -118,7 +118,11 @@
 {
 	PhotoViewController *pvc = [[PhotoViewController alloc] initWithNibName:@"PhotoViewController" bundle:nil];
 	pvc.isWebTest = useInternet.on;
-	pvc.decoder = technology.selectedSegmentIndex;
+#ifdef LIBJPEG
+	pvc.decoder = useInternet.on ? libjpegIncremental : libjpegTurboDecoder;
+#else
+	pvc.decoder = cgimageDecoder;
+#endif
 	pvc.justDoOneImage = justOneImage.on;
 	pvc.orientation = [orientationValue.text integerValue];
 	pvc.singleName = fileName.text;

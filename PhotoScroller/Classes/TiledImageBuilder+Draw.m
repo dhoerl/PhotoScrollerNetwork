@@ -131,19 +131,6 @@ static void PhotoScrollerProviderReleaseInfoCallback (
 	return image;
 }
 
-- (CGSize)imageSize
-{
-	switch(self.orientation) {
-	case 5:
-	case 6:
-	case 7:
-	case 8:
-		return CGSizeMake(self.ims[0].map.height, self.ims[0].map.width);
-	default:
-		return CGSizeMake(self.ims[0].map.width, self.ims[0].map.height);
-	}
-}
-
 - (CGPoint)translateTileForScale:(CGFloat)scale location:(CGPoint)origPt
 {
 	NSUInteger idx = offsetFromScale((float)scale);

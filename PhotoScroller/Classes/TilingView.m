@@ -63,7 +63,6 @@
 {
 	TiledImageBuilder *tb;
 }
-@synthesize annotates;
 
 + (Class)layerClass
 {

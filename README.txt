@@ -3,13 +3,12 @@ Latest v3.0 Dec 6, 2014
 
 *** libjpeg-turbo is now includes arm64 ***
 
-NOTE: Please use one of the 'Turbo' schemes to build (e.g. PhotoScrollerNetworkTurbo) - the older non-turbo schemes do not currently work and will crash
-
-
-NOTE: At WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
-that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
-can be done now with the current APIs. So, even though I had said I hacked a solution into this project, in the end
-its actually pretty elegant!
+Apple's PhotoScroller project lets you displayy huge images using CATiledLayer, but only if
+you pretile them first! My PhotoNetworkScroller project supports tiling large local
+files (using either CGImage or libjpeg-turbo), and network fetches (using only libjpeg-turbo.
+Thus, for only local use, you can use CGImage (as long as you don't run into memory problems,
+so test on older smaller devices). With libjpeg-turbo, the jpeg files are read line by line
+and decompressed to disk as pre-renders RGV tiles.
 
 This sample code:
 
@@ -22,19 +21,33 @@ This sample code:
 - each zoom level has one dedicated temp file rearranged into tiles for rapid tile access & rendering
 - demonstrates how to use concurrent NSOperations to fetch several large images from the web or to process local image files
 - provides two targets, one using just Apple APIs (CGImageRef and friends), and the other (Turbo) using libturbojpeg
-- Turbo target lets you test with 3 techniques for both downloads and local file processing using CGImageSourceRef, libturbojpef, and incremental decode using libjpeg (turbo version)
-- the incremental approach uses mmap, only maps small parts of the image at a time, and does its processing as the image downloads and can thus handle very large images
+- Turbo target lets you test with 3 techniques for both downloads and local file processing using CGImageSourceRef,
+  libturbojpef, and incremental decode using libjpeg (turbo version)
+- the incremental approach uses mmap, only maps small parts of the image at a time, and does its processing as the image
+  downloads and can thus handle very large images
 - averages the decode time for all 3 technologies
-- production quality - all "PhotoScroller/Classes" source being used in an upcoming Lot18 app (except PhotoViewController, which was absorbed into another class)
+- production quality - all "PhotoScroller/Classes" source being used in an upcoming Lot18 app
+  (except PhotoViewController, which was absorbed into another class)
 
-Note: originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
+Notes:
+
+* originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on
+  disk as pngs. This process took around a minute on the iPhone 4 and was thus rejected.
+
+* at WWDC 2012, I talked to the OSX/IOS Kernel manager at a lab, and discussed the problem with memory pressure
+  that users had seen as well as my current solution. He actually said it was as good a way to deal with it on iOS as
+  can be done now with the current APIs. So, even though I had said I hacked a solution into this project, in the end
+  its actually pretty elegant!
+
 
 RECENT CHANGES:
 
 v3.0
 - was able to build libjpeg-turbo for arm64! (see my other project libjpeg-turbo-builder)
-- updated for iOS8
-- rotation code is commented out, maybe later
+- updated most code for iOS8 (but did not switch the UI to autolayout)
+- rotation code is commented out, maybe do the UI updates later
+- the non-turbo schemes work now, so you can see how to use the project without requiring libjpeg-turbo
+  (for loading local files only)
 - separated out, and update, the networking code (uses the latest iOS8 code from my FastAndEasyWebFetches project)
 
 v2.6
