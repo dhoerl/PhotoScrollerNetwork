@@ -115,8 +115,8 @@
 		if(ubc_usage > self.ubc_threshold) {
 			if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
 				// LOG(@"SUSPEND==========================================================usage=%d thresh=%d", ubc_usage, ubc_thresh);
-				dispatch_suspend(fileFlushQueue);
-				dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ LOG(@"unblocked!"); } );
+				dispatch_suspend([TiledImageBuilder fileFlushQueue]);
+				dispatch_group_async([TiledImageBuilder fileFlushGroup], [TiledImageBuilder fileFlushQueue], ^{ LOG(@"unblocked!"); } );
 			}
 [self freeMemory:[NSString stringWithFormat:@"Exceeded threshold: usage=%u thresh=%u", ubc_usage, self.ubc_threshold]];
 		}
@@ -130,7 +130,7 @@ else [self freeMemory:[NSString stringWithFormat:@"Under threshold: usage=%u thr
 				OSAtomicAdd32Barrier(-file_size, &ubc_usage);				
 				if(ubc_usage <= self.ubc_threshold) {
 					if(OSAtomicCompareAndSwap32(1, 0, &fileFlushGroupSuspended)) {
-						dispatch_resume(fileFlushQueue);
+						dispatch_resume([TiledImageBuilder fileFlushQueue]);
 					}
 				}
 			} );

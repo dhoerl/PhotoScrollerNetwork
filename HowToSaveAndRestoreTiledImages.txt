@@ -1,0 +1,61 @@
+
+HOW TO SAVE AND LATER VIEW PROCESS IMAGES USING THIS CODE
+---------------------------------------------------------
+
+The code as presented here was designed to simulataneously download and tile large images. One feature is that it uses unliked files, so if the app crashes, you don't have a massive chunk of image files littering your app.
+
+IMAGE DECODING AND SAVING
+
+Instead of asking PhotoViewController to ask TileImageBuild to download or open the image, your new code will call TileImageBuilder directly.
+
+PhotoViewController processes image files in 'constructStaticImages'. It uses a dispatch_group wait to block until all images are tiled (see dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+Downloaded images are processed by an OperationsRunner object, and via 'fetchWebImages' - the returned operation shows up in 'operationFinished:count:remainingOps' - when all operations complete 'tilePages' is called.
+
+Thus, to get an image downloaded, you will create a TileImageBuilder exactly as PhotoViewController does, using the appropriate init function.
+
+TiledImageBuilder is now going to have two modes: download (or read) an image, save it to a known place, and finish. Secondly, it will have a mode to read in a previously saved image, and then load the image so that PhotoViewController can display the image.
+
+In order to do the above steps:
+
+- add a flag property to TiledImageBuilder to define the mode (saving, restoring) - or set it during an appropriate init
+
+- my suggestion is to use a folder for each image. In each will be each image tile, and a serialized plist file that you will use to save and restore metadata. Thus, when the image is completely decoded, save the TiledImageBuilder to a folder, then later restore it
+
+- required metaData - my first guess at what you need
+
+  TileImageBuilder-Private.h
+	@property (nonatomic, assign) imageDecoder decoder;
+	@property (nonatomic, strong, readwrite) NSDictionary *properties;	// could obviously be omitted
+	@property (nonatomic, assign) imageMemory *ims;						// you need to save the size of the array this points to, as well as the data itself
+	@property (nonatomic, assign) size_t pageSize;						// probably needed
+	@property (nonatomic, assign) CGSize size;							// for sure need
+
+  TileImageBuilder.h
+	@property (nonatomic, assign) NSInteger orientation;				// 0 == automatically set using EXIF orientation from image
+	@property (nonatomic, assign) NSUInteger zoomLevels;				// explose the init setting
+
+  The name of each tile (maybe use 0, 1, 2, 3, 4 by convention - then no need to save - you'll know all path names by the number of tiles)
+
+  The problem with this saving restoring is that some of the properties are set in init, or used by other methods called by init. You may need to create a plain ole init function, and then set the various ivars, then call some funtion to process an image (ie save it), and another to de-archive it. You may find it of help to just move all private ivars into the pubkic file (so you can easily set them), and later on move ones back you didn't need. Be attentive here.
+
+- you will first create the directory for the image files early on in TileImageBuilder, then write a new 'createTempFile:size:' method that instead of creating temp files, saves the images in the image folder with the proper name (and then do not unlink!
+
+- if you do not save the meta data files until all images are decoding, then you can on app start look at all these image folders for any that don't have a meta data file, and if found, unlink the directory, since it was the result of an app crash.
+
+My suggestion to get to this point is copy the PhotoScrollerNetwork folder, then modify the source as is to achieve this - all else should work as is. You will of course need to remove the image folder to clean up space.
+
+You now have image saving done.
+
+
+IMAGE READING
+
+- to dearchive, you will open the metaData file, and restore all the archived data, and set the various properties. I made two ivars to put their archiving/restoring into one place.
+
+- since you know how many image files there are, and their path (and name), you can mimic what is done in 'createTempFile:size:' to open each, set the appropriate "ims" structure to have this file descriptor and any other required info (like size).
+
+- this step should be pretty fast - you don't read the files into memory, you just open the file and set metadata - should be really fast.
+
+My suggestion to test this is take the same project you used for testing Image Decoding, and comment out (or #ifdef) the code that constructs the images, and replace it with code that tells TiledImageBuilder to de-archive a known image. If you use ifdef'd code, you can switch back to saving if you find that you didn't archive enough data, or the wrong data, etc.
+
+Good luck!

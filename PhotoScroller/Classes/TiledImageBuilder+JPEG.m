@@ -137,8 +137,8 @@ static void term_source(j_decompress_ptr cinfo);
 			if(ubc_usage > self.ubc_threshold) {
 				if(OSAtomicCompareAndSwap32(0, 1, &fileFlushGroupSuspended)) {
 					// LOG(@"SUSPEND==============================================================================");
-					dispatch_suspend(fileFlushQueue);
-					dispatch_group_async(fileFlushGroup, fileFlushQueue, ^{ LOG(@"unblocked!"); } );
+					dispatch_suspend([TiledImageBuilder fileFlushQueue ]);
+					dispatch_group_async([TiledImageBuilder fileFlushGroup], [TiledImageBuilder fileFlushQueue ], ^{ LOG(@"unblocked!"); } );
 				}
 			}
 			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^
@@ -149,7 +149,7 @@ static void term_source(j_decompress_ptr cinfo);
 					OSAtomicAdd32Barrier(-file_size, &ubc_usage);
 					if(ubc_usage <= self.ubc_threshold) {
 						if(OSAtomicCompareAndSwap32Barrier(1, 0, &fileFlushGroupSuspended)) {
-							dispatch_resume(fileFlushQueue);
+							dispatch_resume([TiledImageBuilder fileFlushQueue]);
 						}
 					}
 				} );

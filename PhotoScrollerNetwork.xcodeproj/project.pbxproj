@@ -176,6 +176,7 @@
 		DE0D6C8815AB4E100040318C /* Space4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space4.jpg; sourceTree = "<group>"; };
 		DE0D6C8915AB4E100040318C /* Space5.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space5.jpg; sourceTree = "<group>"; };
 		DE111436159E0138004D2459 /* Space6.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Space6.jpg; sourceTree = "<group>"; };
+		DE22F3D71A939DA3001E02D6 /* HowToSaveAndRestoreTiledImages.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = HowToSaveAndRestoreTiledImages.txt; sourceTree = "<group>"; };
 		DE3EC2A5151CC50300921348 /* PhotoScrollerNetwork-iPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PhotoScrollerNetwork-iPad.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE3EC2A8151CC50300921348 /* PhotoScrollerNetwork copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PhotoScrollerNetwork copy-Info.plist"; path = "/Volumes/Data/git/PhotoScrollerNetwork/PhotoScrollerNetwork copy-Info.plist"; sourceTree = "<absolute>"; };
 		DE3EC2AB151CC50300921348 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = "Resources-iPad/PhotoScrollerNetwork/en.lproj/ViewController~ipad.xib"; sourceTree = "<group>"; };
@@ -324,6 +325,7 @@
 			isa = PBXGroup;
 			children = (
 				DE588D8614E9433A00C7E151 /* README.txt */,
+				DE22F3D71A939DA3001E02D6 /* HowToSaveAndRestoreTiledImages.txt */,
 				DEA6786E169AF82B00011D0B /* libturbojpeg */,
 				DE4AD94E14DC788F00D63E5A /* PhotoScroller */,
 				DE4AD93714DC783D00D63E5A /* PhotoScrollerNetwork */,
@@ -990,6 +992,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer: David Hoerl (93QC6X4J23)";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
@@ -1010,6 +1013,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				PROVISIONING_PROFILE = "def4eefc-ca76-47ce-94e9-3381999631a1";
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -1022,6 +1026,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer: David Hoerl (93QC6X4J23)";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
@@ -1038,6 +1043,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 				);
+				PROVISIONING_PROFILE = "def4eefc-ca76-47ce-94e9-3381999631a1";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -1106,6 +1112,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer: David Hoerl (93QC6X4J23)";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
@@ -1119,6 +1126,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = "";
+				PROVISIONING_PROFILE = "def4eefc-ca76-47ce-94e9-3381999631a1";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;

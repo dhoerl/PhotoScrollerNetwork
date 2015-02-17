@@ -118,20 +118,19 @@ static void foo(int sig)
  * The ratio is used to compute a threshold (see the code).
  */
  // Will figure a way to make these static again soon
- 
-dispatch_queue_t		fileFlushQueue;
-dispatch_group_t		fileFlushGroup;
-volatile int32_t		fileFlushGroupSuspended;
-volatile int32_t		ubc_usage;					// rough idea of what our buffer cache usage is
-float					ubc_threshold_ratio;
+
+volatile int32_t			fileFlushGroupSuspended;
+volatile int32_t			ubc_usage;					// rough idea of what our buffer cache usage is
+
+static dispatch_queue_t		fileFlushQueue;
+static dispatch_group_t		fileFlushGroup;
+static float				ubc_threshold_ratio;
 
 
 @implementation TiledImageBuilder
 {
 	NSString	*_imagePath;
 	BOOL		mapWholeFile;
-	BOOL		deleteImageFile;
-	CGSize		size;
 }
 + (void)initialize
 {
@@ -152,6 +151,15 @@ float					ubc_threshold_ratio;
 + (void)setUbcThreshold:(float)val
 {
 	ubc_threshold_ratio = val;
+}
+
++ (dispatch_queue_t)fileFlushQueue
+{
+	return fileFlushQueue;
+}
++ (dispatch_group_t)fileFlushGroup
+{
+	return fileFlushGroup;
 }
 
 #if LEVELS_INIT == 0
@@ -225,7 +233,7 @@ float					ubc_threshold_ratio;
 #endif		
 		_decoder	= dec;
 		_pageSize	= getpagesize();
-		size		= sz;
+		_size		= sz;
 
 		// Take a big chunk of either free memory or all memory
 		freeMemory fm		= [self freeMemory:@"Initialize"];
@@ -371,7 +379,7 @@ LOG(@"YIKES LOW MEMORY: ubc_threshold=%d ubc_usage=%d", _ubc_threshold, ubc_usag
 		//LOG(@"zoomLevelsForSize: TEST IF reducedHeight=%f <= height=%f || reductedWidth=%f < width=%f zLevels=%d", imageSize.height, size.height, imageSize.width, size.width, zLevels);
 		
 		// We don't want to define levels that could only be magnified when viewed, not reduced.
-		if(imageSize.height < size.height || imageSize.width < size.width) break;
+		if(imageSize.height < _size.height || imageSize.width < _size.width) break;
 		++zLevels;
 	}
 LOG(@"ZLEVELS=%d", zLevels);
@@ -589,7 +597,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 	//LOG(@"mapP->fd = %d", mapP->fd);
 	if(mapP->fd <= 0) {
 		//LOG(@"Was 0 so call create");
-		mapP->fd = [self createTempFile:YES  size:mapP->mappedSize];
+		mapP->fd = [self createTempFile:YES size:mapP->mappedSize];
 		if(mapP->fd == -1) return;
 	}
 

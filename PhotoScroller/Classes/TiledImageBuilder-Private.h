@@ -157,13 +157,13 @@ typedef struct {
 
 #endif
 
-// Will figure out a way to make these static again
+/* Will figure out a way to make these static again
 extern dispatch_queue_t		fileFlushQueue;
 extern dispatch_group_t		fileFlushGroup;
+extern float				ubc_threshold_ratio;
+*/
 extern volatile	int32_t		fileFlushGroupSuspended;
 extern volatile int32_t		ubc_usage;					// rough idea of what our buffer cache usage is
-extern float				ubc_threshold_ratio;
-
 
 @interface TiledImageBuilder ()
 @property (nonatomic, assign) imageDecoder decoder;
@@ -172,11 +172,15 @@ extern float				ubc_threshold_ratio;
 @property (nonatomic, assign) imageMemory *ims;
 @property (nonatomic, assign) FILE *imageFile;
 @property (nonatomic, assign) size_t pageSize;
+@property (nonatomic, assign) CGSize size;
+
 #ifdef LIBJPEG
 @property (nonatomic, assign) co_jpeg_source_mgr *src_mgr;			// input
 #endif
 
 + (CGColorSpaceRef)colorSpace;
++ (dispatch_group_t)fileFlushGroup;
++ (dispatch_queue_t)fileFlushQueue;
 
 - (void)mapMemoryForIndex:(size_t)idx width:(size_t)w height:(size_t)h;
 

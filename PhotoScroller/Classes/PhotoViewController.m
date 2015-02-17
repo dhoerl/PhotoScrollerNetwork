@@ -190,7 +190,6 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	if(_isWebTest) {
 		operationsRunner = [[OperationsRunner alloc] initWithDelegate:self];
 		[self fetchWebImages];
-		
 	} else {
 		[self constructStaticImages];
 	}
