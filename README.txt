@@ -35,6 +35,8 @@ The imageDecoder enum defined in PhotoScrollerCommon directs the mod of decompre
 	libjpegTurboDecoder,	// Use libjpeg-turbo, but not incrementally (used when loading a local file)
 	libjpegIncremental		// Used when we download a file from the web, so we can process it a chunk at a time.
 
+The code is licensed under terms as described in the attached LICENSE file.
+
 Notes:
 
 * originally I tried to do as Apple does - receive a single jpeg file then create all the tiles on
