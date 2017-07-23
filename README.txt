@@ -1,9 +1,9 @@
 PhotoScrollerNetwork Project
-Latest v3.0 Dec 6, 2014
+Latest v3.1 Jul 23, 2017
 
 *** libjpeg-turbo is now includes arm64 ***
 
-Apple's PhotoScroller project lets you displayy huge images using CATiledLayer, but only if
+Apple's PhotoScroller project lets you display huge images using CATiledLayer, but only if
 you pretile them first! My PhotoNetworkScroller project supports tiling large local
 files (using either CGImage or libjpeg-turbo), and network fetches (using only libjpeg-turbo.
 Thus, for only local use, you can use CGImage (as long as you don't run into memory problems,
@@ -49,6 +49,10 @@ Notes:
 
 
 RECENT CHANGES:
+
+v3.1
+DropBox changed Public Folders to all private files, unless you create a
+public link to each file. Just did that.
 
 v3.0
 - was able to build libjpeg-turbo for arm64! (see my other project libjpeg-turbo-builder)
