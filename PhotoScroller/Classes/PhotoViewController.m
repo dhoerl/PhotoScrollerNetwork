@@ -310,7 +310,32 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		[tileBuilders addObject:@""];
 		
 		NSString *imageName = count == 1 ? _singleName : [self imageNameAtIndex:idx];
-		NSString *path = [[@"http://dl.dropbox.com/u/60414145" stringByAppendingPathComponent:imageName] stringByAppendingPathExtension:@"jpg"];
+		NSString *path;
+		if([imageName isEqualToString: @"Lake"]) {
+			path = @"https://www.dropbox.com/s/b337y2sn1597sry/Lake.jpg?dl=1";
+		} else
+		if([imageName isEqualToString: @"Shed"]) {
+			path = @"https://www.dropbox.com/s/wq5ed0z4cwgu8xc/Shed.jpg?dl=1";
+		} else
+		if([imageName isEqualToString: @"Tree"]) {
+			path = @"https://www.dropbox.com/s/r1vf3irfero2f04/Tree.jpg?dl=1";
+		} else
+		if([imageName isEqualToString: @"large_leaves_70mp"]) {
+			path = @"https://www.dropbox.com/s/xv4ftt95ud937w4/large_leaves_70mp.jpg?dl=1";
+		} else
+		if([imageName isEqualToString: @"Space4"]) {
+			path = @"https://www.dropbox.com/s/sbda3z1r0komm7g/Space4.jpg?dl=1";
+		} else
+		if([imageName isEqualToString: @"Space5"]) {
+			path = @"https://www.dropbox.com/s/w0s5905cqkcy4ua/Space5.jpg?dl=1";
+		} else
+		if([imageName isEqualToString: @"Space6"]) {
+			path = @"https://www.dropbox.com/s/yx63i2yf8eobrgt/Space6.jpg?dl=1";
+		} else {
+			abort();
+		}
+		// Old way that DropBox broke!
+		// NSString *path = [[@"http://dl.dropbox.com/u/60414145" stringByAppendingPathComponent:imageName] stringByAppendingPathExtension:@"jpg"];
 
 		ConcurrentOp *op = [ConcurrentOp new];
 		op.urlStr = path;

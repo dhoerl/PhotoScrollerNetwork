@@ -50,7 +50,7 @@ You now have image saving done.
 Notes on typedef struct mapper
 	int fd;						// don't need on saving, but need on restore after opening the appropriate tile file
 	unsigned char *addr;		// don't archive, it should be set when you open the file
-	unsigned char *emptyAddr;	//  I believe this is just used when constructing an image
+	unsigned char *emptyAddr;	// I believe this is just used when constructing an image
 	size_t mappedSize;			// I believe this is just used when constructing an image
 	size_t height;				// need
 	size_t width;				// need

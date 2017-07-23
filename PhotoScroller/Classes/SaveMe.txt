@@ -273,8 +273,13 @@ assert(outPtr < (uint32_t *)(currMap->addr + currMap->mappedSize - currMap->empt
 
 
 http://dl.dropbox.com/u/60414145/Lake.jpg
+https://www.dropbox.com/s/b337y2sn1597sry/Lake.jpg?dl=0
+
 http://dl.dropbox.com/u/60414145/Shed.jpg
+https://www.dropbox.com/s/wq5ed0z4cwgu8xc/Shed.jpg?dl=0
+
 http://dl.dropbox.com/u/60414145/Tree.jpg
+https://www.dropbox.com/s/r1vf3irfero2f04/Tree.jpg?dl=0
 
 // JP2
 2012-02-03 12:46:59.728 PhotoScroller[8102:707] A
