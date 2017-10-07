@@ -503,7 +503,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 			}
 
 			fstore_t fst;
-			fst.fst_flags      = F_ALLOCATECONTIG;  // could add F_ALLOCATEALL?
+			fst.fst_flags      = 0; /* iOS10 broke F_ALLOCATECONTIG;*/  // could add F_ALLOCATEALL?
 			fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
 			fst.fst_offset     = 0;                 // offset relative to the EOF
 			fst.fst_length     = sz;
