@@ -1,7 +1,8 @@
 PhotoScrollerNetwork Project
-Latest Update Aug 5, 2019
+Latest Update Aug 8, 2019
 Latest Code Update: v3.2 Aug 8, 2019
 
+--- IMPORTANT ---
 This project will be mothballed, and a new project "PhotoScrollerSwiftPackage" will encapsulate
 a new "Swift Package" that can be used with Xcode 11. Note that "Swift Package" is a misnomer since 
 such packages can contain Swift, Objective C, C/C++, and wrap libraries.
@@ -9,6 +10,7 @@ such packages can contain Swift, Objective C, C/C++, and wrap libraries.
 Once this happens it will be incredibly easy to import the guts of this project. I also plan to support reading
 jpeg images stored onthe local file system too, an oft asked for feature, and as a general direction will
 use "Streams" so any "provider" could supply the data.
+-----------------
 
 *** libjpeg-turbo is now includes arm64 ***
 

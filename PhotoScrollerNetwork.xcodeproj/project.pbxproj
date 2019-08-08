@@ -222,27 +222,11 @@
 		DE7AB8FB15309BD200C4CFE7 /* TiledImageBuilder+Draw.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "TiledImageBuilder+Draw.m"; sourceTree = "<group>"; };
 		DE7AB8FC15309BD200C4CFE7 /* TiledImageBuilder+Tile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = "TiledImageBuilder+Tile.m"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		DEA67612151B87DC009CC825 /* PhotoScrollerCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PhotoScrollerCommon.h; path = ../PhotoScrollerCommon.h; sourceTree = "<group>"; };
-		DEA6786F169AF82B00011D0B /* bmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bmp.h; sourceTree = "<group>"; };
-		DEA67870169AF82B00011D0B /* cderror.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cderror.h; sourceTree = "<group>"; };
-		DEA67871169AF82B00011D0B /* cdjpeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cdjpeg.h; sourceTree = "<group>"; };
-		DEA67872169AF82B00011D0B /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
-		DEA67873169AF82B00011D0B /* jchuff.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jchuff.h; sourceTree = "<group>"; };
 		DEA67874169AF82B00011D0B /* jconfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jconfig.h; sourceTree = "<group>"; };
-		DEA67875169AF82B00011D0B /* jdct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jdct.h; sourceTree = "<group>"; };
-		DEA67876169AF82B00011D0B /* jdhuff.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jdhuff.h; sourceTree = "<group>"; };
 		DEA67877169AF82B00011D0B /* jerror.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jerror.h; sourceTree = "<group>"; };
-		DEA67878169AF82B00011D0B /* jinclude.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jinclude.h; sourceTree = "<group>"; };
-		DEA67879169AF82B00011D0B /* jmemsys.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jmemsys.h; sourceTree = "<group>"; };
 		DEA6787A169AF82B00011D0B /* jmorecfg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jmorecfg.h; sourceTree = "<group>"; };
-		DEA6787B169AF82B00011D0B /* jpegcomp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jpegcomp.h; sourceTree = "<group>"; };
-		DEA6787C169AF82B00011D0B /* jpegint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jpegint.h; sourceTree = "<group>"; };
 		DEA6787D169AF82B00011D0B /* jpeglib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jpeglib.h; sourceTree = "<group>"; };
-		DEA6787E169AF82B00011D0B /* jsimd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsimd.h; sourceTree = "<group>"; };
-		DEA6787F169AF82B00011D0B /* jsimddct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsimddct.h; sourceTree = "<group>"; };
-		DEA67880169AF82B00011D0B /* jversion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jversion.h; sourceTree = "<group>"; };
 		DEA67881169AF82B00011D0B /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libturbojpeg.a; sourceTree = "<group>"; };
-		DEA67882169AF82B00011D0B /* tjutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tjutil.h; sourceTree = "<group>"; };
-		DEA67883169AF82B00011D0B /* transupp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = transupp.h; sourceTree = "<group>"; };
 		DEA67884169AF82B00011D0B /* turbojpeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = turbojpeg.h; sourceTree = "<group>"; };
 		DEB06F6B15F7ACA000BAA8D0 /* large_leaves_70mp.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = large_leaves_70mp.jpg; sourceTree = "<group>"; };
 		DEC616921A339C3000BB265D /* ReadMe */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ReadMe; sourceTree = "<group>"; };
@@ -459,27 +443,11 @@
 		DEA6786E169AF82B00011D0B /* libturbojpeg */ = {
 			isa = PBXGroup;
 			children = (
-				DEA6786F169AF82B00011D0B /* bmp.h */,
-				DEA67870169AF82B00011D0B /* cderror.h */,
-				DEA67871169AF82B00011D0B /* cdjpeg.h */,
-				DEA67872169AF82B00011D0B /* config.h */,
-				DEA67873169AF82B00011D0B /* jchuff.h */,
 				DEA67874169AF82B00011D0B /* jconfig.h */,
-				DEA67875169AF82B00011D0B /* jdct.h */,
-				DEA67876169AF82B00011D0B /* jdhuff.h */,
 				DEA67877169AF82B00011D0B /* jerror.h */,
-				DEA67878169AF82B00011D0B /* jinclude.h */,
-				DEA67879169AF82B00011D0B /* jmemsys.h */,
 				DEA6787A169AF82B00011D0B /* jmorecfg.h */,
-				DEA6787B169AF82B00011D0B /* jpegcomp.h */,
-				DEA6787C169AF82B00011D0B /* jpegint.h */,
 				DEA6787D169AF82B00011D0B /* jpeglib.h */,
-				DEA6787E169AF82B00011D0B /* jsimd.h */,
-				DEA6787F169AF82B00011D0B /* jsimddct.h */,
-				DEA67880169AF82B00011D0B /* jversion.h */,
 				DEA67881169AF82B00011D0B /* libturbojpeg.a */,
-				DEA67882169AF82B00011D0B /* tjutil.h */,
-				DEA67883169AF82B00011D0B /* transupp.h */,
 				DEA67884169AF82B00011D0B /* turbojpeg.h */,
 			);
 			path = libturbojpeg;
