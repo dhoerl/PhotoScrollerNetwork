@@ -25,7 +25,7 @@ In order to do the above steps:
 - required metaData - my first guess at what you need
 
   TileImageBuilder-Private.h
-	@property (nonatomic, assign) imageDecoder decoder;
+	@property (nonatomic, assign) ImageDecoder decoder;
 	@property (nonatomic, strong, readwrite) NSDictionary *properties;	// could obviously be omitted
 	@property (nonatomic, assign) imageMemory *ims;						// you need to save the size of the array this points to, as well as the data itself
 	@property (nonatomic, assign) size_t pageSize;						// probably needed

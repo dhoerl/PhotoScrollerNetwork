@@ -40,7 +40,7 @@ This sample code:
 - production quality - all "PhotoScroller/Classes" source being used in an upcoming Lot18 app
   (except PhotoViewController, which was absorbed into another class)
 
-The imageDecoder enum defined in PhotoScrollerCommon directs the mod of decompression:
+The ImageDecoder enum defined in PhotoScrollerCommon directs the mod of decompression:
 
 	cgimageDecoder=0,		// Use CGImage, libjpeg-turbo not required
 	libjpegTurboDecoder,	// Use libjpeg-turbo, but not incrementally (used when loading a local file)

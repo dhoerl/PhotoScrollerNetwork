@@ -1,6 +1,6 @@
 //
 // PhotoScrollerNetwork
-// Copyright (C) 2013-2015 by David Hoerl
+// Copyright (C) 2013-2019 by David Hoerl
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal

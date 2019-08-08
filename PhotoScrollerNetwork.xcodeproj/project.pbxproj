@@ -245,6 +245,7 @@
 		DEE5850322FCA051003C3F75 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = "Resources-iPad/PhotoScroller/Base.lproj/PhotoViewController~ipad.xib"; sourceTree = "<group>"; };
 		DEE5850422FCA051003C3F75 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/ViewController.xib; sourceTree = "<group>"; };
 		DEE5850522FCA051003C3F75 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = "Resources-iPad/PhotoScrollerNetwork/Base.lproj/ViewController~ipad.xib"; sourceTree = "<group>"; };
+		DEE5850622FCAFBD003C3F75 /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -306,6 +307,7 @@
 		DE4AD92214DC783D00D63E5A = {
 			isa = PBXGroup;
 			children = (
+				DEE5850622FCAFBD003C3F75 /* LICENSE.txt */,
 				DE588D8614E9433A00C7E151 /* README.txt */,
 				DE22F3D71A939DA3001E02D6 /* HowToSaveAndRestoreTiledImages.txt */,
 				DEA6786E169AF82B00011D0B /* libturbojpeg */,
