@@ -256,7 +256,7 @@ static void term_source(j_decompress_ptr cinfo);
 	jpeg_destroy_decompress(&src_mgr->cinfo);
 	src_mgr->cinfo.src = NULL;	// dealloc tests
 
-	fclose(self.imageFile), self.imageFile = NULL;
+	fclose(self.imageFile); self.imageFile = NULL;
 }
 
 - (void)jpegInitNetwork

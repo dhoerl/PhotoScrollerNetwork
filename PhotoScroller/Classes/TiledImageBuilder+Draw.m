@@ -39,7 +39,7 @@
 
 #define LOG NSLog
 
-static inline long offsetFromScale(float scale) { long s = lrintf(1/scale); long idx = 0; while(s > 1) s /= 2.0f, ++idx; return idx; }
+static inline long offsetFromScale(float scale) { long s = lrintf(1/scale); long idx = 0; while(s > 1) { s /= 2.0f; ++idx; } return idx; }
 
 static size_t PhotoScrollerProviderGetBytesAtPosition (
     void *info,

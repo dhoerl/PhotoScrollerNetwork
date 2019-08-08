@@ -109,7 +109,7 @@
 	assert(obj);
 	
     // clear the previous imageView
-    [_imageView removeFromSuperview], self.imageView = nil;
+    [_imageView removeFromSuperview]; self.imageView = nil;
     
     // reset our zoomScale to 1.0 before doing any further calculations
     self.zoomScale = 1.0;
@@ -131,7 +131,7 @@
 		scale = 1;
 	} else {
 		NSLog(@"CLASS %@", NSStringFromClass([obj class]));
-		assert(!"Not of the correct class");
+		assert("Not of the correct class" == NULL);
 	}
 	
 	[self addSubview:_imageView];

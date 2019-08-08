@@ -50,35 +50,35 @@ static BOOL dump_memory_usage(struct task_basic_info *info);
 
 
 #ifndef NDEBUG
-static void dumpMapper(const char *str, mapper *m)
-{
-	printf("MAP: %s\n", str);
-	printf(" fd = %d\n", m->fd);
-	printf(" emptyAddr = %p\n", m->emptyAddr);
-	printf(" addr = %p\n", m->addr);
-	printf(" mappedSize = %lu\n", m->mappedSize);
-	printf(" height = %lu\n", m->height);
-	printf(" width = %lu\n", m->width);
-	printf(" bytesPerRow = %lu\n", m->bytesPerRow);
-	printf(" emptyTileRowSize = %lu\n", m->emptyTileRowSize);
-	putchar('\n');
-}
+//static void dumpMapper(const char *str, mapper *m)
+//{
+//	printf("MAP: %s\n", str);
+//	printf(" fd = %d\n", m->fd);
+//	printf(" emptyAddr = %p\n", m->emptyAddr);
+//	printf(" addr = %p\n", m->addr);
+//	printf(" mappedSize = %lu\n", m->mappedSize);
+//	printf(" height = %lu\n", m->height);
+//	printf(" width = %lu\n", m->width);
+//	printf(" bytesPerRow = %lu\n", m->bytesPerRow);
+//	printf(" emptyTileRowSize = %lu\n", m->emptyTileRowSize);
+//	putchar('\n');
+//}
 #endif
 
 #ifndef NDEBUG
-static void dumpIMS(const char *str, imageMemory *i)
-{
-	printf("IMS: %s\n", str);
-	dumpMapper("map:", &i->map);
-
-	printf(" idx = %ld\n", i->index);
-	printf(" cols = %ld\n", i->cols);
-	printf(" rows = %ld\n", i->rows);
-	printf(" outline = %ld\n", i->outLine);
-	printf(" col = %ld\n", i->col);
-	printf(" row = %ld\n", i->row);
-	putchar('\n');
-}
+//static void dumpIMS(const char *str, imageMemory *i)
+//{
+//	printf("IMS: %s\n", str);
+//	dumpMapper("map:", &i->map);
+//
+//	printf(" idx = %ld\n", i->index);
+//	printf(" cols = %ld\n", i->cols);
+//	printf(" rows = %ld\n", i->rows);
+//	printf(" outline = %ld\n", i->outLine);
+//	printf(" col = %ld\n", i->col);
+//	printf(" row = %ld\n", i->row);
+//	putchar('\n');
+//}
 #endif
 
 //static BOOL tileBuilder(imageMemory *im, BOOL useMMAP, int32_t ubc_thresh);
@@ -401,9 +401,9 @@ LOG(@"ZLEVELS=%d", zLevels);
 	if(!_failed) {
 		_startTime = [self timeStamp];
 
-		fclose(_imageFile), _imageFile = NULL;
+		fclose(_imageFile); _imageFile = NULL;
 		[self decodeImageURL:[NSURL fileURLWithPath:_imagePath]];
-		unlink([_imagePath fileSystemRepresentation]), _imagePath = NULL;
+		unlink([_imagePath fileSystemRepresentation]); _imagePath = NULL;
 		
 #if TIMING_STATS == 1 && !defined(NDEBUG)
 		_finishTime = [self timeStamp];
@@ -438,7 +438,7 @@ LOG(@"ZLEVELS=%d", zLevels);
 				}
 			}
 			CGImageRef image = CGImageSourceCreateImageAtIndex(imageSourcRef, 0, NULL);
-			CFRelease(imageSourcRef), imageSourcRef = NULL;
+			CFRelease(imageSourcRef); imageSourcRef = NULL;
 			if(image) {
 				_failed = NO;
 				[self decodeImage:image];
@@ -502,18 +502,18 @@ LOG(@"ZLEVELS=%d", zLevels);
 				LOG(@"Warning: cannot turn off F_RDAHEAD for input file (errno %s).", strerror(errno) );
 			}
 
-			fstore_t fst;
-			fst.fst_flags      = F_ALLOCATECONTIG;  // could add F_ALLOCATEALL?
-			fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
-			fst.fst_offset     = 0;                 // offset relative to the EOF
-			fst.fst_length     = sz;
-			fst.fst_bytesalloc = 0;                 // why not but is not needed
+            fstore_t fst;
+            fst.fst_flags      = 0;                 // F_ALLOCATECONTIG does not work! (could add F_ALLOCATEALL?)
+            fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
+            fst.fst_offset     = 0;                 // offset relative to the EOF
+            fst.fst_length     = sz;
+            fst.fst_bytesalloc = 0;                 // why not but is not needed
 
-			ret = fcntl(fd, F_PREALLOCATE, &fst);
-			if(ret == -1) {
-				LOG(@"Warning: cannot F_PREALLOCATE for input file (errno %s).", strerror(errno) );
-			}
-	
+            ret = fcntl(fd, F_PREALLOCATE, &fst);
+            if(ret == -1) {
+                LOG(@"Warning: cannot F_PREALLOCATE for input file (errno %d %s).", (int)errno, strerror(errno) );
+            }
+
 			ret = ftruncate(fd, sz);				// Now the file is there for sure
 			if(ret == -1) {
 				LOG(@"Warning: cannot ftruncate input file (errno %s).", strerror(errno) );

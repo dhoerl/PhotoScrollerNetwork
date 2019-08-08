@@ -100,7 +100,9 @@ LOG(@"YIKES: \"URLSession:didReceiveResponse:task:...\" fetcher=%@ response=%@",
 	// LOG(@"EXPECT SIZE %u", responseLength);
 	fetcher.currentReceiveSize = 0;
 	dispatch_queue_t q	= dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-	fetcher.webData		= (NSData *)dispatch_data_create(NULL, 0, q, ^{});
+
+	void *nullArg = NULL;
+	fetcher.webData		= (NSData *)dispatch_data_create(nullArg, 0, q, ^{});
 
 	if(fetcher.error) {
 		LOG(@"Cancel due to error: %@", fetcher.error);

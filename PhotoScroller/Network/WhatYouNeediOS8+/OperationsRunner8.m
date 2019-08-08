@@ -163,7 +163,7 @@ static NSURLSession *sharedSession;
 		case DISPATCH_QUEUE_PRIORITY_BACKGROUND:
 			break;
 		default:
-			assert(!"Invalid Priority Value");
+			assert("Invalid Priority Value" == NULL);
 			return;
 		}
 		_priority = priority;

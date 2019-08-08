@@ -74,7 +74,8 @@
 				[data setLength:0];
 			}
 			dispatch_queue_t q	= dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-			super.webData = (NSData *)dispatch_data_create(NULL, 0, q, ^{});
+			void *argNull = NULL;
+			super.webData = (NSData *)dispatch_data_create(argNull, 0, q, ^{});
 			super.currentReceiveSize = 0;
 		}
 	}

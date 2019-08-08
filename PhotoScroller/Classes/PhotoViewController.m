@@ -267,7 +267,7 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 	}
 
 	for(NSUInteger idx=0; idx<[imageArray count]; ++idx) {
-		dispatch_async(que, ^{ [tileBuilders addObject:@""]; });
+		dispatch_async(que, ^{ [self->tileBuilders addObject:@""]; });
 		NSString *imageName = [imageArray objectAtIndex:idx];
 		NSString *path = [[NSBundle mainBundle] pathForResource:imageName ofType:@"jpg"];
 
@@ -275,8 +275,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 		// thread if we have multiple cores
 		dispatch_group_async(group, multiCore ? dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0) : que, ^
 			{
-				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:_decoder size:CGSizeMake(320, 320) orientation:_orientation];
-				dispatch_group_async(group, que, ^{ [tileBuilders replaceObjectAtIndex:idx withObject:tb]; milliSeconds += tb.milliSeconds; });
+				TiledImageBuilder *tb = [[TiledImageBuilder alloc] initWithImagePath:path withDecode:self->_decoder size:CGSizeMake(320, 320) orientation:self->_orientation];
+			dispatch_group_async(group, que, ^{ [self->tileBuilders replaceObjectAtIndex:idx withObject:tb]; self->milliSeconds += tb.milliSeconds; });
 			} );
 #else // You can now use temporary UIImageViews as placeholders while fetching or tiling the images. Test it below.
 		UIImageView *iv = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:path]];
@@ -292,8 +292,8 @@ static uint64_t DeltaMAT(uint64_t then, uint64_t now);
 			dispatch_async(dispatch_get_main_queue(), ^
 				{
 					self.navigationItem.title = [NSString stringWithFormat:@"DecodeTime: %u ms", ms];
-					[spinner stopAnimating];
-					ok2tile = YES;
+					[self->spinner stopAnimating];
+					self->ok2tile = YES;
 					[self tilePages];
 				});
 			//dispatch_release(group);

@@ -76,7 +76,7 @@
 	LOG(@"%@: got CANCEL", self);
 	self.isFinished = YES;
 	self.isCancelled = YES;
-	[self.task cancel], self.task = nil;
+	[self.task cancel]; self.task = nil;
 }
 
 - (NSMutableURLRequest *)setup
