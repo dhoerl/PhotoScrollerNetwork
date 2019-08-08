@@ -1,5 +1,14 @@
 PhotoScrollerNetwork Project
-Latest v3.1 Jul 23, 2017
+Latest Update Aug 5, 2019
+Latest Code Update: v3.2 Aug 8, 2019
+
+This project will be mothballed, and a new project "PhotoScrollerSwiftPackage" will encapsulate
+a new "Swift Package" that can be used with Xcode 11. Note that "Swift Package" is a misnomer since 
+such packages can contain Swift, Objective C, C/C++, and wrap libraries.
+
+Once this happens it will be incredibly easy to import the guts of this project. I also plan to support reading
+jpeg images stored onthe local file system too, an oft asked for feature, and as a general direction will
+use "Streams" so any "provider" could supply the data.
 
 *** libjpeg-turbo is now includes arm64 ***
 
@@ -50,9 +59,13 @@ Notes:
 
 RECENT CHANGES:
 
+v3.2
+- addressed all the warning that Xcode 11 issued (execpt 2 regarding app images)
+  in preparation for conversion to a Swift Package
+
 v3.1
-DropBox changed Public Folders to all private files, unless you create a
-public link to each file. Just did that.
+- DropBox changed Public Folders to all private files, unless you create a
+  public link to each file. Just did that.
 
 v3.0
 - was able to build libjpeg-turbo for arm64! (see my other project libjpeg-turbo-builder)

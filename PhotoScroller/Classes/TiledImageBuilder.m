@@ -502,17 +502,12 @@ LOG(@"ZLEVELS=%d", zLevels);
 				LOG(@"Warning: cannot turn off F_RDAHEAD for input file (errno %s).", strerror(errno) );
 			}
 
-            fstore_t fst;
-            fst.fst_flags      = 0;                 // F_ALLOCATECONTIG does not work! (could add F_ALLOCATEALL?)
-            fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
-            fst.fst_offset     = 0;                 // offset relative to the EOF
-            fst.fst_length     = sz;
-            fst.fst_bytesalloc = 0;                 // why not but is not needed
-
-            ret = fcntl(fd, F_PREALLOCATE, &fst);
-            if(ret == -1) {
-                LOG(@"Warning: cannot F_PREALLOCATE for input file (errno %d %s).", (int)errno, strerror(errno) );
-            }
+			fstore_t fst;
+			fst.fst_flags      = 0; 				/* iOS10 broke F_ALLOCATECONTIG;*/  // could add F_ALLOCATEALL?
+			fst.fst_posmode    = F_PEOFPOSMODE;     // allocate from EOF (0)
+			fst.fst_offset     = 0;                 // offset relative to the EOF
+			fst.fst_length     = sz;
+			fst.fst_bytesalloc = 0;                 // why not but is not needed
 
 			ret = ftruncate(fd, sz);				// Now the file is there for sure
 			if(ret == -1) {
