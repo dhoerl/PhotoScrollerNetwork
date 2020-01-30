@@ -1,5 +1,5 @@
 PhotoScrollerNetwork Project
-Latest Update Aug 8, 2019
+Latest Update Jan 30, 2020
 Latest Code Update: v3.2 Aug 8, 2019
 
 --- IMPORTANT ---
@@ -10,6 +10,11 @@ such packages can contain Swift, Objective C, C/C++, and wrap libraries.
 Once this happens it will be incredibly easy to import the guts of this project. I also plan to support reading
 jpeg images stored onthe local file system too, an oft asked for feature, and as a general direction will
 use "Streams" so any "provider" could supply the data.
+
+JAN 2020 UPDATE:
+- data component coming along well - there will be two means to feed data, which can be either a URL or a local file path
+  * traditional apps can use a NSInputStream delegate
+  * SwiftUI style apps can use a Combine Publisher
 -----------------
 
 *** libjpeg-turbo is now includes arm64 ***
