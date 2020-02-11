@@ -561,6 +561,9 @@
 			attributes = {
 				LastUpgradeCheck = 1100;
 				TargetAttributes = {
+					DE3EC2B0151CC50D00921348 = {
+						ProvisioningStyle = Automatic;
+					};
 					DE4AD92C14DC783D00D63E5A = {
 						DevelopmentTeam = 2FF6FTW7JA;
 					};
@@ -878,7 +881,7 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
-				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
+				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetworkTurbo-Info.plist";
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
 				WRAPPER_EXTENSION = app;
@@ -890,7 +893,7 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
-				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
+				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetworkTurbo-Info.plist";
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				STRIP_INSTALLED_PRODUCT = YES;
 				TARGETED_DEVICE_FAMILY = 2;
@@ -903,7 +906,7 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
-				INFOPLIST_FILE = "PhotoScrollerNetwork copy-Info.plist";
+				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetworkTurbo-Info.plist";
 				PRODUCT_NAME = "PhotoScrollerNetwork-iPad";
 				TARGETED_DEVICE_FAMILY = 2;
 				WRAPPER_EXTENSION = app;
@@ -913,12 +916,17 @@
 		DE3EC2D5151CC50D00921348 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
-				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
+				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				OTHER_CFLAGS = "-DLIBJPEG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.dfh.PhotoScrollerNetwork;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
@@ -928,16 +936,21 @@
 		DE3EC2D6151CC50D00921348 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
-				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
+				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				OTHER_CFLAGS = (
 					"-DLIBJPEG",
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dfh.PhotoScrollerNetwork;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_INSTALLED_PRODUCT = YES;
 				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
@@ -948,12 +961,17 @@
 		DE3EC2D7151CC50D00921348 /* ReleaseWithAsserts */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PhotoScrollerNetwork/PhotoScrollerNetwork-Prefix.pch";
-				INFOPLIST_FILE = "PhotoScrollerNetworkTurbo copy-Info.plist";
+				INFOPLIST_FILE = "PhotoScrollerNetwork/PhotoScrollerNetwork-Info.plist";
 				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				OTHER_CFLAGS = "-DLIBJPEG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.dfh.PhotoScrollerNetwork;
 				PRODUCT_NAME = "PhotoScrollerNetworkTurbo-iPad";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				TARGETED_DEVICE_FAMILY = 2;
 				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/libturbojpeg\"";
 				WRAPPER_EXTENSION = app;
@@ -1003,7 +1021,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PROVISIONING_PROFILE = "eb094134-29d1-4a96-a3ac-b21fe28d80e3";
 				SDKROOT = iphoneos;
@@ -1046,7 +1064,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -1166,7 +1184,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = "";
 				PROVISIONING_PROFILE = "eb094134-29d1-4a96-a3ac-b21fe28d80e3";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";

@@ -20,7 +20,8 @@ Feb 11 2020 UPDATE:
 
 Older news
 
-*** libjpeg-turbo is now includes arm64 ***
+This project builds and runs using Xcode 11.3 - but fails using Xcode 11.4-beta (due to some issue with libturbojpeg)
+Seriously, I don't think anyone should use this code now given the new Swift Package.
 
 Apple's PhotoScroller project lets you display huge images using CATiledLayer, but only if
 you pretile them first! My PhotoNetworkScroller project supports tiling large local
