@@ -1,21 +1,24 @@
 PhotoScrollerNetwork Project
-Latest Update Jan 30, 2020
+Latest Update Feb 11, 2020
 Latest Code Update: v3.2 Aug 8, 2019
 
 --- IMPORTANT ---
-This project will be mothballed, and a new project "PhotoScrollerSwiftPackage" will encapsulate
-a new "Swift Package" that can be used with Xcode 11. Note that "Swift Package" is a misnomer since 
-such packages can contain Swift, Objective C, C/C++, and wrap libraries.
+This project IS NOW OFFICIALLY unsupported!
+Replaced by "PhotoScrollerSwiftPackage" and a demo/test project, "PhotoScrollerNetwork2"
+["Swift Package" that can be used with Xcode 11.
 
-Once this happens it will be incredibly easy to import the guts of this project. I also plan to support reading
-jpeg images stored onthe local file system too, an oft asked for feature, and as a general direction will
-use "Streams" so any "provider" could supply the data.
+Note that "Swift Package" is a misnomer since
+such packages can contain Swift, Objective C, C/C++ code, and are usable by both Swift and Objective C.
 
-JAN 2020 UPDATE:
-- data component coming along well - there will be two means to feed data, which can be either a URL or a local file path
-  * traditional apps can use a NSInputStream delegate
-  * SwiftUI style apps can use a Combine Publisher
+Feb 11 2020 UPDATE:
+- the core image management and UI have been incorporated into a Swift Package (usable in Xcode 11), PhotoScrollerSwiftPackage
+  * traditional apps can use a NSInputStream (see the PhotoScrollerNetwork2 test/demo project)
+  * SwiftUI style apps can use a Combine Publisher (also in the test project)
+  * lots of unit tests in the test project too
+
 -----------------
+
+Older news
 
 *** libjpeg-turbo is now includes arm64 ***
 
